@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>BRISNET PP</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,sans-serif;background:#0f0f0f;color:#e8e8e8;min-height:100vh}
+.up{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:20px;text-align:center}
+.uz{width:100%;max-width:360px;border:2px dashed #333;border-radius:16px;padding:40px 20px;background:#1a1a1a;cursor:pointer;margin-bottom:12px}
+.uz:active{border-color:#00c853;background:rgba(0,200,83,0.1)}
+.uz h2{font-size:18px;margin-bottom:8px}
+.uz p{font-size:13px;color:#666}
+#fi,#fp{display:none}
+.app{display:none;padding:16px;max-width:420px;margin:0 auto}
+.rc{border:1px solid #333;border-radius:12px;padding:12px;margin-bottom:12px;background:#1a1a1a}
+.rh{display:flex;justify-content:space-between;margin-bottom:8px}
+.rt{font-size:14px;font-weight:600}
+.rm{font-size:11px;color:#666}
+.pb{font-size:10px;padding:2px 6px;border-radius:4px;font-weight:600}
+.pb.b{background:rgba(0,200,83,0.15);color:#00c853}
+.pb.g{background:rgba(255,171,0,0.15);color:#ffab00}
+.hr{display:flex;align-items:center;padding:6px 0;border-bottom:1px solid #222;gap:8px}
+.hr:last-child{border:none}
+.rn{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700}
+.rn.r1{background:rgba(0,200,83,0.18);color:#00c853}
+.rn.r2{background:rgba(255,171,0,0.18);color:#ffab00}
+.rn.r3{background:rgba(68,138,255,0.18);color:#448aff}
+.rn.ro{background:#2a2a2a;color:#888}
+.hi{flex:1;min-width:0}
+.hn{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hd{font-size:10px;color:#666;margin-top:2px}
+.ob{text-align:right}
+.ov{font-size:14px;font-weight:600}
+.sb{height:3px;border-radius:2px;background:#2a2a2a;margin-top:2px;overflow:hidden}
+.sf{height:100%;border-radius:2px}
+.tb{display:flex;gap:4px;padding:12px 0;border-bottom:1px solid #333;overflow-x:auto}
+.t{flex:1;text-align:center;padding:8px;border-radius:8px;font-size:12px;font-weight:500;cursor:pointer;color:#666;background:transparent;border:none;min-width:60px}
+.t.a{background:#242424;color:#fff}
+.p{display:none}
+.p.a{display:block}
+.fr{display:flex;gap:6px;padding:12px 0;overflow-x:auto}
+.fc{padding:5px 12px;border-radius:20px;border:1px solid #333;font-size:11px;cursor:pointer;color:#666;background:transparent;white-space:nowrap}
+.fc.a{background:#fff;color:#000;border-color:#fff}
+.eb{width:100%;padding:6px;border:none;border-radius:6px;background:#2a2a2a;color:#666;font-size:11px;cursor:pointer;margin-top:6px}
+.sl{font-size:10px;text-transform:uppercase;color:#444;margin:16px 0 8px;font-weight:600}
+.cc{border:1px solid #333;border-radius:12px;padding:10px 12px;margin-bottom:8px;background:#1a1a1a}
+.cn{font-size:13px;font-weight:500}
+.cr{font-size:11px;color:#666;margin-top:2px}
+.tg{display:flex;gap:4px;flex-wrap:wrap;margin-top:4px}
+.dt{font-size:9px;padding:1px 5px;border-radius:4px;background:#2a2a2a;color:#666}
+.dt.bf{background:rgba(0,200,83,0.15);color:#00c853}
+.dt.al{background:rgba(255,82,82,0.15);color:#ff5252}
+.bb{position:fixed;bottom:0;left:0;right:0;padding:12px 16px;background:rgba(15,15,15,0.95);border-top:1px solid #333;display:flex;gap:8px}
+.bb button{flex:1;padding:10px;border-radius:8px;border:1px solid #333;background:#1a1a1a;color:#888;font-size:13px;cursor:pointer}
+.bb button.p{background:#00c853;color:#000;border-color:#00c853;font-weight:600}
+.es{text-align:center;padding:40px 20px;color:#666}
+.ld{text-align:center;padding:60px 20px}
+.sp{width:32px;height:32px;border:3px solid #333;border-top-color:#00c853;border-radius:50%;animation:sp 0.8s linear infinite;margin:0 auto 16px}
+@keyframes sp{to{transform:rotate(360deg)}}
+.raw-pdf{background:#1a1a1a;border:1px solid #333;border-radius:12px;padding:12px;font-family:monospace;font-size:9px;line-height:1.4;white-space:pre-wrap;color:#aaa;max-height:60vh;overflow-y:auto}
+.status-msg{background:#1a1a1a;border:1px solid #333;border-radius:8px;padding:10px;margin-bottom:12px;font-size:12px;color:#888}
+.status-ok{color:#00c853}
+.status-warn{color:#ffab00}
+.status-err{color:#ff5252}
+</style>
+</head>
+<body>
+
+<div class="up" id="us">
+  <div class="uz" onclick="document.getElementById('fi').click()">
+    <h2>📁 Upload BRISNET CSV</h2>
+    <p>Full analysis with structured data</p>
+  </div>
+  <div class="uz" onclick="document.getElementById('fp').click()" style="border-color:#444">
+    <h2>📄 Upload BRISNET PDF</h2>
+    <p>Auto-extract races & horses (beta)</p>
+  </div>
+  <input type="file" id="fi" accept=".csv" onchange="hf(this.files[0])">
+  <input type="file" id="fp" accept=".pdf" onchange="hp(this.files[0])">
+</div>
+
+<div class="ld" id="ls" style="display:none">
+  <div class="sp"></div>
+  <p style="color:#666">Parsing...</p>
+</div>
+
+<div class="app" id="ap">
+  <h1 id="tn" style="font-size:16px;margin-bottom:4px">Track</h1>
+  <div id="td" style="font-size:11px;color:#666;margin-bottom:12px">Date</div>
+  <div id="status" class="status-msg" style="display:none"></div>
+
+  <div class="tb">
+    <button class="t a" onclick="st('r')">Races</button>
+    <button class="t" onclick="st('b')">Best</button>
+    <button class="t" onclick="st('c')">Changes</button>
+    <button class="t" onclick="st('w')">Works</button>
+    <button class="t" onclick="st('p')" id="tpdf" style="display:none">Raw</button>
+  </div>
+
+  <div class="fr" id="fr">
+    <button class="fc a" onclick="fr('all')">All</button>
+    <button class="fc" onclick="fr('best')">Best</button>
+    <button class="fc" onclick="fr('dirt')">Dirt</button>
+    <button class="fc" onclick="fr('turf')">Turf</button>
+  </div>
+
+  <div id="pr" class="p a"></div>
+  <div id="pb" class="p"></div>
+  <div id="pc" class="p"></div>
+  <div id="pw" class="p"></div>
+  <div id="pp" class="p"></div>
+
+  <div style="height:70px"></div>
+</div>
+
+<div class="bb" id="bb" style="display:none">
+  <button onclick="xc()">CSV</button>
+  <button onclick="xp()" class="p">PDF</button>
+  <button onclick="location.reload()">New</button>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+<script>
+let td={races:[]},cf='all',er=new Set(),pdfText='';
+
+function hf(f){
+if(!f)return;
+document.getElementById('us').style.display='none';
+document.getElementById('ls').style.display='block';
+const r=new FileReader();
+r.onload=function(e){pc(e.target.result);setTimeout(()=>{document.getElementById('ls').style.display='none';document.getElementById('ap').style.display='block';document.getElementById('bb').style.display='flex';ia();},300);};
+r.readAsText(f);
+}
+
+async function hp(f){
+if(!f)return;
+document.getElementById('us').style.display='none';
+document.getElementById('ls').style.display='block';
+const statusEl=document.getElementById('status');
+statusEl.style.display='block';
+statusEl.innerHTML='<span class="status-warn">⏳ Reading PDF pages...</span>';
+try{
+const arrayBuffer=await f.arrayBuffer();
+const pdf=await pdfjsLib.getDocument({data:arrayBuffer}).promise;
+let allItems=[];
+let fullText='';
+for(let i=1;i<=pdf.numPages;i++){
+statusEl.innerHTML='<span class="status-warn">⏳ Reading page '+i+'/'+pdf.numPages+'...</span>';
+const page=await pdf.getPage(i);
+const textContent=await page.getTextContent();
+const pageText=textContent.items.map(item=>item.str).join(' ');
+fullText+='\n--- PAGE '+i+' ---\n'+pageText+'\n';
+for(const item of textContent.items){
+allItems.push({text:item.str,x:Math.round(item.transform[4]),y:Math.round(item.transform[5]),font:item.fontName,page:i});
+}
+}
+pdfText=fullText;
+statusEl.innerHTML='<span class="status-warn">⏳ Parsing structure...</span>';
+parsePdfItems(allItems);
+document.getElementById('tpdf').style.display='block';
+document.getElementById('pp').innerHTML='<div class="raw-pdf">'+escapeHtml(fullText.substring(0,8000))+(fullText.length>8000?'\n\n...[truncated, '+fullText.length+' chars total]':'')+'</div>';
+statusEl.innerHTML='<span class="status-ok">✅ Found '+td.races.length+' races with '+td.races.reduce((a,r)=>a+r.horses.length,0)+' horses</span>';
+document.getElementById('ls').style.display='none';
+document.getElementById('ap').style.display='block';
+document.getElementById('bb').style.display='flex';
+st('r');
+}catch(err){
+statusEl.innerHTML='<span class="status-err">❌ Error: '+err.message+'</span>';
+setTimeout(()=>{document.getElementById('ls').style.display='none';document.getElementById('us').style.display='flex';},2000);
+}
+}
+
+function escapeHtml(text){
+const div=document.createElement('div');
+div.textContent=text;
+return div.innerHTML;
+}
+
+function parsePdfItems(items){
+const rowMap=new Map();
+for(const item of items){
+const yKey=Math.round(item.y/3)*3;
+if(!rowMap.has(yKey)) rowMap.set(yKey,[]);
+rowMap.get(yKey).push(item);
+}
+const rows=[];
+for(const [y,rowItems] of rowMap){
+rowItems.sort((a,b)=>a.x-b.x);
+const text=rowItems.map(i=>i.text).join(' ').replace(/\s+/g,' ').trim();
+if(text.length>3) rows.push({y:y,text:text,items:rowItems});
+}
+rows.sort((a,b)=>b.y-a.y);
+const races=[];
+let currentRace=null;
+let inRaceSection=false;
+for(let i=0;i<rows.length;i++){
+const row=rows[i];
+const text=row.text;
+const raceMatch=text.match(/Race\s*(\d+)/i);
+if(raceMatch && (text.includes('Yards')||text.includes('Furlongs')||text.includes('Mile')||text.includes('Canterbury')||text.includes('Purse')||text.includes('Post Time'))){
+if(currentRace && currentRace.num>0) races.push(currentRace);
+currentRace={num:parseInt(raceMatch[1]),name:'',dist:'',surf:'Dirt',purse:'',time:'',play:'fair',horses:[]};
+inRaceSection=true;
+const nm=text.match(/(?:Canterbury\s*Park|Park)\s*['"]?([^'"\d]*?)(?:\d+\s*(?:Yards|Furlongs|Mile)|Race\s*\d|Wednesday|Thursday|Friday|Saturday|Sunday|Monday|Tuesday)/i);
+if(nm && nm[1].trim()) currentRace.name=nm[1].trim().replace(/^['"]/,'').replace(/['"]$/,'');
+const dm=text.match(/(\d+(?:\/\d+)?\s*(?:Yards|Furlongs|Mile))/i);
+if(dm) currentRace.dist=dm[1];
+if(text.includes('(T)')||text.includes('Turf')||text.includes(' fm ')) currentRace.surf='Turf';
+else if(text.includes('(D)')||text.includes('Dirt')||text.includes(' ft ')) currentRace.surf='Dirt';
+const pm=text.match(/Purse\s*\$?([\d,]+)/i);
+if(pm) currentRace.purse='$'+pm[1];
+const tm=text.match(/Post\s*Time:\s*([\d:()/\s]+)/i);
+if(tm) currentRace.time=tm[1].trim();
+continue;
+}
+if(!inRaceSection || !currentRace) continue;
+const horseStart=text.match(/^(\d{1,2})\s+([A-Z][a-zA-Z\s'\-]{2,30})(?:\s+\(|\s+Own:|\s*$)/);
+if(horseStart){
+const rank=parseInt(horseStart[1]);
+let name=horseStart[2].trim();
+const fullNameMatch=text.match(/^(\d{1,2})\s+([A-Za-z\s'\-]+?)\s*\(/);
+if(fullNameMatch) name=fullNameMatch[2].trim();
+if(rank>=1 && rank<=20 && name.length>2 && !/^\d+[A-Za-z]{3}/.test(name)){
+const oddsM=text.match(/(\d+\/\d+|\d+\.\d+|EVEN)/);
+const styleM=text.match(/\(([A-Z\/]+)\s*(\d*)\)/);
+const score=rank===1?92:rank===2?84:rank===3?76:rank<=5?68:50;
+let jockey='';
+let trainer='';
+for(let j=i+1;j<Math.min(i+8,rows.length);j++){
+const nextText=rows[j].text;
+const jm=nextText.match(/^([A-Z][a-z]+\s+[A-Z][a-z]+(?:\s*,\s*Jr\.?)?)\s*\(\d+\s+\d+[\-\d\s%]+\)/);
+if(jm && !jockey) jockey=jm[1];
+const trm=nextText.match(/Trainer:\s*([^\(]+)/i);
+if(trm && !trainer) trainer=trm[1].trim();
+if(jockey && trainer) break;
+}
+currentRace.horses.push({
+name:name,rank:rank,odds:oddsM?oddsM[1]:'',score:score,
+jockey:jockey,trainer:trainer,weight:120,dslr:14,
+workouts:['a','a','a','a'],blinkers:false,lasix:true,
+blinkersOn:false,jockeyUp:false,beats:[],
+lastPos:0,lastTrack:'',lastFig:0,
+notes:'PDF import',style:styleM?styleM[1]:''
+});
+continue;
+}
+}
+if(currentRace && currentRace.num>0) races.push(currentRace);
+const seen=new Set();
+const unique=[];
+for(const r of races){
+if(!seen.has(r.num) && r.horses.length>0){
+seen.add(r.num);
+r.horses.sort((a,b)=>a.rank-b.rank);
+const top=r.horses[0];
+if(top){
+if(top.rank===1 && top.score>=85) r.play='best';
+else if(top.rank<=3 && top.score>=75) r.play='good';
+else r.play='fair';
+}
+if(!r.name) r.name='Race '+r.num;
+unique.push(r);
+}
+}
+td.races=unique.sort((a,b)=>a.num-b.num);
+td.name='Canterbury Park';
+td.date='July 22, 2026';
+console.log('PDF Parse Results:');
+console.log('Races:',td.races.length);
+td.races.forEach(r=>{
+console.log('Race',r.num,':',r.name,'|',r.horses.length,'horses');
+r.horses.forEach(h=>console.log('  ',h.rank,h.name,'odds:',h.odds,'jockey:',h.jockey));
+});
+}
+
+function pc(t){
+const l=t.trim().split('\n');
+if(l.length<2)return;
+const h=l[0].toLowerCase().split(',').map(x=>x.trim().replace(/"/g,''));
+const gi=n=>h.indexOf(n.toLowerCase());
+const ix={rn:gi('race #'),na:gi('race name'),di:gi('distance'),su:gi('surface'),pu:gi('purse'),ho:gi('horse'),ra:gi('rank'),od:gi('odds'),jo:gi('jockey'),tr:gi('trainer'),we:gi('weight'),ds:gi('dslr'),wo:gi('workouts'),bl:gi('blinkers'),la:gi('lasix'),ju:gi('jockey change'),be:gi('beats'),lp:gi('last pos'),lt:gi('last track'),lf:gi('last fig'),no:gi('notes'),ti:gi('post time')};
+const rs={};
+for(let i=1;i<l.length;i++){
+const c=pl(l[i]);
+if(c.length<5)continue;
+const n=parseInt(c[ix.rn])||0;
+if(!n)continue;
+if(!rs[n])rs[n]={num:n,name:c[ix.na]||`Race ${n}`,dist:c[ix.di]||'',surf:c[ix.su]||'Dirt',purse:c[ix.pu]||'',time:c[ix.ti]||'',play:'fair',horses:[]};
+const w=(c[ix.wo]||'').trim();
+const wo=w?w.split(/[\/\-]/):['a','a','a','a'];
+rs[n].horses.push({name:c[ix.ho]||'',rank:parseInt(c[ix.ra])||99,odds:c[ix.od]||'',score:parseInt(c[ix.ra])?100-(parseInt(c[ix.ra])*8):50,jockey:c[ix.jo]||'',trainer:c[ix.tr]||'',weight:parseInt(c[ix.we])||120,dslr:parseInt(c[ix.ds])||14,workouts:wo,blinkers:(c[ix.bl]||'').toUpperCase()==='ON',lasix:(c[ix.la]||'').toLowerCase()==='yes',blinkersOn:(c[ix.bl]||'').toUpperCase()==='ON',jockeyUp:(c[ix.ju]||'').toLowerCase()==='yes',beats:(c[ix.be]||'').split(';').filter(b=>b&&b!=='None'),lastPos:parseInt(c[ix.lp])||0,lastTrack:c[ix.lt]||'',lastFig:parseInt(c[ix.lf])||0,notes:c[ix.no]||''});
+}
+td.races=Object.values(rs).sort((a,b)=>a.num-b.num);
+td.races.forEach(r=>{r.horses.sort((a,b)=>a.rank-b.rank);const t=r.horses[0];if(t&&t.score>=85)r.play='best';else if(t&&t.score>=75)r.play='good';});
+td.name=td.races[0]?.horses[0]?'Imported':'Unknown';
+td.date=new Date().toLocaleDateString();
+}
+
+function pl(line){
+const r=[];let c='',q=false;
+for(let i=0;i<line.length;i++){const ch=line[i];if(ch==='"')q=!q;else if(ch===','&&!q){r.push(c.trim());c='';}else c+=ch;}
+r.push(c.trim());return r;
+}
+
+function ia(){
+document.getElementById('tn').textContent=td.name;
+document.getElementById('td').textContent=td.date;
+rr();rb();rc();rw();
+}
+
+function wd(a){return'<span style="display:flex;gap:3px">'+a.map(x=>'<span style="width:6px;height:6px;border-radius:50%;background:'+(x==='g'?'#00c853':x==='a'?'#ffab00':'#ff5252')+'"></span>').join('')+'</span>';}
+function rcn(r){return r===1?'r1':r===2?'r2':r===3?'r3':'ro';}
+function pcl(p){return p==='best'?'b':p==='good'?'g':'';}
+function plb(p){return p==='best'?'BEST':p==='good'?'GOOD':'FAIR';}
+function sc(s){return s>=90?'#00c853':s>=80?'#448aff':s>=70?'#ffab00':'#ff5252';}
+
+function dt(h){
+let t=[];
+if(h.dslr<=14&&h.dslr>0)t.push('<span class="dt bf">'+h.dslr+'d</span>');
+else if(h.dslr>=42)t.push('<span class="dt al">'+h.dslr+'d off</span>');
+else if(h.dslr>0)t.push('<span class="dt">'+h.dslr+'d</span>');
+else t.push('<span class="dt" style="color:#ffab00">DEBUT</span>');
+if(h.blinkersOn)t.push('<span class="dt bf">BLINK</span>');
+if(!h.lasix)t.push('<span class="dt al">NO L</span>');
+if(h.jockeyUp)t.push('<span class="dt bf">J+</span>');
+if(h.beats.length>0)t.push('<span class="dt bf">Beats '+h.beats.length+'</span>');
+return t.join('');
+}
+
+function hr(h,sh){
+const d=sh?`<div style="margin:6px 0 2px 32px;padding:8px;border-radius:8px;background:#242424;font-size:11px"><div style="color:#888;margin-bottom:2px">${h.lastPos?h.lastPos+h.lastTrack+' Fig:'+h.lastFig:'DEBUT'}</div><div style="color:#666;font-size:10px">${h.notes}</div><div class="tg">${dt(h)}</div></div>`:'';
+return `<div class="hr"><div class="rn ${rcn(h.rank)}">${h.rank}</div><div class="hi"><div class="hn">${h.name}</div><div class="hd">${h.jockey||'Jockey TBD'} / ${h.trainer||'Trainer TBD'} ${wd(h.workouts)}</div><div class="sb"><div class="sf" style="width:${h.score}%;background:${sc(h.score)}"></div></div></div><div class="ob"><div class="ov">${h.odds||'--'}</div></div></div>${d}`;
+}
+
+function rca(r){
+const e=er.has('r-'+r.num);
+return `<div class="rc"><div class="rh"><div><div class="rt">Race ${r.num} ${r.name?'— '+r.name:''}</div><div class="rm">${r.time?r.time+' · ':''}${r.dist?r.dist+' · ':''}${r.surf}${r.purse?' · '+r.purse:''}</div></div><span class="pb ${pcl(r.play)}">${plb(r.play)}</span></div>${r.horses.map(h=>hr(h,e)).join('')}<button class="eb" onclick="te(${r.num})">${e?'Collapse':'Expand'}</button></div>`;
+}
+
+function rr(){
+let r=td.races;
+if(cf==='best')r=r.filter(x=>x.play==='best');
+else if(cf==='good')r=r.filter(x=>x.play==='good');
+else if(cf==='dirt')r=r.filter(x=>x.surf.toLowerCase()==='dirt');
+else if(cf==='turf')r=r.filter(x=>x.surf.toLowerCase()==='turf');
+document.getElementById('pr').innerHTML=r.map(x=>rca(x)).join('')||'<div class="es">No races found. Try uploading a CSV for full data.</div>';
+}
+
+function rb(){
+const b=td.races.filter(r=>r.play==='best').sort((a,b)=>b.horses[0].score-a.horses[0].score);
+const g=td.races.filter(r=>r.play==='good').sort((a,b)=>b.horses[0].score-a.horses[0].score);
+let h='';
+if(b.length)h+='<div class="sl">Best Plays</div>'+b.map(r=>rca(r)).join('');
+if(g.length)h+='<div class="sl">Good Plays</div>'+g.map(r=>rca(r)).join('');
+document.getElementById('pb').innerHTML=h||'<div class="es">No best plays found</div>';
+}
+
+function rc(){
+const ch=[];
+td.races.forEach(r=>r.horses.forEach(h=>{if(h.jockeyUp||h.blinkersOn||!h.lasix||h.dslr>=42||h.notes.toLowerCase().includes('scratch'))ch.push({...h,rn:r.num,rnm:r.name});}));
+let h='<div class="sl">Changes</div>';
+h+=ch.map(x=>`<div class="cc"><div style="display:flex;justify-content:space-between"><span class="cn">${x.name}</span><span style="font-size:10px;color:#666">R${x.rn}</span></div><div class="cr">${x.rnm}</div><div class="tg">${x.blinkersOn?'<span class="dt bf">BLINK</span>':''}${x.jockeyUp?'<span class="dt bf">J+</span>':''}${!x.lasix?'<span class="dt al">NO L</span>':''}${x.dslr>=42?'<span class="dt al">'+x.dslr+'d off</span>':''}${x.notes.toLowerCase().includes('scratch')?'<span class="dt al">SCRATCH</span>':''}</div></div>`).join('');
+document.getElementById('pc').innerHTML=h;
+}
+
+function rw(){
+const a=[];td.races.forEach(r=>r.horses.forEach(h=>a.push({...h,rn:r.num})));
+a.sort((a,b)=>b.workouts.filter(w=>w==='g').length-a.workouts.filter(w=>w==='g').length);
+let h='<div class="sl">Workouts</div>';
+h+=a.slice(0,20).map(x=>`<div class="cc"><div style="display:flex;justify-content:space-between"><span class="cn">${x.name}</span><span style="font-size:10px;color:#666">R${x.rn}</span></div><div style="display:flex;align-items:center;gap:8px;margin-top:5px">${wd(x.workouts)}<span style="font-size:11px;color:#888">${x.workouts.filter(w=>w==='g').length}/4 bullets</span></div></div>`).join('');
+document.getElementById('pw').innerHTML=h;
+}
+
+function st(t){
+document.querySelectorAll('.t').forEach(x=>x.classList.remove('a'));
+document.querySelectorAll('.p').forEach(x=>x.classList.remove('a'));
+if(t==='r'){document.querySelector('.t').classList.add('a');document.getElementById('pr').classList.add('a');document.getElementById('fr').style.display='flex';}
+if(t==='b'){document.querySelectorAll('.t')[1].classList.add('a');document.getElementById('pb').classList.add('a');document.getElementById('fr').style.display='none';}
+if(t==='c'){document.querySelectorAll('.t')[2].classList.add('a');document.getElementById('pc').classList.add('a');document.getElementById('fr').style.display='none';}
+if(t==='w'){document.querySelectorAll('.t')[3].classList.add('a');document.getElementById('pw').classList.add('a');document.getElementById('fr').style.display='none';}
+if(t==='p'){document.getElementById('tpdf').classList.add('a');document.getElementById('pp').classList.add('a');document.getElementById('fr').style.display='none';}
+}
+
+function fr(t){cf=t;document.querySelectorAll('.fc').forEach(c=>c.classList.remove('a'));event.target.classList.add('a');rr();}
+function te(n){const k='r-'+n;if(er.has(k))er.delete(k);else er.add(k);rr();rb();}
+
+function xc(){
+let csv='Track,Race #,Race Name,Distance,Surface,Purse,Horse,Rank,Odds,Score,Jockey,Trainer,Weight,DSLR,Workouts,Blinkers,Lasix,Jockey Change,Beats,Last Pos,Last Track,Last Fig,Notes\n';
+td.races.forEach(r=>r.horses.forEach(h=>{csv+=`${td.name},${r.num},"${r.name}",${r.dist},${r.surf},${r.purse},${h.name},${h.rank},${h.odds},${h.score},${h.jockey},${h.trainer},${h.weight},${h.dslr},${h.workouts.join('/')},${h.blinkersOn?'ON':'OFF'},${h.lasix?'Yes':'No'},${h.jockeyUp?'Yes':'No'},${h.beats.join(';')},${h.lastPos},${h.lastTrack},${h.lastFig},"${h.notes}"\n`;}));
+const b=new Blob([csv],{type:'text/csv'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='brisnet_pp.csv';a.click();
+}
+
+function xp(){
+const { jsPDF } = window.jspdf;
+const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'letter' });
+let y = 30;
+doc.setFontSize(16);
+doc.setTextColor(0, 0, 0);
+doc.text(`BRISNET PP - ${td.name} - ${td.date}`, 30, y);
+y += 25;
+td.races.forEach(r => {
+    if (y > 520) { doc.addPage(); y = 30; }
+    doc.setFontSize(11);
+    doc.setTextColor(0, 0, 0);
+    doc.text(`Race ${r.num}: ${r.name} - ${r.dist} ${r.surf} - ${r.purse}`, 30, y);
+    y += 14;
+    const rows = r.horses.map(h => [
+        String(h.rank), h.name, h.odds, String(h.score),
+        h.jockey, h.trainer, String(h.dslr), h.workouts.join(''), h.notes
+    ]);
+    doc.autoTable({
+        startY: y,
+        head: [['Rk', 'Horse', 'Odds', 'Score', 'Jockey', 'Trainer', 'DSLR', 'Work', 'Notes']],
+        body: rows,
+        theme: 'grid',
+        styles: { fontSize: 8, cellPadding: 2 },
+        headStyles: { fillColor: [40, 40, 40], textColor: [255, 255, 255] },
+        columnStyles: {
+            0: { cellWidth: 20 }, 1: { cellWidth: 80 }, 2: { cellWidth: 35 },
+            3: { cellWidth: 30 }, 4: { cellWidth: 65 }, 5: { cellWidth: 65 },
+            6: { cellWidth: 25 }, 7: { cellWidth: 30 }, 8: { cellWidth: 'auto' }
+        },
+        margin: { left: 30, right: 30 }
+    });
+    y = doc.lastAutoTable.finalY + 12;
+});
+doc.save('brisnet_pp.pdf');
+}
+</script>
+</body>
+</html>
