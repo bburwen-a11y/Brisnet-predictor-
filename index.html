@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>BRISNET PDF / CSV Viewer</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0f0f0f;color:#e8e8e8;min-height:100vh}
+.up{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:20px;text-align:center}
+.uz{width:100%;max-width:420px;border:2px dashed #333;border-radius:16px;padding:40px 20px;background:#1a1a1a;cursor:pointer;transition:all .2s}
+.uz:hover{border-color:#00c853;background:rgba(0,200,83,0.05)}
+.uz h2{font-size:20px;margin-bottom:10px;color:#fff}
+.uz p{font-size:14px;color:#888}
+#fi{display:none}
+.app{display:none;padding:16px;max-width:900px;margin:0 auto}
+.rc{border:1px solid #333;border-radius:12px;padding:14px;margin-bottom:14px;background:#1a1a1a}
+.rh{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;flex-wrap:wrap;gap:8px}
+.rt{font-size:15px;font-weight:700;color:#fff}
+.rm{font-size:12px;color:#888;margin-top:3px}
+.rmeta{font-size:11px;color:#666;margin-top:4px}
+.pb{font-size:10px;padding:3px 8px;border-radius:4px;font-weight:700;text-transform:uppercase}
+.pb.best{background:rgba(0,200,83,0.15);color:#00c853}
+.pb.good{background:rgba(255,171,0,0.15);color:#ffab00}
+.pb.fair{background:#2a2a2a;color:#888}
+.hr{display:flex;align-items:center;padding:7px 0;border-bottom:1px solid #222;gap:10px;flex-wrap:wrap}
+.hr:last-child{border:none}
+.rn{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;flex-shrink:0}
+.rn.r1{background:rgba(0,200,83,0.18);color:#00c853}
+.rn.r2{background:rgba(255,171,0,0.18);color:#ffab00}
+.rn.r3{background:rgba(68,138,255,0.18);color:#448aff}
+.rn.ro{background:#2a2a2a;color:#888}
+.hi{flex:1;min-width:180px}
+.hn{font-size:14px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hd{font-size:11px;color:#888;margin-top:2px}
+.hx{font-size:11px;color:#666;margin-top:3px;display:flex;gap:8px;flex-wrap:wrap}
+.hx span{background:#242424;padding:2px 6px;border-radius:4px}
+.ob{text-align:right;flex-shrink:0}
+.ov{font-size:15px;font-weight:700;color:#fff}
+.od{font-size:11px;color:#888}
+.tb{display:flex;gap:4px;padding:14px 0;border-bottom:1px solid #333;overflow-x:auto}
+.t{flex:1;text-align:center;padding:10px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;color:#888;background:transparent;border:none;white-space:nowrap}
+.t.a{background:#242424;color:#fff}
+.fr{display:flex;gap:6px;padding:14px 0;overflow-x:auto}
+.fc{padding:6px 14px;border-radius:20px;border:1px solid #333;font-size:12px;cursor:pointer;color:#888;background:transparent;white-space:nowrap}
+.fc.a{background:#fff;color:#000;border-color:#fff;font-weight:600}
+.p{display:none}
+.p.a{display:block}
+.eb{width:100%;padding:8px;border:none;border-radius:8px;background:#2a2a2a;color:#888;font-size:12px;cursor:pointer;margin-top:8px}
+.eb:hover{background:#333;color:#fff}
+.sl{font-size:11px;text-transform:uppercase;color:#555;margin:18px 0 10px;font-weight:700;letter-spacing:.5px}
+.cc{border:1px solid #333;border-radius:12px;padding:12px;margin-bottom:10px;background:#1a1a1a}
+.cn{font-size:14px;font-weight:600;color:#fff}
+.cr{font-size:12px;color:#888;margin-top:3px}
+.tg{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}
+.dt{font-size:10px;padding:2px 6px;border-radius:4px;background:#242424;color:#888;font-weight:500}
+.dt.bf{background:rgba(0,200,83,0.15);color:#00c853}
+.dt.al{background:rgba(255,82,82,0.15);color:#ff5252}
+.dt.wa{background:rgba(255,171,0,0.15);color:#ffab00}
+.bb{position:fixed;bottom:0;left:0;right:0;padding:14px 16px;background:rgba(15,15,15,0.98);border-top:1px solid #333;display:flex;gap:10px;z-index:100}
+.bb button{flex:1;padding:12px;border-radius:10px;border:1px solid #333;background:#1a1a1a;color:#888;font-size:14px;cursor:pointer;font-weight:500}
+.bb button.p{background:#00c853;color:#000;border-color:#00c853;font-weight:700}
+.bb button:hover{background:#242424}
+.es{text-align:center;padding:50px 20px;color:#666;font-size:14px}
+.ld{text-align:center;padding:60px 20px}
+.sp{width:36px;height:36px;border:3px solid #333;border-top-color:#00c853;border-radius:50%;animation:sp .8s linear infinite;margin:0 auto 18px}
+@keyframes sp{to{transform:rotate(360deg)}}
+table{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px}
+th,td{border:1px solid #333;padding:6px;text-align:left}
+th{background:#242424;color:#fff;font-weight:600;font-size:11px;position:sticky;top:0}
+tr:nth-child(even){background:#161616}
+tr:hover{background:#1f1f1f}
+.pos-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(55px,1fr));gap:5px;margin-top:6px}
+.pos-item{background:#242424;padding:5px 6px;border-radius:6px;text-align:center;font-size:11px}
+.pos-item .pl{color:#888;font-size:9px;text-transform:uppercase;margin-bottom:1px}
+.pos-item .pv{color:#fff;font-weight:700}
+.info-bar{background:#1a1a1a;border:1px solid #333;border-radius:10px;padding:12px 16px;margin-bottom:14px;font-size:13px;color:#aaa}
+.mode-badge{display:inline-block;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;margin-left:10px}
+.mode-badge.pp{background:rgba(0,200,83,0.15);color:#00c853}
+.mode-badge.rc{background:rgba(68,138,255,0.18);color:#448aff}
+.mode-badge.en{background:rgba(255,171,0,0.15);color:#ffab00}
+.err-box{background:rgba(255,82,82,0.1);border:1px solid rgba(255,82,82,0.3);border-radius:10px;padding:16px;margin-top:20px;color:#ff5252;font-size:13px;text-align:left;max-width:600px}
+.log-box{background:#1a1a1a;border:1px solid #333;border-radius:8px;padding:12px;margin-top:16px;font-family:monospace;font-size:11px;color:#888;text-align:left;max-width:600px;max-height:200px;overflow-y:auto}
+</style>
+</head>
+<body>
+
+<div class="up" id="us">
+  <div class="uz" onclick="document.getElementById('fi').click()">
+    <h2>📁 Upload BRISNET File</h2>
+    <p>Drop a <b>PDF</b> (Results or Entries) or <b>CSV</b> here<br><span style="font-size:12px;color:#555">Or click to browse</span></p>
+  </div>
+  <input type="file" id="fi" accept=".pdf,.csv,.json" onchange="handleFile(this.files[0])">
+  <div style="margin-top:24px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+    <button onclick="loadDemoPP()" style="padding:12px 24px;border-radius:10px;border:1px solid #00c853;background:rgba(0,200,83,0.1);color:#00c853;font-size:14px;cursor:pointer;font-weight:700">📋 PP Demo</button>
+    <button onclick="loadDemoRC()" style="padding:12px 24px;border-radius:10px;border:1px solid #448aff;background:rgba(68,138,255,0.1);color:#448aff;font-size:14px;cursor:pointer;font-weight:700">📊 Results Demo</button>
+  </div>
+  <p style="margin-top:20px;font-size:12px;color:#555;max-width:420px">
+    <b>Tip:</b> Upload any BRISNET PDF. Parsing happens in your browser. Open DevTools (F12) for debug logs.
+  </p>
+</div>
+
+<div class="ld" id="ls" style="display:none">
+  <div class="sp"></div>
+  <p style="color:#888" id="lsText">Reading PDF...</p>
+  <div id="lsLog" class="log-box" style="display:none"></div>
+</div>
+
+<div class="app" id="ap">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+    <div>
+      <h1 id="tn" style="font-size:18px">Track</h1>
+      <div id="td" style="font-size:12px;color:#888;margin-top:2px">Date</div>
+    </div>
+    <div id="modeLabel" class="mode-badge pp">PP MODE</div>
+  </div>
+  <div class="info-bar" id="infoBar" style="display:none"></div>
+
+  <div class="tb">
+    <button class="t a" onclick="st('r')">Races</button>
+    <button class="t" onclick="st('b')">Best Plays</button>
+    <button class="t" onclick="st('c')">Changes</button>
+    <button class="t" onclick="st('t')">Table View</button>
+  </div>
+
+  <div class="fr" id="fr">
+    <button class="fc a" onclick="fr('all')">All</button>
+    <button class="fc" onclick="fr('best')">Best</button>
+    <button class="fc" onclick="fr('good')">Good</button>
+    <button class="fc" onclick="fr('dirt')">Dirt</button>
+    <button class="fc" onclick="fr('turf')">Turf</button>
+  </div>
+
+  <div id="pr" class="p a"></div>
+  <div id="pb" class="p"></div>
+  <div id="pc" class="p"></div>
+  <div id="pt" class="p"></div>
+
+  <div style="height:80px"></div>
+</div>
+
+<div class="bb" id="bb" style="display:none">
+  <button onclick="exportCSV()">📥 Export CSV</button>
+  <button onclick="location.reload()" class="p">🔄 New File</button>
+</div>
+
+<script>
+// ==================== DEBUG ====================
+const logs=[];
+function log(msg){logs.push(msg);console.log(msg);const el=document.getElementById('lsLog');if(el){el.style.display='block';el.innerHTML+='<div>'+msg+'</div>';el.scrollTop=el.scrollHeight;}}
+function logErr(msg){log('<b style=color:#ff5252>ERROR: '+msg+'</b>');}
+
+// ==================== STATE ====================
+let td={races:[],mode:'pp',cf:'all'},er=new Set();
+
+// ==================== FILE HANDLER ====================
+async function handleFile(f){
+  if(!f)return;
+  document.getElementById('us').style.display='none';
+  document.getElementById('ls').style.display='block';
+  const name=f.name.toLowerCase();
+  log('File: '+f.name+' ('+(f.size/1024).toFixed(1)+' KB)');
+
+  try{
+    if(name.endsWith('.pdf')){
+      log('Extracting with pdf.js...');
+      const text=await extractPDFText(f);
+      log('Extracted '+text.length+' chars');
+      log('Sample: '+text.substring(0,180).replace(/\n/g,' | '));
+
+      const fmt=detectFormat(text);
+      log('Format: '+fmt);
+
+      let races;
+      if(fmt==='results'){races=parseResultsText(text);td={name:races[0]?.track||'BRISNET',date:races[0]?.date||'',mode:'rc',races:races};}
+      else if(fmt==='entries'){races=parseEntriesText(text);td={name:races[0]?.track||'BRISNET',date:races[0]?.date||'',mode:'en',races:races};}
+      else{throw new Error('Unknown format. Need BRISNET Results or Entries PDF.');}
+
+      log('Parsed '+races.length+' races, '+races.reduce((a,r)=>a+r.horses.length,0)+' horses');
+    }else if(name.endsWith('.json')){
+      td=JSON.parse(await f.text());td.mode='rc';
+    }else{
+      parseCSV(await f.text());
+    }
+
+    if(!td.races||td.races.length===0)throw new Error('No races found.');
+
+    document.getElementById('ls').style.display='none';
+    document.getElementById('ap').style.display='block';
+    document.getElementById('bb').style.display='flex';
+    initApp();
+  }catch(e){
+    logErr(e.message);
+    document.getElementById('lsText').textContent='Failed';
+    document.getElementById('ls').innerHTML+='<div style="margin-top:20px"><button onclick="location.reload()" style="padding:12px 24px;border-radius:10px;border:1px solid #ff5252;background:rgba(255,82,82,0.1);color:#ff5252;font-size:14px;cursor:pointer;font-weight:700">🔄 Try Again</button></div>';
+  }
+}
+
+// ==================== PDF EXTRACTION ====================
+async function extractPDFText(file){
+  const ab=await file.arrayBuffer();
+  const pdf=await pdfjsLib.getDocument({data:ab}).promise;
+  log('Pages: '+pdf.numPages);
+  let allLines=[];
+  for(let i=1;i<=pdf.numPages;i++){
+    const page=await pdf.getPage(i);
+    const content=await page.getTextContent();
+    const lines=reconstructLines(content.items);
+    allLines=allLines.concat(lines);
+    log('  P'+i+': '+lines.length+' lines');
+  }
+  return allLines.join('\n');
+}
+
+function reconstructLines(items){
+  // Group by y-coordinate (within 4px), sort by x, join with EMPTY string
+  // This matches PyPDF2's compact output where adjacent fields touch
+  const groups={};
+  const TH=4;
+  for(const it of items){
+    const y=Math.round(it.transform[5]);
+    const x=it.transform[4];
+    let gy=null;
+    for(const k in groups){if(Math.abs(Number(k)-y)<=TH){gy=Number(k);break;}}
+    if(gy===null)gy=y;
+    if(!groups[gy])groups[gy]=[];
+    groups[gy].push({x:x,str:it.str});
+  }
+  const sortedY=Object.keys(groups).map(Number).sort((a,b)=>b-a);
+  const out=[];
+  for(const y of sortedY){
+    const lineItems=groups[y].sort((a,b)=>a.x-b.x);
+    // Join with empty string - BRISNET PDFs have touching fields
+    let line=lineItems.map(it=>it.str).join('');
+    out.push(line);
+  }
+  return out;
+}
+
+// ==================== FORMAT DETECTION ====================
+function detectFormat(text){
+  const t=text.toUpperCase();
+  if(t.includes('OFF AT')&&t.includes('MUTUEL'))return'results';
+  if(t.includes('POST TIME')||t.includes('M/L'))return'entries';
+  if(t.includes('WINNER')&&t.includes('EXACTA'))return'results';
+  if(t.includes('LAST RACED')&&t.includes('#HORSE'))return'results';
+  return'unknown';
+}
+
+// ==================== RESULTS PARSER ====================
+function parseResultsText(text){
+  const markers=['FIRST RACE','SECOND RACE','THIRD RACE','FOURTH RACE',
+    'FIFTH RACE','SIXTH RACE','SEVENTH RACE','EIGHTH RACE',
+    'NINTH RACE','TENTH RACE','ELEVENTH RACE','TWELFTH RACE'];
+  const pos=[];
+  for(const m of markers){const p=text.indexOf(m);if(p!==-1)pos.push({p,m,num:markers.indexOf(m)+1});}
+  pos.sort((a,b)=>a.p-b.p);pos.push({p:text.length,m:'END',num:99});
+  const races=[];
+  for(let i=0;i<pos.length-1;i++){
+    const r=parseResultsRace(pos[i].num,text.substring(pos[i].p,pos[i+1].p));
+    if(r&&r.horses.length){races.push(r);log('  R'+r.num+': '+r.horses.length+' horses');}
+  }
+  return races;
+}
+
+function parseResultsRace(num,chunk){
+  const lines=chunk.split('\n').map(l=>l.trim()).filter(l=>l);
+  const r={number:num,name:'',distance:'',surface:'Dirt',purse:'',track:'',date:'',off_time:'',track_condition:'',win_time:'',fractional_times:'',horses:[]};
+
+  if(lines[0]){
+    const m1=lines[0].match(/^(\d+½?\s*(?:YARDS|FURLONGS|MILE\.?))/);
+    if(m1)r.distance=m1[1];
+    if(lines[0].includes('(Turf)'))r.surface='Turf';
+    const m2=lines[0].match(/Purse\s+\$([\d,]+)/);
+    if(m2)r.purse='$'+m2[1];
+    const m3=lines[0].match(/\)\s*([A-Z][A-Z\s]+)\.?/);
+    if(m3)r.name=m3[1].trim();
+  }
+  for(const l of lines){
+    const m=l.match(/([A-Za-z]+\s+[A-Za-z]+)\s+(\w+\s+\d{1,2}[a-z]{0,2},\s*\d{4})/);
+    if(m&&!l.includes('Value of Race')&&!l.includes('RACES SINCE')){r.track=m[1];r.date=m[2];break;}
+  }
+  for(const l of lines){
+    if(l.startsWith('OFF AT')){
+      const m1=l.match(/OFF AT\s+(\d+:\d+)/);if(m1)r.off_time=m1[1];
+      const m2=l.match(/Track\s+(\w+)/);if(m2)r.track_condition=m2[1];
+      const m3=l.match(/Time\s+([^\(]+)/);if(m3)r.win_time=m3[1].trim();
+      const m4=l.match(/\(([^)]+)\)/);if(m4)r.fractional_times=m4[1];
+      break;
+    }
+  }
+
+  let hIdx=-1,hLine='';
+  for(let i=0;i<lines.length;i++){
+    if(lines[i].includes('Last Raced')&&lines[i].includes('#Horse')){hIdx=i;hLine=lines[i];break;}
+  }
+  if(hIdx===-1){log('  No header for R'+num);return r;}
+
+  const fmt={hasTime:hLine.includes('Time')&&!hLine.includes("Cl'g Pr"),hasClg:hLine.includes("Cl'g Pr"),has14:hLine.includes('¼'),has12:hLine.includes('½'),has34:hLine.includes('¾')};
+
+  for(let i=hIdx+1;i<lines.length;i++){
+    const l=lines[i];
+    if(!l||l.startsWith('OFF AT')||l.includes('Mutuel Prices')||l.includes('Owners-')||l.includes('Trainers-')||l.includes('Breeders-')||l.includes('Copyright'))break;
+    if(/^\d{2}[A-Za-z]{3}\d{2}/.test(l)||/^\s*\d{1,2}[A-Za-z]/.test(l)){
+      const h=parseHorseLine(l,fmt);
+      if(h)r.horses.push(h);
+    }
+  }
+  return r;
+}
+
+function parseHorseLine(line,fmt){
+  line=line.trim();if(!line)return null;
+  const o={};
+
+  const dm=line.match(/^(\d{2}[A-Za-z]{3}\d{2}[^\s]{0,5})\s+/);
+  if(dm){o.lastRaced=dm[1];line=line.substring(dm[0].length);}else{o.lastRaced='';}
+
+  const nm=line.match(/^(\d{1,2})/);
+  if(!nm)return null;
+  o.number=parseInt(nm[1]);
+  let rem=line.substring(nm[0].length);
+
+  const om=rem.match(/(\d+\.\d{2})$/);
+  if(!om)return null;
+  o.odds=om[1];
+  rem=rem.substring(0,om.index).trim();
+
+  const asm=rem.match(/(\d[GCFHM])/);
+  if(!asm)return null;
+  o.ageSex=asm[1];
+
+  const ne=rem.substring(0,asm.index);
+  const epats=['L bf','L b','Lbf','Lb','bfk','bf','bk','hf','b','L','f','k'];
+  let equip='';
+  for(const p of epats){if(ne.endsWith(p)){equip=p;o.name=ne.substring(0,ne.length-p.length).trim();break;}}
+  if(!o.name)o.name=ne.trim();
+  o.equipment=equip;
+
+  const wa=rem.substring(asm.index+asm[0].length);
+  const wm=wa.match(/^(\d{2,3})/);
+  if(!wm)return null;
+  o.weight=parseInt(wm[1]);
+  let afterW=wa.substring(wm[0].length);
+  const ppm=afterW.match(/^(\d{1,2})/);
+  if(!ppm)return null;
+  o.pp=parseInt(ppm[1]);
+  let afterPP=afterW.substring(ppm[0].length).trim();
+
+  o.time='';o.clgPr='';o.jockey='';o.positions='';
+  o.st='';o.q='';o.h='';o.tq='';o.str='';o.fn='';
+
+  if(fmt.hasTime){
+    const tm=afterPP.match(/(\d:\d{2}\.\d{2})/);
+    if(tm){o.time=tm[1];o.jockey=afterPP.substring(0,tm.index).trim();o.positions=afterPP.substring(tm.index+tm[0].length).trim();}
+    else{o.jockey=afterPP;}
+  }else{
+    const posPat=/[\d²³©¨ª«¬­®ƒ‚\x81\xad\xaf\xa7\xb2\xb3]+/;
+    if(fmt.hasClg){
+      const cm=afterPP.match(/\b(\d{3,5})\b/);
+      if(cm){o.clgPr=cm[1];o.jockey=afterPP.substring(0,cm.index).trim();const ac=afterPP.substring(cm.index+cm[0].length).trim();const pm=ac.match(posPat);if(pm)o.positions=pm[0];}
+      else{o.jockey=afterPP;}
+    }else{
+      const pm=afterPP.match(posPat);
+      if(pm){o.jockey=afterPP.substring(0,pm.index).trim();o.positions=pm[0];}
+      else{o.jockey=afterPP;}
+    }
+  }
+
+  if(o.positions){
+    const parts=o.positions.match(/\d+[^\d]*/g)||[];
+    const cols=[];if(fmt.has14)cols.push('q');if(fmt.has12)cols.push('h');if(fmt.has34)cols.push('tq');
+    const all=['st',...cols,'str','fn'];
+    for(let i=0;i<all.length;i++)if(i<parts.length)o[all[i]]=parts[i].trim();
+  }
+  return o;
+}
+
+// ==================== ENTRIES PARSER ====================
+function parseEntriesText(text){
+  const markers=['FIRST RACE','SECOND RACE','THIRD RACE','FOURTH RACE',
+    'FIFTH RACE','SIXTH RACE','SEVENTH RACE','EIGHTH RACE',
+    'NINTH RACE','TENTH RACE','ELEVENTH RACE','TWELFTH RACE'];
+  const pos=[];
+  for(const m of markers){const p=text.indexOf(m);if(p!==-1)pos.push({p,m,num:markers.indexOf(m)+1});}
+  pos.sort((a,b)=>a.p-b.p);pos.push({p:text.length,m:'END',num:99});
+  const races=[];
+  for(let i=0;i<pos.length-1;i++){
+    const r=parseEntriesRace(pos[i].num,text.substring(pos[i].p,pos[i+1].p));
+    if(r&&r.horses.length)races.push(r);
+  }
+  return races;
+}
+
+function parseEntriesRace(num,chunk){
+  const lines=chunk.split('\n').map(l=>l.trim()).filter(l=>l);
+  const r={number:num,name:'',distance:'',surface:'Dirt',purse:'',track:'',date:'',postTime:'',horses:[]};
+
+  if(lines[0]){
+    const m1=lines[0].match(/^(\d+½?\s*(?:YARDS|FURLONGS|MILE\.?))/);
+    if(m1)r.distance=m1[1];
+    if(lines[0].includes('(Turf)'))r.surface='Turf';
+    const m2=lines[0].match(/Purse\s+\$([\d,]+)/);
+    if(m2)r.purse='$'+m2[1];
+  }
+  for(const l of lines){
+    const m=l.match(/([A-Za-z]+\s+[A-Za-z]+)\s+(\w+\s+\d{1,2}[a-z]{0,2},\s*\d{4})/);
+    if(m&&!l.includes('Value of Race')){r.track=m[1];r.date=m[2];break;}
+  }
+  for(const l of lines){const m=l.match(/Post\s+Time\s+(\d+:\d+)/i);if(m){r.postTime=m[1];break;}}
+
+  let hIdx=-1;
+  for(let i=0;i<lines.length;i++){
+    if((lines[i].includes('PP')&&lines[i].includes('Horse')&&lines[i].includes('Jockey'))||(lines[i].includes('M/L')&&lines[i].includes('Horse'))){hIdx=i;break;}
+  }
+  if(hIdx===-1)return r;
+
+  for(let i=hIdx+1;i<lines.length;i++){
+    const l=lines[i];
+    if(!l||l.includes('Copyright')||l.includes('Trainers-')||l.includes('Owners-'))break;
+    const m=l.match(/^(\d{1,2})\s+([A-Za-z][A-Za-z\s]+?)\s+(L\s+bf|L\s+b|Lbf|Lb|bfk|bf|bk|hf|b|L|f|k)?\s*(\d[GCFHM])\s+(\d{2,3})\s+([A-Za-z\s\.]+?)\s+(\d+\.?\d*)\s*$/);
+    if(m){
+      r.horses.push({pp:parseInt(m[1]),name:m[2].trim(),equipment:(m[3]||'').trim(),ageSex:m[4],weight:parseInt(m[5]),jockey:m[6].trim(),ml:m[7],number:parseInt(m[1])});
+    }
+  }
+  return r;
+}
+
+// ==================== CSV PARSER ====================
+function parseCSV(text){
+  const lines=text.trim().split('\n');
+  if(lines.length<2)return;
+  const h=parseLine(lines[0]).map(x=>x.trim().toLowerCase().replace(/"/g,''));
+  const get=n=>h.indexOf(n.toLowerCase());
+  const ix={rn:get('race #'),na:get('race name'),di:get('distance'),su:get('surface'),pu:get('purse'),ho:get('horse'),ra:get('rank'),od:get('odds'),jo:get('jockey'),tr:get('trainer'),we:get('weight'),ds:get('dslr'),wo:get('workouts'),bl:get('blinkers'),la:get('lasix'),ju:get('jockey change'),be:get('beats'),lp:get('last pos'),lt:get('last track'),lf:get('last fig'),no:get('notes'),ti:get('post time')};
+  const isRC=h.includes('positions raw')||h.includes('horse #');
+  td.mode=isRC?'rc':'pp';
+
+  if(isRC){
+    const tr=get('track'),dt=get('date');
+    const rs={};
+    for(let i=1;i<lines.length;i++){
+      const c=parseLine(lines[i]);if(c.length<5)continue;
+      const n=parseInt(c[ix.rn])||0;if(!n)continue;
+      if(!rs[n])rs[n]={num:n,name:c[ix.na]||`Race ${n}`,dist:c[ix.di]||'',surf:c[ix.su]||'Dirt',purse:c[ix.pu]||'',track:c[tr]||'',date:c[dt]||'',horses:[]};
+      rs[n].horses.push({number:parseInt(c[get('horse #')]||0),name:c[get('horse')]||'',equipment:c[get('m/eqt')]||'',ageSex:c[get('a/s')]||'',weight:parseInt(c[get('wt')]||0),pp:parseInt(c[get('pp')]||0),jockey:c[get('jockey')]||'',clgPr:c[get('clg pr')]||'',time:c[get('time')]||'',lastRaced:c[get('last raced')]||'',odds:c[get('odds')]||'',st:c[get('st')]||'',q:c[get('1/4')]||'',h:c[get('1/2')]||'',tq:c[get('3/4')]||'',str:c[get('str')]||'',fn:c[get('fin')]||''});
+    }
+    td.races=Object.values(rs).sort((a,b)=>a.num-b.num);
+    td.name=td.races[0]?.track||'Unknown';td.date=td.races[0]?.date||'';
+  }else{
+    const rs={};
+    for(let i=1;i<lines.length;i++){
+      const c=parseLine(lines[i]);if(c.length<5)continue;
+      const n=parseInt(c[ix.rn])||0;if(!n)continue;
+      if(!rs[n])rs[n]={num:n,name:c[ix.na]||`Race ${n}`,dist:c[ix.di]||'',surf:c[ix.su]||'Dirt',purse:c[ix.pu]||'',time:c[ix.ti]||'',play:'fair',horses:[]};
+      const w=(c[ix.wo]||'').trim();const wo=w?w.split(/[\/\-]/):['a','a','a','a'];const rank=parseInt(c[ix.ra])||99;
+      rs[n].horses.push({name:c[ix.ho]||'',rank:rank,odds:c[ix.od]||'',score:rank?100-(rank*8):50,jockey:c[ix.jo]||'',trainer:c[ix.tr]||'',weight:parseInt(c[ix.we])||120,dslr:parseInt(c[ix.ds])||14,workouts:wo,blinkersOn:(c[ix.bl]||'').toUpperCase()==='ON',lasix:(c[ix.la]||'').toLowerCase()==='yes',jockeyUp:(c[ix.ju]||'').toLowerCase()==='yes',beats:(c[ix.be]||'').split(';').filter(b=>b&&b!=='None'),lastPos:parseInt(c[ix.lp])||0,lastTrack:c[ix.lt]||'',lastFig:parseInt(c[ix.lf])||0,notes:c[ix.no]||''});
+    }
+    td.races=Object.values(rs).sort((a,b)=>a.num-b.num);
+    td.races.forEach(r=>{r.horses.sort((a,b)=>a.rank-b.rank);const t=r.horses[0];if(t&&t.score>=85)r.play='best';else if(t&&t.score>=75)r.play='good';});
+    td.name='Imported Card';td.date=new Date().toLocaleDateString();
+  }
+}
+
+function parseLine(line){
+  const r=[];let c='',q=false;
+  for(let i=0;i<line.length;i++){const ch=line[i];if(ch==='"')q=!q;else if(ch===','&&!q){r.push(c.trim());c='';}else c+=ch;}
+  r.push(c.trim());return r;
+}
+
+// ==================== RENDERERS ====================
+function initApp(){
+  document.getElementById('tn').textContent=td.name||'BRISNET Card';
+  document.getElementById('td').textContent=td.date||'';
+  const ml=document.getElementById('modeLabel');
+  if(td.mode==='rc'){ml.textContent='RESULT CHART';ml.className='mode-badge rc';}
+  else if(td.mode==='en'){ml.textContent='ENTRIES';ml.className='mode-badge en';}
+  else{ml.textContent='PP MODE';ml.className='mode-badge pp';}
+
+  if(td.mode==='rc'){document.getElementById('fr').style.display='none';renderRCRaces();renderRCTable();renderRCChanges();}
+  else if(td.mode==='en'){document.getElementById('fr').style.display='none';renderEntriesRaces();renderEntriesTable();renderEntriesChanges();}
+  else{renderPPRaces();renderPPBest();renderPPChanges();renderPPWorks();}
+}
+
+function renderRCRaces(){
+  let h='';
+  td.races.forEach(r=>{
+    h+=`<div class="rc"><div class="rh"><div><div class="rt">Race ${r.num} — ${r.name}</div><div class="rm">${r.dist} · ${r.surf} · ${r.purse}</div><div class="rmeta">${r.track} · ${r.date}</div></div></div>`;
+    r.horses.forEach(x=>{
+      h+=`<div class="hr"><div class="rn ro">${x.number}</div><div class="hi"><div class="hn">${x.name}</div><div class="hd">${x.jockey} · ${x.ageSex} · ${x.weight}lbs · PP${x.pp}</div><div class="hx">${x.equipment?`<span>Eq: ${x.equipment}</span>`:''}${x.clgPr?`<span>Claim: $${x.clgPr}</span>`:''}${x.lastRaced?`<span>Last: ${x.lastRaced}</span>`:''}${x.time?`<span>Time: ${x.time}</span>`:''}</div><div class="pos-grid">${x.st?`<div class="pos-item"><div class="pl">St</div><div class="pv">${x.st}</div></div>`:''}${x.q?`<div class="pos-item"><div class="pl">1/4</div><div class="pv">${x.q}</div></div>`:''}${x.h?`<div class="pos-item"><div class="pl">1/2</div><div class="pv">${x.h}</div></div>`:''}${x.tq?`<div class="pos-item"><div class="pl">3/4</div><div class="pv">${x.tq}</div></div>`:''}${x.str?`<div class="pos-item"><div class="pl">Str</div><div class="pv">${x.str}</div></div>`:''}${x.fn?`<div class="pos-item"><div class="pl">Fin</div><div class="pv">${x.fn}</div></div>`:''}</div></div><div class="ob"><div class="ov">${x.odds}</div></div></div>`;
+    });
+    h+=`</div>`;
+  });
+  document.getElementById('pr').innerHTML=h||'<div class="es">No races found</div>';
+}
+
+function renderRCTable(){
+  let h='<div style="overflow-x:auto"><table><thead><tr><th>Race</th><th>#</th><th>Horse</th><th>A/S</th><th>Wt</th><th>PP</th><th>Jockey</th><th>Odds</th><th>St</th><th>1/4</th><th>1/2</th><th>3/4</th><th>Str</th><th>Fin</th><th>Time</th><th>Last</th></tr></thead><tbody>';
+  td.races.forEach(r=>r.horses.forEach(x=>{h+=`<tr><td>${r.num}</td><td>${x.number}</td><td><b>${x.name}</b></td><td>${x.ageSex}</td><td>${x.weight}</td><td>${x.pp}</td><td>${x.jockey}</td><td>${x.odds}</td><td>${x.st}</td><td>${x.q}</td><td>${x.h}</td><td>${x.tq}</td><td>${x.str}</td><td>${x.fn}</td><td>${x.time}</td><td>${x.lastRaced}</td></tr>`;}));
+  h+='</tbody></table></div>';
+  document.getElementById('pt').innerHTML=h;
+}
+
+function renderRCChanges(){
+  let h='<div class="sl">Equipment & Changes</div>';
+  const ch=[];td.races.forEach(r=>r.horses.forEach(x=>{if(x.equipment||x.clgPr||x.lastRaced)ch.push({...x,rn:r.num,rnm:r.name});}));
+  if(!ch.length){h+='<div class="es">No notable changes</div>';}
+  else{h+=ch.map(x=>`<div class="cc"><div style="display:flex;justify-content:space-between"><span class="cn">${x.name}</span><span style="font-size:11px;color:#666">R${x.rn}</span></div><div class="cr">${x.rnm}</div><div class="tg">${x.equipment?`<span class="dt bf">Eq: ${x.equipment}</span>`:''}${x.clgPr?`<span class="dt wa">Claim $${x.clgPr}</span>`:''}${x.lastRaced?`<span class="dt">Last: ${x.lastRaced}</span>`:''}</div></div>`).join('');}
+  document.getElementById('pc').innerHTML=h;
+}
+
+function renderEntriesRaces(){
+  let h='';
+  td.races.forEach(r=>{
+    h+=`<div class="rc"><div class="rh"><div><div class="rt">Race ${r.num} — ${r.name}</div><div class="rm">${r.dist} · ${r.surf} · ${r.purse}</div><div class="rmeta">${r.track} · ${r.date}${r.postTime?' · Post '+r.postTime:''}</div></div></div>`;
+    r.horses.forEach(x=>{h+=`<div class="hr"><div class="rn ro">${x.pp}</div><div class="hi"><div class="hn">${x.name}</div><div class="hd">${x.jockey} · ${x.ageSex} · ${x.weight}lbs · PP${x.pp}</div><div class="hx">${x.equipment?`<span>Eq: ${x.equipment}</span>`:''}</div></div><div class="ob"><div class="ov">${x.ml}</div><div class="od">M/L</div></div></div>`;});
+    h+=`</div>`;
+  });
+  document.getElementById('pr').innerHTML=h||'<div class="es">No entries found</div>';
+}
+
+function renderEntriesTable(){
+  let h='<div style="overflow-x:auto"><table><thead><tr><th>Race</th><th>PP</th><th>Horse</th><th>A/S</th><th>Wt</th><th>Jockey</th><th>M/L</th></tr></thead><tbody>';
+  td.races.forEach(r=>r.horses.forEach(x=>{h+=`<tr><td>${r.num}</td><td>${x.pp}</td><td><b>${x.name}</b></td><td>${x.ageSex}</td><td>${x.weight}</td><td>${x.jockey}</td><td>${x.ml}</td></tr>`;}));
+  h+='</tbody></table></div>';
+  document.getElementById('pt').innerHTML=h;
+}
+
+function renderEntriesChanges(){
+  let h='<div class="sl">Equipment</div>';
+  const ch=[];td.races.forEach(r=>r.horses.forEach(x=>{if(x.equipment)ch.push({...x,rn:r.num,rnm:r.name});}));
+  if(!ch.length){h+='<div class="es">No equipment changes</div>';}
+  else{h+=ch.map(x=>`<div class="cc"><div style="display:flex;justify-content:space-between"><span class="cn">${x.name}</span><span style="font-size:11px;color:#666">R${x.rn}</span></div><div class="cr">${x.rnm}</div><div class="tg">${x.equipment?`<span class="dt bf">Eq: ${x.equipment}</span>`:''}</div></div>`).join('');}
+  document.getElementById('pc').innerHTML=h;
+}
+
+function wd(a){return'<span style="display:flex;gap:3px">'+a.map(x=>'<span style="width:7px;height:7px;border-radius:50%;background:'+(x==='g'?'#00c853':x==='a'?'#ffab00':'#ff5252')+'"></span>').join('')+'</span>';}
+function rcn(r){return r===1?'r1':r===2?'r2':r===3?'r3':'ro';}
+function pcl(p){return p==='best'?'b':p==='good'?'g':'';}
+function plb(p){return p==='best'?'BEST':p==='good'?'GOOD':'FAIR';}
+function sc(s){return s>=90?'#00c853':s>=80?'#448aff':s>=70?'#ffab00':'#ff5252';}
+
+function dt(h){
+  let t=[];
+  if(h.dslr<=14&&h.dslr>0)t.push('<span class="dt bf">'+h.dslr+'d</span>');
+  else if(h.dslr>=42)t.push('<span class="dt al">'+h.dslr+'d off</span>');
+  else if(h.dslr>0)t.push('<span class="dt">'+h.dslr+'d</span>');
+  else t.push('<span class="dt" style="color:#ffab00">DEBUT</span>');
+  if(h.blinkersOn)t.push('<span class="dt bf">BLINK</span>');
+  if(!h.lasix)t.push('<span class="dt al">NO L</span>');
+  if(h.jockeyUp)t.push('<span class="dt bf">J+</span>');
+  if(h.beats.length>0)t.push('<span class="dt bf">Beats '+h.beats.length+'</span>');
+  return t.join('');
+}
+
+function hr(h,sh){
+  const d=sh?`<div style="margin:6px 0 2px 36px;padding:10px;border-radius:8px;background:#242424;font-size:12px"><div style="color:#888;margin-bottom:3px">${h.lastPos?h.lastPos+h.lastTrack+' Fig:'+h.lastFig:'DEBUT'}</div><div style="color:#666;font-size:11px">${h.notes}</div><div class="tg">${dt(h)}</div></div>`:'';
+  return `<div class="hr"><div class="rn ${rcn(h.rank)}">${h.rank}</div><div class="hi"><div class="hn">${h.name}</div><div class="hd">${h.jockey} / ${h.trainer} ${wd(h.workouts)}</div><div style="height:4px;border-radius:2px;background:#2a2a2a;margin-top:3px;overflow:hidden"><div style="height:100%;border-radius:2px;width:${h.score}%;background:${sc(h.score)}"></div></div></div><div class="ob"><div class="ov">${h.odds}</div></div></div>${d}`;
+}
+
+function rca(r){
+  const e=er.has('r-'+r.num);
+  return `<div class="rc"><div class="rh"><div><div class="rt">Race ${r.num} — ${r.name}</div><div class="rm">${r.time} · ${r.dist} · ${r.surf} · ${r.purse}</div></div><span class="pb ${pcl(r.play)}">${plb(r.play)}</span></div>${r.horses.map(h=>hr(h,e)).join('')}<button class="eb" onclick="te(${r.num})">${e?'Collapse':'Expand'}</button></div>`;
+}
+
+function renderPPRaces(){
+  let r=td.races;
+  if(cf==='best')r=r.filter(x=>x.play==='best');
+  else if(cf==='good')r=r.filter(x=>x.play==='good');
+  else if(cf==='dirt')r=r.filter(x=>x.surf.toLowerCase()==='dirt');
+  else if(cf==='turf')r=r.filter(x=>x.surf.toLowerCase()==='turf');
+  document.getElementById('pr').innerHTML=r.map(x=>rca(x)).join('')||'<div class="es">No races</div>';
+}
+
+function renderPPBest(){
+  const b=td.races.filter(r=>r.play==='best').sort((a,b)=>b.horses[0].score-a.horses[0].score);
+  const g=td.races.filter(r=>r.play==='good').sort((a,b)=>b.horses[0].score-a.horses[0].score);
+  let h='';
+  if(b.length)h+='<div class="sl">Best Plays</div>'+b.map(r=>rca(r)).join('');
+  if(g.length)h+='<div class="sl">Good Plays</div>'+g.map(r=>rca(r)).join('');
+  document.getElementById('pb').innerHTML=h||'<div class="es">No best plays</div>';
+}
+
+function renderPPChanges(){
+  const ch=[];td.races.forEach(r=>r.horses.forEach(h=>{if(h.jockeyUp||h.blinkersOn||!h.lasix||h.dslr>=42||h.notes.toLowerCase().includes('scratch'))ch.push({...h,rn:r.num,rnm:r.name});}));
+  let h='<div class="sl">Changes</div>';
+  h+=ch.map(x=>`<div class="cc"><div style="display:flex;justify-content:space-between"><span class="cn">${x.name}</span><span style="font-size:10px;color:#666">R${x.rn}</span></div><div class="cr">${x.rnm}</div><div class="tg">${x.blinkersOn?'<span class="dt bf">BLINK</span>':''}${x.jockeyUp?'<span class="dt bf">J+</span>':''}${!x.lasix?'<span class="dt al">NO L</span>':''}${x.dslr>=42?'<span class="dt al">'+x.dslr+'d off</span>':''}${x.notes.toLowerCase().includes('scratch')?'<span class="dt al">SCRATCH</span>':''}</div></div>`).join('');
+  document.getElementById('pc').innerHTML=h;
+}
+
+function renderPPWorks(){
+  const a=[];td.races.forEach(r=>r.horses.forEach(h=>a.push({...h,rn:r.num})));
+  a.sort((a,b)=>b.workouts.filter(w=>w==='g').length-a.workouts.filter(w=>w==='g').length);
+  let h='<div class="sl">Workouts</div>';
+  h+=a.slice(0,20).map(x=>`<div class="cc"><div style="display:flex;justify-content:space-between"><span class="cn">${x.name}</span><span style="font-size:10px;color:#666">R${x.rn}</span></div><div style="display:flex;align-items:center;gap:8px;margin-top:5px">${wd(x.workouts)}<span style="font-size:11px;color:#888">${x.workouts.filter(w=>w==='g').length}/4 bullets</span></div></div>`).join('');
+  document.getElementById('pt').innerHTML=h;
+}
+
+function st(t){
+  document.querySelectorAll('.t').forEach(x=>x.classList.remove('a'));
+  document.querySelectorAll('.p').forEach(x=>x.classList.remove('a'));
+  const tabs=['r','b','c','t'],panes=['pr','pb','pc','pt'];
+  const idx=tabs.indexOf(t);
+  if(idx>=0){document.querySelectorAll('.t')[idx].classList.add('a');document.getElementById(panes[idx]).classList.add('a');}
+  if(td.mode==='pp')document.getElementById('fr').style.display=(t==='r')?'flex':'none';
+}
+
+function fr(t){cf=t;document.querySelectorAll('.fc').forEach(c=>c.classList.remove('a'));event.target.classList.add('a');if(td.mode==='pp')renderPPRaces();}
+function te(n){const k='r-'+n;if(er.has(k))er.delete(k);else er.add(k);if(td.mode==='pp'){renderPPRaces();renderPPBest();}}
+
+function exportCSV(){
+  if(td.mode==='rc'){
+    let csv='Race #,Race Name,Distance,Surface,Purse,Horse #,Horse,M/Eqt,A/S,Wt,PP,Jockey,Clg Pr,Time,Last Raced,St,1/4,1/2,3/4,Str,Fin,Odds\n';
+    td.races.forEach(r=>r.horses.forEach(h=>{csv+=`${r.num},"${r.name}",${r.dist},${r.surf},${r.purse},${h.number},${h.name},${h.equipment},${h.ageSex},${h.weight},${h.pp},${h.jockey},${h.clgPr},${h.time},${h.lastRaced},${h.st},${h.q},${h.h},${h.tq},${h.str},${h.fn},${h.odds}\n`;}));
+    download(csv,'brisnet_results.csv','text/csv');
+  }else if(td.mode==='en'){
+    let csv='Race #,Race Name,Distance,Surface,Purse,PP,Horse,M/Eqt,A/S,Wt,Jockey,ML\n';
+    td.races.forEach(r=>r.horses.forEach(h=>{csv+=`${r.num},"${r.name}",${r.dist},${r.surf},${r.purse},${h.pp},${h.name},${h.equipment},${h.ageSex},${h.weight},${h.jockey},${h.ml}\n`;}));
+    download(csv,'brisnet_entries.csv','text/csv');
+  }else{
+    let csv='Track,Race #,Race Name,Distance,Surface,Purse,Horse,Rank,Odds,Score,Jockey,Trainer,Weight,DSLR,Workouts,Blinkers,Lasix,Jockey Change,Beats,Last Pos,Last Track,Last Fig,Notes\n';
+    td.races.forEach(r=>r.horses.forEach(h=>{csv+=`${td.name},${r.num},"${r.name}",${r.dist},${r.surf},${r.purse},${h.name},${h.rank},${h.odds},${h.score},${h.jockey},${h.trainer},${h.weight},${h.dslr},${h.workouts.join('/')},${h.blinkersOn?'ON':'OFF'},${h.lasix?'Yes':'No'},${h.jockeyUp?'Yes':'No'},${h.beats.join(';')},${h.lastPos},${h.lastTrack},${h.lastFig},"${h.notes}"\n`;}));
+    download(csv,'brisnet_pp.csv','text/csv');
+  }
+}
+
+function download(data,filename,type){const b=new Blob([data],{type});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=filename;a.click();}
+
+function loadDemoPP(){
+  td={name:'Canterbury Park (PP)',date:'7/22/2026',mode:'pp',races:[
+    {num:3,name:'TMClm 7500b',dist:'7½ Furlongs (T)',surf:'Turf',purse:'$12,000',time:'7:08',play:'best',horses:[
+      {name:'Alcohol',rank:1,odds:'9/2',score:92,jockey:'Roman C',trainer:'Espinoza E',weight:125,dslr:14,workouts:['g','a','g','a'],blinkersOn:false,lasix:true,jockeyUp:false,beats:[],lastPos:4,lastTrack:'Cby',lastFig:75,notes:'Claimed from Nielsen. 3rd off layoff.'},
+      {name:'Fall Moon',rank:2,odds:'5/2',score:84,jockey:'Quinonez A',trainer:'Woolley Jr BL',weight:125,dslr:21,workouts:['a','g','a','g'],blinkersOn:false,lasix:true,jockeyUp:false,beats:[],lastPos:3,lastTrack:'Cby',lastFig:77,notes:'4w1/4;chased on place.'}
+    ]},
+    {num:4,name:'Clm 7500b',dist:'1 Mile',surf:'Dirt',purse:'$10,500',time:'7:38',play:'good',horses:[
+      {name:'Lemon Sohn',rank:1,odds:'9/5',score:92,jockey:'Gallardo E',trainer:'Espinoza E',weight:125,dslr:7,workouts:['g','a','g','a'],blinkersOn:false,lasix:true,jockeyUp:false,beats:[],lastPos:3,lastTrack:'Cby',lastFig:77,notes:'Stalk;svd gnd;outkickd.'}
+    ]}
+  ]};
+  document.getElementById('us').style.display='none';
+  document.getElementById('ap').style.display='block';
+  document.getElementById('bb').style.display='flex';
+  initApp();
+}
+
+function loadDemoRC(){
+  td={name:'Canterbury Park',date:'July 22nd, 2026',mode:'rc',races:[
+    {num:1,name:'MAIDEN',dist:'330 Yards',surf:'Dirt',purse:'$16,000',track:'Canterbury Park',date:'July 22nd, 2026',horses:[
+      {number:2,name:'Eos Hey Bucko',equipment:'bfk',ageSex:'2G',weight:124,pp:2,jockey:'Ramirez A O',clgPr:'',time:'0:17.52',lastRaced:'',odds:'1.20',st:'1',q:'',h:'',tq:'',str:'1²',fn:'1³'},
+      {number:5,name:'Iza B Slick',equipment:'bf',ageSex:'2G',weight:124,pp:5,jockey:'Americano M',clgPr:'',time:'0:17.58',lastRaced:'',odds:'7.00',st:'5',q:'',h:'',tq:'',str:'2²',fn:'2²'}
+    ]}
+  ]};
+  document.getElementById('us').style.display='none';
+  document.getElementById('ap').style.display='block';
+  document.getElementById('bb').style.display='flex';
+  initApp();
+}
+</script>
+</body>
+</html>
