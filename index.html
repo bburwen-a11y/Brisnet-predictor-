@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Past Performance & Market Edge Analyzer</title>
+  <style>
+    :root {
+      --bg-color: #0f172a;
+      --card-bg: #1e293b;
+      --border-color: #334155;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent-color: #38bdf8;
+      --green-bg: #166534;
+      --green-text: #4ade80;
+      --red-bg: #991b1b;
+      --red-text: #f87171;
+      --gold-bg: #854d0e;
+      --gold-text: #fde047;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      margin: 0;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    h1, h2 { color: var(--text-main); margin-top: 0; }
+
+    .control-panel {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 15px;
+    }
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    label {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    input[type="file"], select, button {
+      background: #0f172a;
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 10px;
+      border-radius: 6px;
+      font-size: 0.9rem;
+    }
+
+    button {
+      background: #0284c7;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: background 0.2s;
+    }
+
+    button:hover {
+      background: var(--accent-color);
+      color: #0f172a;
+    }
+
+    .status {
+      font-size: 0.8rem;
+      margin-top: 4px;
+      font-family: monospace;
+    }
+
+    .status.ok { color: var(--green-text); }
+    .status.err { color: var(--red-text); }
+
+    .field-race {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      margin-bottom: 20px;
+      overflow: hidden;
+    }
+
+    .field-race-head {
+      background: #0f172a;
+      padding: 12px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .field-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.85rem;
+    }
+
+    .field-table th, .field-table td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .field-table th {
+      background: #182234;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .field-table tr:hover { background: #273549; }
+
+    .tr-scratched {
+      opacity: 0.45;
+      text-decoration: line-through;
+      background: #1a1010 !important;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      margin-right: 4px;
+    }
+
+    .badge-prime { background: var(--gold-bg); color: var(--gold-text); }
+    .badge-speed { background: #1e40af; color: #93c5fd; }
+    .badge-pace { background: #6b21a8; color: #e9d5ff; }
+    .badge-scratch { background: var(--red-bg); color: var(--red-text); }
+
+    .field-edge.pos { color: var(--green-text); font-weight: bold; }
+    .field-edge.neg { color: var(--red-text); }
+    .field-edge.dash { color: var(--text-muted); }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>Horse Racing Past Performance & Market Edge Analyzer</h1>
+  
+  <div class="control-panel">
+    <div class="input-group">
+      <label for="drfInput">1. Upload Brisnet CSV (.CSV)</label>
+      <input type="file" id="drfInput" accept="*/*">
+      <div id="drfStatus" class="status">Waiting for file...</div>
+    </div>
+
+    <div class="input-group">
+      <label for="rssInput">2. Upload Equibase RSS (.RSS / .XML)</label>
+      <input type="file" id="rssInput" accept="*/*">
+      <div id="rssStatus" class="status">Waiting for file...</div>
+    </div>
+
+    <div class="input-group">
+      <label for="sortOption">Sort Race Field By</label>
+      <select id="sortOption">
+        <option value="post">Post Position</option>
+        <option value="edge">Highest Value Edge</option>
+        <option value="criteria">Criteria Score</option>
+      </select>
+    </div>
+
+    <div class="input-group" style="justify-content: flex-end;">
+      <button id="computeBtn">Force Run Calculation</button>
+    </div>
+  </div>
+
+  <div id="logConsole" style="background:#000; color:#0f0; padding:10px; border-radius:6px; font-family:monospace; font-size:0.8rem; margin-bottom:20px; display:none;"></div>
+
+  <div id="resultsSection" style="display: none;">
+    <h2>Race Field Breakdown & Market Edges</h2>
+    <div id="fieldTables"></div>
+  </div>
+</div>
+
+<script>
+  let cardEntries = [];
+  let scratchesSet = new Set();
+  let computedRaces = [];
+  let currentSort = 'post';
+
+  function log(msg) {
+    const consoleDiv = document.getElementById('logConsole');
+    consoleDiv.style.display = 'block';
+    consoleDiv.innerHTML += `<div>> ${msg}</div>`;
+  }
+
+  function titleCase(str) {
+    return str ? str.toLowerCase().replace(/(?:^|\s)\w/g, m => m.toUpperCase()) : '';
+  }
+
+  function formatOdds(rawOdds) {
+    if (!rawOdds) return '5/1';
+    const val = parseFloat(rawOdds);
+    if (isNaN(val)) return rawOdds;
+    if (val === 1.0) return '1/1';
+    if (val === 0.5) return '1/2';
+    if (val === 2.5) return '5/2';
+    if (val === 3.5) return '7/2';
+    if (val === 4.5) return '9/2';
+    return `${val}/1`;
+  }
+
+  function oddsToProbability(oddsStr) {
+    if (!oddsStr) return 0;
+    const clean = oddsStr.trim();
+    if (clean.includes('/')) {
+      const parts = clean.split('/');
+      const num = parseFloat(parts[0]), den = parseFloat(parts[1]);
+      if (!isNaN(num) && !isNaN(den) && (num + den) > 0) return den / (num + den);
+    }
+    const dec = parseFloat(clean);
+    return (!isNaN(dec) && dec > 0) ? 1 / (dec + 1) : 0;
+  }
+
+  /* ---------------- Robust CSV Splitter ---------------- */
+  function splitCSVLine(line) {
+    const fields = [];
+    let cur = '';
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+      const c = line[i];
+      if (c === '"') {
+        inQuotes = !inQuotes;
+      } else if (c === ',' && !inQuotes) {
+        fields.push(cur.replace(/^"|"$/g, '').trim());
+        cur = '';
+      } else {
+        cur += c;
+      }
+    }
+    fields.push(cur.replace(/^"|"$/g, '').trim());
+    return fields;
+  }
+
+  function parseBrisnetCSV(text) {
+    const lines = text.split(/\r?\n/);
+    const out = [];
+
+    lines.forEach((line) => {
+      if (!line.trim()) return;
+      const fields = splitCSVLine(line);
+      if (fields.length < 45) return;
+
+      const raceVal = parseInt(fields[2], 10);
+      const postVal = parseInt(fields[3], 10);
+      if (isNaN(raceVal) || isNaN(postVal)) return;
+
+      const race = raceVal.toString();
+      const post = postVal.toString();
+      const horse = titleCase(fields[44] || `Horse ${post}`);
+      const trainer = titleCase(fields[27] || '');
+      const jockey = titleCase(fields[32] || '');
+      const rawOdds = fields[43] || '';
+      const odds = formatOdds(rawOdds);
+      const primePower = parseFloat(fields[250]) || 0;
+      const runStyle = fields[251] || '';
+
+      const speedFigs = [];
+      for (let i = 0; i < 10; i++) {
+        const fig = parseFloat(fields[715 + i]);
+        if (!isNaN(fig) && fig > 0) speedFigs.push(fig);
+      }
+      const last3 = speedFigs.slice(0, 3);
+      let best2Of3Avg = 0;
+      if (last3.length >= 2) {
+        last3.sort((a, b) => b - a);
+        best2Of3Avg = (last3[0] + last3[1]) / 2;
+      } else if (last3.length === 1) {
+        best2Of3Avg = last3[0];
+      }
+
+      out.push({
+        race: race,
+        post: post,
+        horse: horse,
+        trainer: trainer,
+        jockey: jockey,
+        odds: odds,
+        primePower: primePower,
+        runStyle: runStyle,
+        best2Of3Avg: best2Of3Avg,
+        scratched: false
+      });
+    });
+
+    log(`Successfully parsed ${out.length} horses from CSV.`);
+    return out;
+  }
+
+  function parseEquibaseRss(text) {
+    scratchesSet.clear();
+    let count = 0;
+
+    const regex = /Race\s+(\d+):\s*<b>#\s*(\d+)\s+([^<]+)<\/b>/gi;
+    let match;
+    while ((match = regex.exec(text)) !== null) {
+      const raceNum = parseInt(match[1], 10).toString();
+      const postNum = parseInt(match[2], 10).toString();
+      const horseName = match[3].trim().toLowerCase();
+
+      scratchesSet.add(`${raceNum}_${postNum}`);
+      scratchesSet.add(`${raceNum}_${horseName}`);
+      count++;
+    }
+
+    if (count === 0) {
+      const fallbackRegex = /Race\s+(\d+):\s*#?\s*(\d+)\s+([^\n<]+)/gi;
+      while ((match = fallbackRegex.exec(text)) !== null) {
+        if (/scratch/i.test(match[0])) {
+          const raceNum = parseInt(match[1], 10).toString();
+          const postNum = parseInt(match[2], 10).toString();
+          const horseName = match[3].trim().toLowerCase();
+          scratchesSet.add(`${raceNum}_${postNum}`);
+          scratchesSet.add(`${raceNum}_${horseName}`);
+          count++;
+        }
+      }
+    }
+
+    log(`Successfully extracted ${count} scratches from RSS.`);
+    return count;
+  }
+
+  function computeCard() {
+    if (!cardEntries.length) {
+      log("Awaiting CSV file before computing...");
+      return;
+    }
+
+    let scratchMatchCount = 0;
+    cardEntries.forEach(entry => {
+      const keyPos = `${entry.race}_${entry.post}`;
+      const keyName = `${entry.race}_${entry.horse.toLowerCase()}`;
+      if (scratchesSet.has(keyPos) || scratchesSet.has(keyName)) {
+        entry.scratched = true;
+        scratchMatchCount++;
+      } else {
+        entry.scratched = false;
+      }
+    });
+
+    log(`Matched ${scratchMatchCount} scratches in race card.`);
+
+    const racesMap = {};
+    cardEntries.forEach(r => {
+      if (!racesMap[r.race]) racesMap[r.race] = [];
+      racesMap[r.race].push(r);
+    });
+
+    computedRaces = [];
+
+    Object.keys(racesMap).sort((a,b) => parseInt(a,10) - parseInt(b,10)).forEach(raceNum => {
+      const entries = racesMap[raceNum];
+      const activeEntries = entries.filter(e => !e.scratched);
+
+      const primePowers = activeEntries.map(e => e.primePower).sort((a,b) => b - a);
+      const speedAvgs = activeEntries.map(e => e.best2Of3Avg).sort((a,b) => b - a);
+      const earlyRunners = activeEntries.filter(e => e.runStyle && e.runStyle.startsWith('E'));
+
+      let totalRawProb = 0;
+      let totalPrimePower = 0;
+
+      activeEntries.forEach(r => {
+        r._rawProb = oddsToProbability(r.odds);
+        totalRawProb += r._rawProb;
+        totalPrimePower += (r.primePower || 100);
+      });
+
+      const processedEntries = entries.map(r => {
+        if (r.scratched) {
+          return { ...r, fairMktProb: 0, modelProb: 0, edge: 0, flags: ['SCRATCHED'], criteriaScore: -1 };
+        }
+
+        const fairMktProb = totalRawProb > 0 ? (r._rawProb / totalRawProb) : 0;
+        const modelProb = totalPrimePower > 0 ? ((r.primePower || 100) / totalPrimePower) : 0;
+        const edge = modelProb - fairMktProb;
+
+        const flags = [];
+        let criteriaScore = 0;
+
+        if (r.primePower > 0 && primePowers.length > 1 && r.primePower === primePowers[0]) {
+          const gap = r.primePower - primePowers[1];
+          if (gap >= 3.0) {
+            flags.push(`Prime Gap (+${gap.toFixed(1)})`);
+            criteriaScore += 3;
+          }
+        }
+
+        if (r.best2Of3Avg > 0 && r.best2Of3Avg === speedAvgs[0]) {
+          flags.push(`Speed #1 (${r.best2Of3Avg.toFixed(0)})`);
+          criteriaScore += 2;
+        }
+
+        if (r.runStyle && r.runStyle.startsWith('E') && earlyRunners.length === 1) {
+          flags.push('Lone Speed');
+          criteriaScore += 2;
+        }
+
+        return {
+          ...r,
+          fairMktProb: fairMktProb,
+          modelProb: modelProb,
+          edge: edge,
+          flags: flags,
+          criteriaScore: criteriaScore
+        };
+      });
+
+      computedRaces.push({ raceNum: raceNum, entries: processedEntries });
+    });
+
+    renderCardOutput();
+  }
+
+  function renderCardOutput() {
+    const resultsSec = document.getElementById('resultsSection');
+    resultsSec.style.display = 'block';
+    const container = document.getElementById('fieldTables');
+    container.innerHTML = '';
+
+    computedRaces.forEach(r => {
+      const raceBox = document.createElement('div');
+      raceBox.className = 'field-race';
+
+      let entries = [...r.entries];
+      if (currentSort === 'edge') {
+        entries.sort((a,b) => b.edge - a.edge);
+      } else if (currentSort === 'criteria') {
+        entries.sort((a,b) => b.criteriaScore - a.criteriaScore);
+      } else {
+        entries.sort((a,b) => parseInt(a.post,10) - parseInt(b.post,10));
+      }
+
+      const rowsHtml = entries.map(e => {
+        const edgePct = (e.edge * 100).toFixed(1);
+        const edgeClass = e.edge > 0.02 ? 'pos' : (e.edge < -0.02 ? 'neg' : 'dash');
+        const formattedEdge = e.scratched ? '-' : (e.edge > 0 ? `+${edgePct}%` : `${edgePct}%`);
+        
+        const badges = e.flags.map(f => {
+          let badgeCls = 'badge-pace';
+          if (f.includes('Prime')) badgeCls = 'badge-prime';
+          if (f.includes('Speed')) badgeCls = 'badge-speed';
+          if (f === 'SCRATCHED') badgeCls = 'badge-scratch';
+          return `<span class="badge ${badgeCls}">${f}</span>`;
+        }).join('');
+
+        return `
+          <tr class="${e.scratched ? 'tr-scratched' : ''}">
+            <td>${e.post}</td>
+            <td><b>${e.horse}</b><br/><small style="color:var(--text-muted)">${e.jockey} / ${e.trainer}</small></td>
+            <td>${e.odds}</td>
+            <td>${e.scratched ? '-' : (e.fairMktProb * 100).toFixed(1) + '%'}</td>
+            <td>${e.scratched ? '-' : (e.modelProb * 100).toFixed(1) + '%'}</td>
+            <td><span class="field-edge ${edgeClass}">${formattedEdge}</span></td>
+            <td>${badges || '<span style="color:var(--text-muted)">-</span>'}</td>
+          </tr>
+        `;
+      }).join('');
+
+      raceBox.innerHTML = `
+        <div class="field-race-head">
+          <strong>Race ${r.raceNum}</strong>
+        </div>
+        <table class="field-table">
+          <thead>
+            <tr>
+              <th style="width:50px">Post</th>
+              <th>Horse / Connections</th>
+              <th style="width:70px">ML</th>
+              <th style="width:80px">Mkt %</th>
+              <th style="width:80px">Model %</th>
+              <th style="width:80px">Edge</th>
+              <th>High-Probability Signals</th>
+            </tr>
+          </thead>
+          <tbody>${rowsHtml}</tbody>
+        </table>
+      `;
+      container.appendChild(raceBox);
+    });
+
+    log("Rendered full output table successfully.");
+  }
+
+  document.getElementById('drfInput').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    log(`Selected CSV file: ${file.name}`);
+    const reader = new FileReader();
+    reader.onload = function(evt) {
+      cardEntries = parseBrisnetCSV(evt.target.result);
+      document.getElementById('drfStatus').className = 'status ok';
+      document.getElementById('drfStatus').textContent = `Loaded ${cardEntries.length} horses.`;
+      computeCard();
+    };
+    reader.readAsText(file);
+  });
+
+  document.getElementById('rssInput').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    log(`Selected RSS file: ${file.name}`);
+    const reader = new FileReader();
+    reader.onload = function(evt) {
+      const cnt = parseEquibaseRss(evt.target.result);
+      document.getElementById('rssStatus').className = 'status ok';
+      document.getElementById('rssStatus').textContent = `Loaded ${cnt} scratches.`;
+      computeCard();
+    };
+    reader.readAsText(file);
+  });
+
+  document.getElementById('computeBtn').addEventListener('click', computeCard);
+  document.getElementById('sortOption').addEventListener('change', (e) => {
+    currentSort = e.target.value;
+    if (computedRaces.length) renderCardOutput();
+  });
+</script>
+</body>
+</html>
