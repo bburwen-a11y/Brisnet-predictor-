@@ -42,7 +42,7 @@
       padding: 20px;
       margin-bottom: 20px;
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
       gap: 15px;
     }
 
@@ -127,7 +127,7 @@
     .field-table tr:hover { background: #273549; }
 
     .tr-scratched {
-      opacity: 0.35;
+      opacity: 0.4;
       text-decoration: line-through;
       background: #1a1010 !important;
     }
@@ -233,17 +233,17 @@
       const fields = line.split(/,(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)/).map(f => f.replace(/^"|"$/g, '').trim());
       if (fields.length < 50) return;
 
-      const race = parseInt(fields[2], 10).toString(); // Field 3
-      const post = parseInt(fields[3], 10).toString(); // Field 4
+      const race = parseInt(fields[2], 10).toString(); // Normalized integer string
+      const post = parseInt(fields[3], 10).toString(); 
       const horse = titleCase(fields[44] || `Horse ${post}`); // Field 45 is Horse Name!
-      const trainer = titleCase(fields[27] || ''); // Field 28
-      const jockey = titleCase(fields[32] || ''); // Field 33
-      const rawOdds = fields[43] || ''; // Field 44 Morning Line
+      const trainer = titleCase(fields[27] || ''); 
+      const jockey = titleCase(fields[32] || ''); 
+      const rawOdds = fields[43] || ''; 
       const odds = formatOdds(rawOdds);
-      const primePower = parseFloat(fields[250]) || 0; // Field 251 Prime Power
-      const runStyle = fields[251] || ''; // Field 252 Running Style
+      const primePower = parseFloat(fields[250]) || 0; 
+      const runStyle = fields[251] || ''; 
 
-      // Extract last 3 Speed Figures (Fields 716-725)
+      // Extract last 3 Speed Figures
       const speedFigs = [];
       for (let i = 0; i < 10; i++) {
         const fig = parseFloat(fields[715 + i]);
@@ -281,6 +281,7 @@
     const xmlDoc = parser.parseFromString(xmlText, "text/xml");
     const items = xmlDoc.querySelectorAll("item");
     const extractedScratches = [];
+    scratchesSet.clear();
 
     items.forEach(item => {
       const desc = item.querySelector("description") ? item.querySelector("description").textContent : "";
@@ -290,13 +291,13 @@
         if (/scratched|scratch/i.test(line)) {
           const match = line.match(/Race\s+(\d+):\s*<b>#\s*(\d+)\s+([^<]+)</b>/i);
           if (match) {
-            const raceNum = parseInt(match[1], 10).toString();
+            const raceNum = parseInt(match[1], 10).toString(); // Strip leading zero ("01" -> "1")
             const postNum = parseInt(match[2], 10).toString();
-            const horseName = match[3].trim();
+            const horseName = match[3].trim().toLowerCase();
 
-            extractedScratches.push({ race: raceNum, post: postNum, horse: horseName });
+            extractedScratches.push({ race: raceNum, post: postNum, horse: match[3].trim() });
             scratchesSet.add(`${raceNum}_${postNum}`);
-            scratchesSet.add(`${raceNum}_${horseName.toLowerCase()}`);
+            scratchesSet.add(`${raceNum}_${horseName}`);
           }
         }
       });
@@ -305,20 +306,18 @@
     return extractedScratches;
   }
 
-  /* ---------------- Apply Scratches to Card ---------------- */
-  function applyScratches() {
-    cardEntries.forEach(entry => {
-      if (scratchesSet.has(`${entry.race}_${entry.post}`) || scratchesSet.has(`${entry.race}_${entry.horse.toLowerCase()}`)) {
-        entry.scratched = true;
-      }
-    });
-  }
-
-  /* ---------------- Computation Engine ---------------- */
+  /* ---------------- Apply Scratches & Compute ---------------- */
   function computeCard() {
     if (!cardEntries.length) return;
 
-    applyScratches();
+    // Apply Scratch Matching
+    cardEntries.forEach(entry => {
+      const keyPos = `${entry.race}_${entry.post}`;
+      const keyName = `${entry.race}_${entry.horse.toLowerCase()}`;
+      if (scratchesSet.has(keyPos) || scratchesSet.has(keyName)) {
+        entry.scratched = true;
+      }
+    });
 
     const racesMap = {};
     cardEntries.forEach(r => {
@@ -342,7 +341,7 @@
       activeEntries.forEach(r => {
         r._rawProb = oddsToProbability(r.odds);
         totalRawProb += r._rawProb;
-        totalPrimePower += r.primePower || 100;
+        totalPrimePower += (r.primePower || 100);
       });
 
       const processedEntries = entries.map(r => {
@@ -357,7 +356,7 @@
         const flags = [];
         let criteriaScore = 0;
 
-        // 1. Prime Power Gap >= 3.0 pts
+        // Prime Power Gap >= 3.0 pts
         if (r.primePower > 0 && primePowers.length > 1 && r.primePower === primePowers[0]) {
           const gap = r.primePower - primePowers[1];
           if (gap >= 3.0) {
@@ -366,13 +365,13 @@
           }
         }
 
-        // 2. Best 2 of 3 Speed Figure Leader
+        // Speed Figure Leader
         if (r.best2Of3Avg > 0 && r.best2Of3Avg === speedAvgs[0]) {
           flags.push(`Speed #1 (${r.best2Of3Avg.toFixed(0)})`);
           criteriaScore += 2;
         }
 
-        // 3. Lone Speed Setup
+        // Lone Speed Setup
         if (r.runStyle && r.runStyle.startsWith('E') && earlyRunners.length === 1) {
           flags.push('Lone Speed');
           criteriaScore += 2;
@@ -397,9 +396,10 @@
     renderCardOutput();
   }
 
-  /* ---------------- UI Render Function ---------------- */
+  /* ---------------- Render Output Table ---------------- */
   function renderCardOutput() {
-    document.getElementById('resultsSection').style.display = 'block';
+    const resultsSec = document.getElementById('resultsSection');
+    resultsSec.style.display = 'block';
     const container = document.getElementById('fieldTables');
     container.innerHTML = '';
 
@@ -465,7 +465,7 @@
     });
   }
 
-  /* ---------------- File Input Handlers ---------------- */
+  /* ---------------- Listeners ---------------- */
   document.getElementById('drfInput').addEventListener('change', function(e) {
     const file = e.target.files[0];
     if (!file) return;
@@ -475,7 +475,7 @@
       const statusEl = document.getElementById('drfStatus');
       statusEl.className = 'status ok';
       statusEl.textContent = `Loaded ${cardEntries.length} entries from CSV.`;
-      if (cardEntries.length) computeCard();
+      computeCard(); // Instantly trigger render
     };
     reader.readAsText(file);
   });
@@ -488,8 +488,8 @@
       const parsedScratches = parseEquibaseRss(evt.target.result);
       const statusEl = document.getElementById('rssStatus');
       statusEl.className = 'status ok';
-      statusEl.textContent = `Extracted ${parsedScratches.length} scratches from RSS feed.`;
-      if (cardEntries.length) computeCard();
+      statusEl.textContent = `Extracted ${parsedScratches.length} scratches from RSS.`;
+      computeCard(); // Instantly trigger render & update scratches
     };
     reader.readAsText(file);
   });
