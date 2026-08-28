@@ -12,7 +12,7 @@
             color: #333;
         }
         .container {
-            max-width: 900px;
+            max-width: 950px;
             margin: 0 auto;
             background: #ffffff;
             padding: 24px;
@@ -88,7 +88,7 @@
 
     <div class="controls">
         <label for="trackCode"><strong>Track Code:</strong></label>
-        <input type="text" id="trackCode" value="mnr-USA" placeholder="e.g. mnr-USA, gp-USA">
+        <input type="text" id="trackCode" value="SAR-USA" placeholder="e.g. SAR-USA, GP-USA, MNR-USA">
 
         <label for="pollInterval"><strong>Refresh (Sec):</strong></label>
         <input type="number" id="pollInterval" value="30" min="5" style="width: 70px;">
@@ -106,14 +106,14 @@
             <tr>
                 <th>Time Detected</th>
                 <th>Race #</th>
-                <th>Program #</th>
+                <th>Program # & Horse</th>
                 <th>Details / Reason</th>
                 <th>Status</th>
             </tr>
         </thead>
         <tbody id="scratchTableBody">
             <tr>
-                <td colspan="5" class="no-data">No scratches detected yet. Click "Start Monitoring".</td>
+                <td colspan="5" class="no-data">No scratches loaded yet. Click "Start Monitoring".</td>
             </tr>
         </tbody>
     </table>
@@ -125,7 +125,7 @@
     const seenScratches = new Set();
 
     async function fetchAndParseScratches() {
-        const trackCode = document.getElementById("trackCode").value.trim();
+        const trackCode = document.getElementById("trackCode").value.trim().toUpperCase();
         const statusText = document.getElementById("statusText");
         const lastUpdated = document.getElementById("lastUpdated");
         
@@ -136,20 +136,19 @@
 
         statusText.innerText = `Status: Fetching updates for ${trackCode}...`;
         
-        // Use a CORS proxy to allow client-side fetching directly from Equibase
         const cacheBuster = Date.now();
         const targetUrl = `https://www.equibase.com/static/latechanges/html/latechanges${trackCode}.html?cb=${cacheBuster}`;
         const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
 
         try {
             const response = await fetch(proxyUrl);
-            if (!response.ok) throw new Error("Network response was not OK");
+            if (!response.ok) throw new Error("Network response failed");
             
             const data = await response.json();
-            const rawHtml = data.contents;
+            const rawHtmlOrXml = data.contents;
 
-            if (rawHtml) {
-                parseHtmlPayload(rawHtml);
+            if (rawHtmlOrXml) {
+                parseFeedPayload(rawHtmlOrXml);
                 statusText.innerText = `Status: Active (Monitoring ${trackCode})`;
             } else {
                 statusText.innerText = `Status: Received empty payload from track feed.`;
@@ -164,48 +163,62 @@
         }
     }
 
-    function parseHtmlPayload(htmlContent) {
-        // Parse HTML string into DOM object
+    function parseFeedPayload(payload) {
         const parser = new DOMParser();
-        const doc = parser.parseFromString(htmlContent, 'text/html');
-        const textContent = doc.body.innerText || doc.body.textContent || "";
         
-        const lines = textContent.split('\n');
-        let currentRace = null;
-        let newEntriesFound = false;
+        // Handle RSS/XML payload vs raw HTML page payload seamlessly
+        let descriptions = [];
+        if (payload.includes("<rss") || payload.includes("<xml")) {
+            const xmlDoc = parser.parseFromString(payload, 'text/xml');
+            const items = xmlDoc.querySelectorAll("item description");
+            items.forEach(item => descriptions.push(item.textContent));
+        } else {
+            descriptions.push(payload);
+        }
 
-        lines.forEach(line => {
-            const trimmed = line.trim();
-            if (!trimmed) return;
+        descriptions.forEach(desc => {
+            // Split entries separated by HTML line breaks <br/> or newlines
+            const entries = desc.split(/<br\s*\/?>|\n/gi);
 
-            // Detect Race Header (e.g., "Race: 1" or "Race 4")
-            const raceMatch = trimmed.match(/Race:\s*(\d+)/i);
-            if (raceMatch) {
-                currentRace = parseInt(raceMatch[1], 10);
-                return;
-            }
+            entries.forEach(line => {
+                // Strip inline HTML tags (<b>, <i>, etc.) to evaluate clean text
+                const cleanLine = line.replace(/<[^>]*>/g, '').trim();
+                if (!cleanLine) return;
 
-            // Detect Scratch lines
-            if (trimmed.includes("Scratched") || trimmed.includes("Scratch")) {
-                const progMatch = trimmed.match(/#(\d+[A-Z]?)/);
-                const progNum = progMatch ? progMatch[1] : "N/A";
-                
-                // Create unique ID to prevent duplicates on table
-                const scratchId = `R${currentRace}_P${progNum}_${trimmed}`;
+                // Check for Scratch indicators
+                if (cleanLine.includes("Scratched") || cleanLine.includes("Scratch Reason")) {
+                    
+                    // Extract Race Number (e.g., "Race 01:" or "Race 5:")
+                    const raceMatch = cleanLine.match(/Race\s*(\d+):/i);
+                    const raceNum = raceMatch ? parseInt(raceMatch[1], 10) : "N/A";
 
-                if (!seenScratches.has(scratchId)) {
-                    seenScratches.add(scratchId);
-                    appendScratchToTable(currentRace, progNum, trimmed);
-                    newEntriesFound = true;
+                    // Extract Program # and Horse Name (e.g., "# 7 Classy Runner" or "#11 Funny Words")
+                    const horseMatch = cleanLine.match(/#\s*(\d+[A-Z]?\s+[^S-]+)/i);
+                    const horseInfo = horseMatch ? `#${horseMatch[1].trim()}` : "N/A";
+
+                    // Extract Reason / Details after the hyphen or keyword
+                    let reason = "Scratched";
+                    if (cleanLine.includes("-")) {
+                        reason = cleanLine.split("-").pop().trim();
+                    } else if (cleanLine.includes("changed to")) {
+                        reason = cleanLine.split("changed to").pop().trim();
+                    }
+
+                    // Deduplication ID
+                    const scratchId = `R${raceNum}_${horseInfo}_${reason}`;
+
+                    if (!seenScratches.has(scratchId)) {
+                        seenScratches.add(scratchId);
+                        appendScratchToTable(raceNum, horseInfo, reason, cleanLine);
+                    }
                 }
-            }
+            });
         });
     }
 
-    function appendScratchToTable(race, programNum, details) {
+    function appendScratchToTable(race, horse, reason, rawLine) {
         const tbody = document.getElementById("scratchTableBody");
         
-        // Remove placeholder row if present
         if (tbody.querySelector(".no-data")) {
             tbody.innerHTML = "";
         }
@@ -215,13 +228,12 @@
 
         row.innerHTML = `
             <td>${now}</td>
-            <td><strong>Race ${race || 'N/A'}</strong></td>
-            <td><strong>#${programNum}</strong></td>
-            <td>${details}</td>
+            <td><strong>Race ${race}</strong></td>
+            <td><strong>${horse}</strong></td>
+            <td>${reason} <br><small style="color:#777;">${rawLine}</small></td>
             <td><span class="badge-scratch">SCRATCHED</span></td>
         `;
 
-        // Prepend to show latest scratches at top
         tbody.insertBefore(row, tbody.firstChild);
     }
 
@@ -240,7 +252,6 @@
             btn.innerText = "Stop Monitoring";
             btn.style.backgroundColor = "#d9381e";
             
-            // Execute immediately, then set interval loop
             fetchAndParseScratches();
             
             const intervalSec = parseInt(document.getElementById("pollInterval").value, 10) || 30;
