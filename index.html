@@ -154,7 +154,7 @@
 <body>
 
 <div class="container">
-  <h1>Horse Racing Past Performance & Value Edge Analyzer</h1>
+  <h1>Horse Racing Past Performance & Market Edge Analyzer</h1>
   
   <div class="control-panel">
     <div class="input-group">
@@ -230,13 +230,13 @@
 
     lines.forEach(line => {
       if (!line.trim()) return;
-      // Handle CSV quoted fields accurately
       const fields = line.split(/,(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)/).map(f => f.replace(/^"|"$/g, '').trim());
       if (fields.length < 50) return;
 
       const race = parseInt(fields[2], 10).toString(); // Field 3
       const post = parseInt(fields[3], 10).toString(); // Field 4
-      const horse = titleCase(fields[27] || `Horse ${post}`); // Field 28
+      const horse = titleCase(fields[44] || `Horse ${post}`); // Field 45 is Horse Name!
+      const trainer = titleCase(fields[27] || ''); // Field 28
       const jockey = titleCase(fields[32] || ''); // Field 33
       const rawOdds = fields[43] || ''; // Field 44 Morning Line
       const odds = formatOdds(rawOdds);
@@ -262,6 +262,7 @@
         race: race,
         post: post,
         horse: horse,
+        trainer: trainer,
         jockey: jockey,
         odds: odds,
         primePower: primePower,
@@ -431,7 +432,7 @@
         return `
           <tr class="${e.scratched ? 'tr-scratched' : ''}">
             <td>${e.post}</td>
-            <td><b>${e.horse}</b><br/><small style="color:var(--text-muted)">${e.jockey}</small></td>
+            <td><b>${e.horse}</b><br/><small style="color:var(--text-muted)">${e.jockey} / ${e.trainer}</small></td>
             <td>${e.odds}</td>
             <td>${e.scratched ? '-' : (e.fairMktProb * 100).toFixed(1) + '%'}</td>
             <td>${e.scratched ? '-' : (e.modelProb * 100).toFixed(1) + '%'}</td>
@@ -449,7 +450,7 @@
           <thead>
             <tr>
               <th style="width:50px">Post</th>
-              <th>Horse / Jockey</th>
+              <th>Horse / Connections</th>
               <th style="width:70px">ML</th>
               <th style="width:80px">Mkt %</th>
               <th style="width:80px">Model %</th>
