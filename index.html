@@ -233,9 +233,9 @@
       const fields = line.split(/,(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)/).map(f => f.replace(/^"|"$/g, '').trim());
       if (fields.length < 50) return;
 
-      const race = parseInt(fields[2], 10).toString(); // Normalized integer string
-      const post = parseInt(fields[3], 10).toString(); 
-      const horse = titleCase(fields[44] || `Horse ${post}`); // Field 45 is Horse Name!
+      const race = parseInt(fields[2], 10).toString(); // Field 3
+      const post = parseInt(fields[3], 10).toString(); // Field 4
+      const horse = titleCase(fields[44] || `Horse ${post}`); // Field 45 (Horse Name)
       const trainer = titleCase(fields[27] || ''); 
       const jockey = titleCase(fields[32] || ''); 
       const rawOdds = fields[43] || ''; 
@@ -465,7 +465,7 @@
     });
   }
 
-  /* ---------------- Listeners ---------------- */
+  /* ---------------- Event Handlers ---------------- */
   document.getElementById('drfInput').addEventListener('change', function(e) {
     const file = e.target.files[0];
     if (!file) return;
@@ -475,7 +475,7 @@
       const statusEl = document.getElementById('drfStatus');
       statusEl.className = 'status ok';
       statusEl.textContent = `Loaded ${cardEntries.length} entries from CSV.`;
-      computeCard(); // Instantly trigger render
+      computeCard();
     };
     reader.readAsText(file);
   });
@@ -489,7 +489,7 @@
       const statusEl = document.getElementById('rssStatus');
       statusEl.className = 'status ok';
       statusEl.textContent = `Extracted ${parsedScratches.length} scratches from RSS.`;
-      computeCard(); // Instantly trigger render & update scratches
+      computeCard();
     };
     reader.readAsText(file);
   });
