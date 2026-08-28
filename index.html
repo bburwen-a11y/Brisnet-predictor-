@@ -3,381 +3,571 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Equibase Scratch & Late Changes Monitor</title>
+    <title>Equibase Live Scratch & Race Card Builder</title>
     <style>
+        :root {
+            --primary: #1e3a8a;
+            --primary-hover: #1d4ed8;
+            --danger: #dc2626;
+            --danger-hover: #b91c1c;
+            --bg-gray: #f8fafc;
+            --card-bg: #ffffff;
+            --border: #e2e8f0;
+        }
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            margin: 20px;
-            background-color: #f4f6f8;
-            color: #222;
+            margin: 0;
+            padding: 20px;
+            background-color: var(--bg-gray);
+            color: #0f172a;
         }
+
         .container {
-            max-width: 1000px;
+            max-width: 1100px;
             margin: 0 auto;
-            background: #ffffff;
-            padding: 24px;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
-        h2 { margin-top: 0; color: #1a252f; }
-        .section-box {
-            background: #f8f9fa;
-            border: 1px solid #e2e8f0;
-            padding: 16px;
-            border-radius: 6px;
+
+        header {
+            background: var(--primary);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        header h1 { margin: 0 0 5px 0; font-size: 24px; }
+        header p { margin: 0; opacity: 0.9; font-size: 14px; }
+
+        .control-panel {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
             margin-bottom: 20px;
         }
-        .controls-row {
+
+        @media (max-width: 768px) {
+            .control-panel { grid-template-columns: 1fr; }
+        }
+
+        .box {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .box h3 { margin-top: 0; font-size: 16px; border-bottom: 2px solid var(--border); padding-bottom: 8px; }
+
+        .form-group {
+            margin-bottom: 12px;
             display: flex;
-            gap: 12px;
-            align-items: center;
-            flex-wrap: wrap;
+            flex-direction: column;
+            gap: 6px;
         }
-        label { font-weight: 600; font-size: 14px; }
-        input[type="text"], input[type="number"], select {
-            padding: 8px 10px;
+
+        label { font-size: 13px; font-weight: 600; color: #475569; }
+
+        input, select, button {
+            padding: 10px;
             font-size: 14px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
         }
+
         button {
-            padding: 8px 16px;
-            font-size: 14px;
-            font-weight: bold;
-            background-color: #0066cc;
+            background-color: var(--primary);
             color: white;
+            font-weight: 600;
             border: none;
-            border-radius: 4px;
             cursor: pointer;
+            transition: background-color 0.2s;
         }
-        button:hover { background-color: #0052a3; }
-        button.stop-btn { background-color: #d9381e; }
-        button.stop-btn:hover { background-color: #b02a16; }
-        .file-input-wrapper {
-            display: flex;
-            align-items: center;
-            gap: 10px;
+
+        button:hover { background-color: var(--primary-hover); }
+
+        button.btn-compute {
+            background-color: #059669;
+            width: 100%;
+            margin-top: 10px;
+            padding: 12px;
+            font-size: 15px;
         }
+
+        button.btn-compute:hover { background-color: #047857; }
+
+        button.btn-stop { background-color: var(--danger); }
+        button.btn-stop:hover { background-color: var(--danger-hover); }
+
         .status-bar {
-            margin: 15px 0 10px 0;
+            background: #e2e8f0;
+            padding: 10px 16px;
+            border-radius: 6px;
             font-size: 13px;
-            color: #555;
             display: flex;
             justify-content: space-between;
-            background: #eef2f7;
-            padding: 8px 12px;
-            border-radius: 4px;
+            margin-bottom: 20px;
+            font-weight: 500;
         }
+
+        /* Race Card Visual Styling */
+        .race-card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 16px;
+            margin-top: 15px;
+        }
+
+        .race-box {
+            background: white;
+            border: 1fr solid var(--border);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .race-header {
+            background: #1e293b;
+            color: white;
+            padding: 10px 14px;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+        }
+
+        .horse-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .horse-item {
+            padding: 8px 14px;
+            border-bottom: 1px solid #f1f5f9;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 13px;
+        }
+
+        .horse-item:last-child { border-bottom: none; }
+
+        .horse-item.scratched {
+            background-color: #fef2f2;
+            text-decoration: line-through;
+            color: #94a3b8;
+        }
+
+        .pgm-num {
+            background: #cbd5e1;
+            color: #0f172a;
+            font-weight: bold;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-right: 8px;
+            font-size: 12px;
+        }
+
+        .scratched .pgm-num {
+            background: #fca5a5;
+            color: #7f1d1d;
+        }
+
+        .badge-scr {
+            background: #ef4444;
+            color: white;
+            font-weight: bold;
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            text-decoration: none !important;
+        }
+
+        /* Feed Output Table */
         table {
             width: 100%;
             border-collapse: collapse;
             margin-top: 10px;
+            background: white;
         }
+
         th, td {
             text-align: left;
-            padding: 10px 12px;
-            border-bottom: 1px solid #e1e4e8;
-            font-size: 14px;
+            padding: 10px;
+            border-bottom: 1px solid var(--border);
+            font-size: 13px;
         }
-        th { background-color: #f1f5f9; font-weight: 600; }
-        tr:hover { background-color: #f8fafc; }
-        .badge-scratch {
-            background-color: #ffebe9;
-            color: #cf222e;
-            padding: 3px 8px;
-            border-radius: 12px;
-            font-size: 11px;
-            font-weight: bold;
+
+        th { background: #f1f5f9; }
+
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 15px;
         }
-        .badge-change {
-            background-color: #fff8c5;
-            color: #9a6700;
-            padding: 3px 8px;
-            border-radius: 12px;
-            font-size: 11px;
-            font-weight: bold;
+
+        .tab-btn {
+            background: #e2e8f0;
+            color: #334155;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
         }
-        .badge-info {
-            background-color: #ddf4ff;
-            color: #0969da;
-            padding: 3px 8px;
-            border-radius: 12px;
-            font-size: 11px;
-            font-weight: bold;
+
+        .tab-btn.active {
+            background: var(--primary);
+            color: white;
         }
-        .no-data { text-align: center; padding: 20px; color: #888; }
-        .clear-btn { background-color: #6c757d; font-size: 12px; padding: 4px 8px; }
-        .clear-btn:hover { background-color: #5a6268; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>Equibase Scratches & Changes Monitor</h2>
+    <header>
+        <h1>Equibase Scratch & Race Card Engine</h1>
+        <p>Live RSS Feed Monitor & Automated Scratch Processing</p>
+    </header>
 
-    <!-- Option 1: File Upload -->
-    <div class="section-box">
-        <label>📁 Option 1: Process Saved File (.rss, .xml, .csv)</label>
-        <div class="file-input-wrapper" style="margin-top: 8px;">
-            <input type="file" id="rssFileInput" accept=".rss,.xml,.csv,.txt">
-            <button onclick="handleFileUpload()">Upload & Process</button>
+    <div class="control-panel">
+        <!-- Local Upload Box -->
+        <div class="box">
+            <h3>📁 Option 1: Process Saved File (.rss, .xml)</h3>
+            <div class="form-group">
+                <label for="rssFileInput">Select Equibase File:</label>
+                <input type="file" id="rssFileInput" accept=".rss,.xml,.txt">
+            </div>
+            <button onclick="processUploadedFile()">Upload & Compute Scratches</button>
+        </div>
+
+        <!-- Live Web Monitor Box -->
+        <div class="box">
+            <h3>🌐 Option 2: Live Feed Monitoring</h3>
+            <div style="display: flex; gap: 8px;">
+                <div class="form-group" style="flex: 2;">
+                    <label for="trackSelect">Track Preset:</label>
+                    <select id="trackSelect" onchange="syncTrackCode()">
+                        <option value="SAR-USA" selected>Saratoga (SAR-USA)</option>
+                        <option value="AQU-USA">Aqueduct (AQU-USA)</option>
+                        <option value="BEL-USA">Belmont (BEL-USA)</option>
+                        <option value="GP-USA">Gulfstream (GP-USA)</option>
+                        <option value="DMR-USA">Del Mar (DMR-USA)</option>
+                        <option value="WO-CAN">Woodbine (WO-CAN)</option>
+                        <option value="CUSTOM">Custom Code...</option>
+                    </select>
+                </div>
+                <div class="form-group" style="flex: 1;">
+                    <label for="trackCode">Code:</label>
+                    <input type="text" id="trackCode" value="SAR-USA">
+                </div>
+            </div>
+            <div style="display: flex; gap: 8px; margin-top: 8px;">
+                <button id="startBtn" style="flex: 1;" onclick="toggleLiveFetch()">Start Live Polling</button>
+            </div>
         </div>
     </div>
 
-    <!-- Option 2: Live Track Web Monitor -->
-    <div class="section-box">
-        <label>🌐 Option 2: Live Feed Monitoring</label>
-        <div class="controls-row" style="margin-top: 8px;">
+    <!-- Compute Card Action Banner -->
+    <div class="box" style="margin-bottom: 20px; background: #ecfdf5; border-color: #a7f3d0;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
             <div>
-                <label for="trackSelect">Track Preset:</label>
-                <select id="trackSelect" onchange="updateTrackCodeInput()">
-                    <option value="SAR-USA" selected>Saratoga (SAR-USA)</option>
-                    <option value="AQU-USA">Aqueduct (AQU-USA)</option>
-                    <option value="BEL-USA">Belmont (BEL-USA)</option>
-                    <option value="GP-USA">Gulfstream (GP-USA)</option>
-                    <option value="DMR-USA">Del Mar (DMR-USA)</option>
-                    <option value="WO-CAN">Woodbine (WO-CAN)</option>
-                    <option value="PRX-USA">Parx (PRX-USA)</option>
-                    <option value="MNR-USA">Mountaineer (MNR-USA)</option>
-                    <option value="CUSTOM">Custom Code...</option>
-                </select>
+                <strong style="color: #065f46; font-size: 15px;">⚡ Card Processing Engine</strong>
+                <p style="margin: 2px 0 0 0; color: #047857; font-size: 13px;">Click below to apply scratches to the field card view.</p>
             </div>
-
-            <div>
-                <label for="trackCode">Code:</label>
-                <input type="text" id="trackCode" value="SAR-USA" style="width: 90px;">
-            </div>
-
-            <div>
-                <label for="pollInterval">Poll (Sec):</label>
-                <input type="number" id="pollInterval" value="30" min="5" style="width: 60px;">
-            </div>
-
-            <button id="startBtn" onclick="toggleMonitoring()" style="margin-top: 18px;">Start Live Fetch</button>
+            <button class="btn-compute" style="width: auto; margin: 0;" onclick="computeAndBuildCard()">Compute & Build Card</button>
         </div>
     </div>
 
-    <!-- Status & Results -->
+    <!-- Status Bar -->
     <div class="status-bar">
-        <span id="statusText">Status: Ready (Upload a file or start live fetch)</span>
-        <span id="lastUpdated">Last Action: None</span>
+        <span id="statusText">Status: Ready. Upload file or click Live Polling.</span>
+        <span id="lastUpdated">Last Check: Never</span>
     </div>
 
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px;">
-        <h3 style="margin: 0;">Parsed Scratches & Track Updates</h3>
-        <button class="clear-btn" onclick="clearResults()">Clear Table</button>
+    <!-- View Switcher Tabs -->
+    <div class="tabs">
+        <button id="tabCardBtn" class="tab-btn active" onclick="switchTab('card')">📊 Built Race Card View</button>
+        <button id="tabFeedBtn" class="tab-btn" onclick="switchTab('feed')">📜 Live Feed Feed Raw Log</button>
     </div>
 
-    <table>
-        <thead>
-            <tr>
-                <th>Detected Time</th>
-                <th>Race #</th>
-                <th>Runner / Item</th>
-                <th>Details / Reason</th>
-                <th>Type</th>
-            </tr>
-        </thead>
-        <tbody id="scratchTableBody">
-            <tr>
-                <td colspan="5" class="no-data">No data parsed yet. Upload an .rss file or start live monitoring.</td>
-            </tr>
-        </tbody>
-    </table>
+    <!-- View 1: Built Race Card Grid -->
+    <div id="cardView">
+        <div id="raceCardContainer" class="race-card-grid">
+            <div class="box" style="grid-column: 1 / -1; text-align: center; color: #64748b; padding: 40px;">
+                No Race Card built yet. Upload an .rss file or fetch live data, then click <strong>Compute & Build Card</strong>.
+            </div>
+        </div>
+    </div>
+
+    <!-- View 2: Raw Feed Output Table -->
+    <div id="feedView" style="display: none;">
+        <table>
+            <thead>
+                <tr>
+                    <th>Timestamp</th>
+                    <th>Race #</th>
+                    <th>Pgm # / Runner</th>
+                    <th>Details / Reason</th>
+                    <th>Type</th>
+                </tr>
+            </thead>
+            <tbody id="feedTableBody">
+                <tr>
+                    <td colspan="5" style="text-align: center; color: #94a3b8;">No entries parsed yet.</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
 </div>
 
 <script>
-    let isMonitoring = false;
-    let timerId = null;
-    const seenEntries = new Set();
+    let isPolling = false;
+    let pollTimer = null;
+    
+    // Core state storage for race cards & scratches
+    const scratchRegistry = new Map(); // Key: Race_Pgm, Value: Reason
+    const parsedScratchesList = [];
 
-    function updateTrackCodeInput() {
-        const select = document.getElementById("trackSelect");
-        const codeInput = document.getElementById("trackCode");
-        if (select.value !== "CUSTOM") {
-            codeInput.value = select.value;
+    function syncTrackCode() {
+        const sel = document.getElementById("trackSelect");
+        if (sel.value !== "CUSTOM") {
+            document.getElementById("trackCode").value = sel.value;
         }
     }
 
-    // --- FILE UPLOAD PARSER ---
-    function handleFileUpload() {
+    function switchTab(tab) {
+        if (tab === 'card') {
+            document.getElementById('cardView').style.display = 'block';
+            document.getElementById('feedView').style.display = 'none';
+            document.getElementById('tabCardBtn').classList.add('active');
+            document.getElementById('tabFeedBtn').classList.remove('active');
+        } else {
+            document.getElementById('cardView').style.display = 'none';
+            document.getElementById('feedView').style.display = 'block';
+            document.getElementById('tabCardBtn').classList.remove('active');
+            document.getElementById('tabFeedBtn').classList.add('active');
+        }
+    }
+
+    // --- UPLOAD HANDLER ---
+    function processUploadedFile() {
         const fileInput = document.getElementById("rssFileInput");
         const file = fileInput.files[0];
-        
         if (!file) {
-            alert("Please select an .rss, .xml, or .csv file first.");
+            alert("Please select an .rss or .xml file first.");
             return;
         }
 
         const reader = new FileReader();
         reader.onload = function(e) {
-            const content = e.target.result;
-            const statusText = document.getElementById("statusText");
-            const lastUpdated = document.getElementById("lastUpdated");
-            
-            parsePayload(content, `File: ${file.name}`);
-            statusText.innerText = `Status: Successfully processed local file "${file.name}"`;
-            lastUpdated.innerText = `Last Action: Uploaded at ${new Date().toLocaleTimeString()}`;
+            parseRSSPayload(e.target.result);
+            document.getElementById("statusText").innerText = `Processed file: ${file.name}`;
+            document.getElementById("lastUpdated").innerText = `Updated: ${new Date().toLocaleTimeString()}`;
+            computeAndBuildCard();
         };
         reader.readAsText(file);
     }
 
-    // --- LIVE WEB FETCH ---
-    async function fetchLiveFeed() {
+    // --- LIVE FEED FETCH ---
+    async function fetchLiveRSS() {
         const trackCode = document.getElementById("trackCode").value.trim().toUpperCase();
         const statusText = document.getElementById("statusText");
-        const lastUpdated = document.getElementById("lastUpdated");
+        
+        statusText.innerText = `Fetching live feed for ${trackCode}...`;
+        
+        const cacheBust = Date.now();
+        const targetUrl = `https://www.equibase.com/static/latechanges/html/latechanges${trackCode}.html?cb=${cacheBust}`;
+        
+        // Proxy list for CORS bypass
+        const proxies = [
+            `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`,
+            `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`
+        ];
 
-        if (!trackCode) {
-            alert("Please specify a track code.");
-            return;
+        let payload = null;
+        for (const proxy of proxies) {
+            try {
+                const res = await fetch(proxy);
+                if (res.ok) {
+                    const data = await res.json();
+                    payload = data.contents || data;
+                    if (typeof payload === 'string' && payload.length > 50) break;
+                }
+            } catch (e) {
+                console.warn("Proxy failed, trying next...", proxy);
+            }
         }
 
-        statusText.innerText = `Status: Fetching feed for ${trackCode}...`;
-        
-        const cacheBuster = Date.now();
-        const targetUrl = `https://www.equibase.com/static/latechanges/html/latechanges${trackCode}.html?cb=${cacheBuster}`;
-        const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
-
-        try {
-            const response = await fetch(proxyUrl);
-            if (!response.ok) throw new Error("HTTP connection failed");
-
-            const data = await response.json();
-            if (data.contents) {
-                parsePayload(data.contents, `Live Feed (${trackCode})`);
-                statusText.innerText = `Status: Live Monitoring Active (${trackCode})`;
-            } else {
-                statusText.innerText = `Status: Received empty response for ${trackCode}`;
-            }
-
-            lastUpdated.innerText = `Last Checked: ${new Date().toLocaleTimeString()}`;
-        } catch (err) {
-            console.error("Fetch Error:", err);
-            statusText.innerText = `Status: Error fetching ${trackCode} feed (${err.message})`;
+        if (payload) {
+            parseRSSPayload(payload);
+            statusText.innerText = `Active Monitoring: ${trackCode}`;
+            document.getElementById("lastUpdated").innerText = `Last Check: ${new Date().toLocaleTimeString()}`;
+            computeAndBuildCard();
+        } else {
+            statusText.innerText = `Failed to connect to ${trackCode} feed.`;
         }
     }
 
-    // --- CORE EQUIBASE PARSER ---
-    function parsePayload(payload, sourceName) {
-        const parser = new DOMParser();
-        let textBlocks = [];
-
-        // Determine if content is XML/RSS or raw text/HTML
-        if (payload.includes("<rss") || payload.includes("<xml") || payload.includes("<channel")) {
-            const xmlDoc = parser.parseFromString(payload, "text/xml");
-            const items = xmlDoc.querySelectorAll("item");
-            
-            items.forEach(item => {
-                const desc = item.querySelector("description");
-                const pubDate = item.querySelector("pubDate") || item.querySelector("date");
-                if (desc) {
-                    textBlocks.push({
-                        time: pubDate ? pubDate.textContent : new Date().toLocaleTimeString(),
-                        text: desc.textContent
-                    });
-                }
-            });
+    function toggleLiveFetch() {
+        const btn = document.getElementById("startBtn");
+        if (isPolling) {
+            clearInterval(pollTimer);
+            isPolling = false;
+            btn.innerText = "Start Live Polling";
+            btn.classList.remove("btn-stop");
+            document.getElementById("statusText").innerText = "Polling stopped.";
         } else {
-            textBlocks.push({
-                time: new Date().toLocaleTimeString(),
-                text: payload
-            });
+            isPolling = true;
+            btn.innerText = "Stop Polling";
+            btn.classList.add("btn-stop");
+            fetchLiveRSS();
+            pollTimer = setInterval(fetchRSS, 30000);
+        }
+    }
+
+    // --- RSS & HTML PARSER ---
+    function parseRSSPayload(rawText) {
+        const parser = new DOMParser();
+        let descriptions = [];
+
+        if (rawText.includes("<rss") || rawText.includes("<xml")) {
+            const xmlDoc = parser.parseFromString(rawText, "text/xml");
+            const items = xmlDoc.querySelectorAll("item description");
+            items.forEach(i => descriptions.push(i.textContent));
+        } else {
+            descriptions.push(rawText);
         }
 
-        textBlocks.forEach(block => {
-            // Equibase separates updates by <br/> or newlines inside description elements
-            const lines = block.text.split(/<br\s*\/?>|\n/gi);
-
+        descriptions.forEach(desc => {
+            const lines = desc.split(/<br\s*\/?>|\n/gi);
             lines.forEach(line => {
-                // Strip all HTML tags like <b>, <i> to get clean text
                 const clean = line.replace(/<[^>]*>/g, '').trim();
                 if (!clean) return;
 
-                // Extract Race Number
+                // Parse Race Number
                 const raceMatch = clean.match(/Race\s*(\d+):/i);
-                const raceNum = raceMatch ? raceMatch[1] : "--";
+                if (!raceMatch) return;
+                const raceNum = parseInt(raceMatch[1], 10);
 
-                // Classify update type
-                let type = "INFO";
-                let badgeClass = "badge-info";
-                
+                // Parse Scratches
                 if (clean.includes("Scratched") || clean.includes("Scratch Reason")) {
-                    type = "SCRATCH";
-                    badgeClass = "badge-scratch";
-                } else if (clean.includes("Jockey") || clean.includes("changed to")) {
-                    type = "CHANGE";
-                    badgeClass = "badge-change";
-                }
+                    const pgmMatch = clean.match(/#\s*(\d+[A-Z]?)\s+([^S-]+?)(?=\s+(?:Scratched|Scratch Reason|-)|$)/i);
+                    const pgm = pgmMatch ? pgmMatch[1].trim() : null;
+                    const horseName = pgmMatch ? pgmMatch[2].trim() : "Unknown Horse";
 
-                // Extract Runner/Horse details if present (# 7 Classy Runner)
-                const runnerMatch = clean.match(/#\s*(\d+[A-Z]?\s+[^S-]+)/i);
-                const runner = runnerMatch ? `#${runnerMatch[1].trim()}` : "Track Info";
+                    let reason = "Scratched";
+                    if (clean.includes("changed to")) {
+                        reason = clean.split("changed to").pop().trim();
+                    } else if (clean.includes("-")) {
+                        reason = clean.split("-").pop().trim();
+                    }
 
-                // Extract reason or description detail
-                let detail = clean;
-                if (clean.includes("Race " + raceNum + ":")) {
-                    detail = clean.replace(/Race\s*\d+:\s*/i, '');
-                }
+                    if (pgm) {
+                        const key = `R${raceNum}_P${pgm}`;
+                        scratchRegistry.set(key, { pgm, horseName, reason, raceNum });
 
-                // Unique Key for Deduplication
-                const uniqueKey = `${raceNum}_${clean}`;
-
-                if (!seenEntries.has(uniqueKey)) {
-                    seenEntries.add(uniqueKey);
-                    addResultRow(block.time, raceNum, runner, detail, type, badgeClass);
+                        // Log to Feed view
+                        if (!parsedScratchesList.some(s => s.key === key && s.reason === reason)) {
+                            parsedScratchesList.push({
+                                time: new Date().toLocaleTimeString(),
+                                raceNum,
+                                runner: `#${pgm} ${horseName}`,
+                                detail: reason,
+                                type: 'SCRATCH',
+                                key
+                            });
+                        }
+                    }
                 }
             });
         });
+
+        renderFeedTable();
     }
 
-    function addResultRow(timeStr, raceNum, runner, detail, type, badgeClass) {
-        const tbody = document.getElementById("scratchTableBody");
+    function renderFeedTable() {
+        const tbody = document.getElementById("feedTableBody");
+        if (parsedScratchesList.length === 0) return;
 
-        if (tbody.querySelector(".no-data")) {
-            tbody.innerHTML = "";
+        tbody.innerHTML = "";
+        parsedScratchesList.slice().reverse().forEach(item => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td>${item.time}</td>
+                <td><strong>Race ${item.raceNum}</strong></td>
+                <td><strong>${item.runner}</strong></td>
+                <td>${item.detail}</td>
+                <td><span class="badge-scr">${item.type}</span></td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    // --- COMPUTE & BUILD RACE CARD ENGINE ---
+    function computeAndBuildCard() {
+        const cardContainer = document.getElementById("raceCardContainer");
+        cardContainer.innerHTML = "";
+
+        // Group scratches by Race Number
+        const raceMap = new Map();
+        for (let r = 1; r <= 12; r++) {
+            raceMap.set(r, []);
         }
 
-        const row = document.createElement("tr");
-        row.innerHTML = `
-            <td><small>${timeStr}</small></td>
-            <td><strong>Race ${raceNum}</strong></td>
-            <td><strong>${runner}</strong></td>
-            <td>${detail}</td>
-            <td><span class="${badgeClass}">${type}</span></td>
-        `;
+        scratchRegistry.forEach((val) => {
+            if (raceMap.has(val.raceNum)) {
+                raceMap.get(val.raceNum).push(val);
+            }
+        });
 
-        tbody.insertBefore(row, tbody.firstChild);
-    }
+        let totalScratchesFound = 0;
 
-    function toggleMonitoring() {
-        const btn = document.getElementById("startBtn");
-        const statusText = document.getElementById("statusText");
+        raceMap.forEach((scratches, raceNum) => {
+            if (scratches.length === 0 && Array.from(scratchRegistry.keys()).length === 0) return;
+            totalScratchesFound += scratches.length;
 
-        if (isMonitoring) {
-            clearInterval(timerId);
-            isMonitoring = false;
-            btn.innerText = "Start Live Fetch";
-            btn.classList.remove("stop-btn");
-            statusText.innerText = "Status: Live monitoring stopped";
-        } else {
-            isMonitoring = true;
-            btn.innerText = "Stop Live Fetch";
-            btn.classList.add("stop-btn");
+            const raceBox = document.createElement("div");
+            raceBox.className = "race-box";
 
-            fetchLiveFeed();
-            const intervalSec = parseInt(document.getElementById("pollInterval").value, 10) || 30;
-            timerId = setInterval(fetchLiveFeed, intervalSec * 1000);
+            let horseListHtml = "";
+            if (scratches.length > 0) {
+                scratches.forEach(s => {
+                    horseListHtml += `
+                        <li class="horse-item scratched">
+                            <div>
+                                <span class="pgm-num">#${s.pgm}</span>
+                                <strong>${s.horseName}</strong>
+                            </div>
+                            <span class="badge-scr">${s.reason}</span>
+                        </li>
+                    `;
+                });
+            } else {
+                horseListHtml = `<li class="horse-item" style="color: #64748b; font-style: italic;">No scratches recorded for this race.</li>`;
+            }
+
+            raceBox.innerHTML = `
+                <div class="race-header">
+                    <span>Race ${raceNum}</span>
+                    <span>${scratches.length} Scratches</span>
+                </div>
+                <ul class="horse-list">
+                    ${horseListHtml}
+                </ul>
+            `;
+
+            cardContainer.appendChild(raceBox);
+        });
+
+        if (cardContainer.children.length === 0) {
+            cardContainer.innerHTML = `
+                <div class="box" style="grid-column: 1 / -1; text-align: center; color: #64748b; padding: 40px;">
+                    No scratches active in current dataset. Upload a file or start polling.
+                </div>
+            `;
         }
-    }
-
-    function clearResults() {
-        seenEntries.clear();
-        document.getElementById("scratchTableBody").innerHTML = `
-            <tr>
-                <td colspan="5" class="no-data">Table cleared. Upload a file or start live monitoring.</td>
-            </tr>
-        `;
     }
 </script>
 
