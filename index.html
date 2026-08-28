@@ -1,794 +1,526 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>BRISNET PP</title>
-<style>
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:-apple-system,sans-serif;background:#0f0f0f;color:#e8e8e8;min-height:100vh}
-.up{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:20px;text-align:center}
-.uz{width:100%;max-width:360px;border:2px dashed #333;border-radius:16px;padding:40px 20px;background:#1a1a1a;cursor:pointer}
-.uz:active{border-color:#00c853;background:rgba(0,200,83,0.1)}
-.uz h2{font-size:18px;margin-bottom:8px}
-.uz p{font-size:13px;color:#666}
-#fi{display:none}
-.app{display:none;padding:16px;max-width:420px;margin:0 auto}
-.rc{border:1px solid #333;border-radius:12px;padding:12px;margin-bottom:12px;background:#1a1a1a}
-.rh{display:flex;justify-content:space-between;margin-bottom:8px}
-.rt{font-size:14px;font-weight:600}
-.rm{font-size:11px;color:#666}
-.pb{font-size:10px;padding:2px 6px;border-radius:4px;font-weight:600}
-.pb.b{background:rgba(0,200,83,0.15);color:#00c853}
-.pb.g{background:rgba(255,171,0,0.15);color:#ffab00}
-.pb.v{background:rgba(68,138,255,0.15);color:#448aff}
-.hr{display:flex;align-items:center;padding:6px 0;border-bottom:1px solid #222;gap:8px}
-.hr:last-child{border:none}
-.rn{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700}
-.rn.r1{background:rgba(0,200,83,0.18);color:#00c853}
-.rn.r2{background:rgba(255,171,0,0.18);color:#ffab00}
-.rn.r3{background:rgba(68,138,255,0.18);color:#448aff}
-.rn.ro{background:#2a2a2a;color:#888}
-.hi{flex:1;min-width:0}
-.hn{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.hd{font-size:10px;color:#666;margin-top:2px}
-.ob{text-align:right}
-.ov{font-size:14px;font-weight:600}
-.sb{height:3px;border-radius:2px;background:#2a2a2a;margin-top:2px;overflow:hidden}
-.sf{height:100%;border-radius:2px}
-.tb{display:flex;gap:4px;padding:12px 0;border-bottom:1px solid #333;overflow-x:auto}
-.t{flex:1;text-align:center;padding:8px;border-radius:8px;font-size:12px;font-weight:500;cursor:pointer;color:#666;background:transparent;border:none;white-space:nowrap}
-.t.a{background:#242424;color:#fff}
-.p{display:none}
-.p.a{display:block}
-.fr{display:flex;gap:6px;padding:12px 0;overflow-x:auto}
-.fc{padding:5px 12px;border-radius:20px;border:1px solid #333;font-size:11px;cursor:pointer;color:#666;background:transparent;white-space:nowrap}
-.fc.a{background:#fff;color:#000;border-color:#fff}
-.eb{width:100%;padding:6px;border:none;border-radius:6px;background:#2a2a2a;color:#666;font-size:11px;cursor:pointer;margin-top:6px}
-.sl{font-size:10px;text-transform:uppercase;color:#444;margin:16px 0 8px;font-weight:600}
-.cc{border:1px solid #333;border-radius:12px;padding:10px 12px;margin-bottom:8px;background:#1a1a1a}
-.cn{font-size:13px;font-weight:500}
-.cr{font-size:11px;color:#666;margin-top:2px}
-.tg{display:flex;gap:4px;flex-wrap:wrap;margin-top:4px}
-.dt{font-size:9px;padding:1px 5px;border-radius:4px;background:#2a2a2a;color:#666}
-.dt.bf{background:rgba(0,200,83,0.15);color:#00c853}
-.dt.al{background:rgba(255,82,82,0.15);color:#ff5252}
-.dt.vl{background:rgba(68,138,255,0.15);color:#448aff}
-.bb{position:fixed;bottom:0;left:0;right:0;padding:12px 16px;background:rgba(15,15,15,0.95);border-top:1px solid #333;display:flex;gap:8px}
-.bb button{flex:1;padding:10px;border-radius:8px;border:1px solid #333;background:#1a1a1a;color:#888;font-size:13px;cursor:pointer}
-.bb button.p{background:#00c853;color:#000;border-color:#00c853;font-weight:600}
-.es{text-align:center;padding:40px 20px;color:#666}
-.ld{text-align:center;padding:60px 20px}
-.sp{width:32px;height:32px;border:3px solid #333;border-top-color:#00c853;border-radius:50%;animation:sp 0.8s linear infinite;margin:0 auto 16px}
-@keyframes sp{to{transform:rotate(360deg)}}
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Past Performance & Market Edge Analyzer</title>
+  <style>
+    :root {
+      --bg-color: #0f172a;
+      --card-bg: #1e293b;
+      --border-color: #334155;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent-color: #38bdf8;
+      --green-bg: #166534;
+      --green-text: #4ade80;
+      --red-bg: #991b1b;
+      --red-text: #f87171;
+      --gold-bg: #854d0e;
+      --gold-text: #fde047;
+    }
 
-.lg{border:1px solid #333;border-radius:12px;padding:12px;margin-bottom:12px;background:#1a1a1a}
-.lh{display:flex;justify-content:space-between;align-items:center;cursor:pointer}
-.lh span{font-size:13px;font-weight:600}
-.lh svg{width:16px;height:16px;color:#666;transition:transform 0.2s}
-.lh.o svg{transform:rotate(180deg)}
-.lc{display:none;font-size:11px;color:#888;margin-top:10px}
-.lc.o{display:block}
-.li{display:flex;align-items:center;gap:8px;margin-bottom:6px}
-.li:last-child{margin-bottom:0}
-.li span{flex:1}
-.lbx{width:10px;height:10px;border-radius:3px;flex-shrink:0}
-.lc .rn{width:18px;height:18px;font-size:9px}
-.ldot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
-.lbar{height:4px;border-radius:2px;width:40px;flex-shrink:0}
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      margin: 0;
+      padding: 20px;
+    }
 
-.sb-row{display:flex;justify-content:space-between;font-size:10px;color:#666;margin:1px 0}
-.sb-row span:first-child{color:#888}
-.sb-row span:last-child{font-weight:600}
-.sb-pos{color:#00c853}
-.sb-neg{color:#ff5252}
-.sb-total{border-top:1px solid #333;margin-top:3px;padding-top:3px}
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
 
-.bc{border:1px solid #333;border-radius:12px;padding:12px;margin-bottom:12px;background:#1a1a1a}
-.bc.best{border-color:rgba(0,200,83,0.4);background:rgba(0,200,83,0.04)}
-.bc.strong{border-color:rgba(0,200,83,0.3)}
-.bc.play{border-color:rgba(68,138,255,0.3)}
-.bc.lean{border-color:rgba(255,171,0,0.25)}
-.bh{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
-.bh .rt{font-size:14px;font-weight:600}
-.bh .rm{font-size:11px;color:#666}
-.bt{display:flex;flex-direction:column;gap:6px}
-.bw{display:flex;align-items:center;gap:8px;padding:8px;border-radius:8px;background:#242424}
-.bw.win{background:rgba(0,200,83,0.08);border:1px solid rgba(0,200,83,0.15)}
-.bw.ex{background:rgba(68,138,255,0.08);border:1px solid rgba(68,138,255,0.15)}
-.bw.tri{background:rgba(255,171,0,0.08);border:1px solid rgba(255,171,0,0.15)}
-.bw .bl{font-size:10px;font-weight:700;width:36px;flex-shrink:0}
-.bw.win .bl{color:#00c853}
-.bw.ex .bl{color:#448aff}
-.bw.tri .bl{color:#ffab00}
-.bw .bp{flex:1;font-size:12px}
-.bw .bo{font-size:11px;color:#888;white-space:nowrap}
-.bconf{font-size:10px;padding:3px 8px;border-radius:4px;font-weight:700;margin-bottom:6px;display:inline-block}
-.bconf.strong{background:rgba(0,200,83,0.15);color:#00c853}
-.bconf.play{background:rgba(68,138,255,0.15);color:#448aff}
-.bconf.lean{background:rgba(255,171,0,0.15);color:#ffab00}
+    h1, h2, h3 {
+      color: var(--text-main);
+      margin-top: 0;
+    }
 
-.wd-tbl{width:100%;font-size:10px;color:#888;border-collapse:collapse;margin-top:6px}
-.wd-tbl td,.wd-tbl th{border:1px solid #333;padding:3px 4px;text-align:left}
-.wd-tbl th{color:#aaa;background:#242424}
-</style>
+    .control-panel {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 15px;
+    }
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    label {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    input[type="file"], select, button {
+      background: #0f172a;
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 10px;
+      border-radius: 6px;
+      font-size: 0.9rem;
+    }
+
+    button {
+      background: #0284c7;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: background 0.2s;
+    }
+
+    button:hover {
+      background: var(--accent-color);
+      color: #0f172a;
+    }
+
+    .status {
+      font-size: 0.8rem;
+      margin-top: 4px;
+    }
+
+    .status.ok { color: var(--green-text); }
+    .status.err { color: var(--red-text); }
+
+    .field-race {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      margin-bottom: 20px;
+      overflow: hidden;
+    }
+
+    .field-race-head {
+      background: #0f172a;
+      padding: 12px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .field-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.85rem;
+    }
+
+    .field-table th, .field-table td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .field-table th {
+      background: #182234;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .field-table tr:hover {
+      background: #273549;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      margin-right: 4px;
+    }
+
+    .badge-prime { background: var(--gold-bg); color: var(--gold-text); }
+    .badge-speed { background: #1e40af; color: #93c5fd; }
+    .badge-pace { background: #6b21a8; color: #e9d5ff; }
+
+    .field-edge.pos { color: var(--green-text); font-weight: bold; }
+    .field-edge.neg { color: var(--red-text); }
+    .field-edge.dash { color: var(--text-muted); }
+  </style>
 </head>
 <body>
 
-<div class="up" id="us">
-  <div class="uz" onclick="document.getElementById('fi').click()">
-    <h2>📁 Upload BRISNET CSV</h2>
-    <p>Tap here to select your file</p>
-  </div>
-  <input type="file" id="fi" accept=".csv" onchange="hf(this.files[0])">
-</div>
-
-<div class="ld" id="ls" style="display:none">
-  <div class="sp"></div>
-  <p style="color:#666">Parsing...</p>
-</div>
-
-<div class="app" id="ap">
-  <h1 id="tn" style="font-size:16px;margin-bottom:4px">Track</h1>
-  <div id="td" style="font-size:11px;color:#666;margin-bottom:12px">Date</div>
-
-  <div class="lg" id="lg">
-    <div class="lh" onclick="tlg()">
-      <span>📖 Legend</span>
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+<div class="container">
+  <h1>Horse Racing Past Performance & Value Analyzer</h1>
+  
+  <div class="control-panel">
+    <div class="input-group">
+      <label for="drfInput">Upload Brisnet DRF / CSV File</label>
+      <input type="file" id="drfInput" accept=".drf,.csv,.txt">
+      <div id="drfStatus" class="status"></div>
     </div>
-    <div class="lc" id="lc">
-      <div style="margin-bottom:10px;font-weight:600;color:#aaa;font-size:11px">PLAY RATING</div>
-      <div class="li"><div class="lbx" style="background:rgba(0,200,83,0.15);border:1px solid #00c853"></div><span><b style="color:#00c853">BEST</b> — Score 80+ with 6+ pt gap</span></div>
-      <div class="li"><div class="lbx" style="background:rgba(255,171,0,0.15);border:1px solid #ffab00"></div><span><b style="color:#ffab00">GOOD</b> — Score 70–79</span></div>
-      <div class="li"><div class="lbx" style="background:rgba(68,138,255,0.15);border:1px solid #448aff"></div><span><b style="color:#448aff">VALUE</b> — Score better than odds suggest</span></div>
-      <div class="li"><div class="lbx" style="background:#2a2a2a;border:1px solid #444"></div><span><b style="color:#888">FAIR</b> — Competitive but no edge</span></div>
-      
-      <div style="margin:10px 0;font-weight:600;color:#aaa;font-size:11px">SCORING FACTORS</div>
-      <div class="li"><span style="color:#aaa;width:80px;flex:0">PrimePower</span><span>BRISNET proprietary power rating (0–100 scale)</span></div>
-      <div class="li"><span style="color:#aaa;width:80px;flex:0">Class</span><span>Purse level + race grade vs horse history</span></div>
-      <div class="li"><span style="color:#aaa;width:80px;flex:0">Form</span><span>DSLR, layoff penalty, recent finish pattern</span></div>
-      <div class="li"><span style="color:#aaa;width:80px;flex:0">Speed</span><span>Last fig + average of best 3 figs</span></div>
-      <div class="li"><span style="color:#aaa;width:80px;flex:0">Works</span><span>Bullet + Breezing count in last works <b>on current surface</b></span></div>
-      <div class="li"><span style="color:#aaa;width:80px;flex:0">Changes</span><span>Blinkers, lasix, jockey switch</span></div>
-      <div class="li"><span style="color:#aaa;width:80px;flex:0">Connections</span><span>Jockey + trainer win % / hot barn</span></div>
-      <div class="li"><span style="color:#aaa;width:80px;flex:0">Value</span><span>Morning line vs computed fair odds</span></div>
-      
-      <div style="margin:10px 0;font-weight:600;color:#aaa;font-size:11px">SCORE BAR</div>
-      <div class="li"><div class="lbar" style="background:#00c853"></div><span>80+ Elite</span></div>
-      <div class="li"><div class="lbar" style="background:#448aff"></div><span>70–79 Strong</span></div>
-      <div class="li"><div class="lbar" style="background:#ffab00"></div><span>60–69 Fair</span></div>
-      <div class="li"><div class="lbar" style="background:#ff5252"></div><span>&lt;60 Weak</span></div>
-      
-      <div style="margin:10px 0;font-weight:600;color:#aaa;font-size:11px">WORKOUT DOTS (CURRENT SURFACE ONLY)</div>
-      <div class="li"><span style="display:flex;gap:3px"><span class="ldot" style="background:#00c853"></span></span><span>Green = Bullet (fastest work of the day)</span></div>
-      <div class="li"><span style="display:flex;gap:3px"><span class="ldot" style="background:#448aff"></span></span><span>Blue = Breezing (B — no urging)</span></div>
-      <div class="li"><span style="display:flex;gap:3px"><span class="ldot" style="background:#ffab00"></span></span><span>Yellow = Handily (H — urged)</span></div>
-      <div class="li"><span style="display:flex;gap:3px"><span class="ldot" style="background:#ff5252"></span></span><span>Red = Other / no rating</span></div>
-      <div class="li"><span style="display:flex;gap:3px"></span><span><b>No dots</b> = Zero works on today's surface</span></div>
-      
-      <div style="margin:10px 0;font-weight:600;color:#aaa;font-size:11px">HORSE BADGES</div>
-      <div class="li"><span class="dt bf" style="font-size:9px">14d</span><span style="margin-left:6px">Days since last race (green = sharp)</span></div>
-      <div class="li"><span class="dt al" style="font-size:9px">42d off</span><span style="margin-left:6px">Long layoff (red = rusty)</span></div>
-      <div class="li"><span class="dt" style="font-size:9px;color:#ffab00">DEBUT</span><span style="margin-left:6px">First-time starter</span></div>
-      <div class="li"><span class="dt al" style="font-size:9px">NO WORK</span><span style="margin-left:6px">No workouts on current surface</span></div>
-      <div class="li"><span class="dt bf" style="font-size:9px">BLINK</span><span style="margin-left:6px">Blinkers ON</span></div>
-      <div class="li"><span class="dt al" style="font-size:9px">NO L</span><span style="margin-left:6px">No Lasix</span></div>
-      <div class="li"><span class="dt bf" style="font-size:9px">J+</span><span style="margin-left:6px">Jockey change</span></div>
-      <div class="li"><span class="dt vl" style="font-size:9px">VALUE</span><span style="margin-left:6px">Score higher than ML implies</span></div>
+
+    <div class="input-group">
+      <label for="rssInput">Upload Equibase RSS / XML File</label>
+      <input type="file" id="rssInput" accept=".rss,.xml">
+      <div id="rssStatus" class="status"></div>
+    </div>
+
+    <div class="input-group">
+      <label for="sortOption">Sort Race Field By</label>
+      <select id="sortOption">
+        <option value="post">Post Position</option>
+        <option value="edge">Highest Value Edge</option>
+        <option value="criteria">High-Probability Criteria Score</option>
+      </select>
+    </div>
+
+    <div class="input-group" style="justify-content: flex-end;">
+      <button id="computeBtn">Compute Value & Analyze Field</button>
     </div>
   </div>
 
-  <div class="tb">
-    <button class="t a" onclick="st('r')">Races</button>
-    <button class="t" onclick="st('b')">Best</button>
-    <button class="t" onclick="st('x')">Bets</button>
-    <button class="t" onclick="st('c')">Changes</button>
-    <button class="t" onclick="st('w')">Works</button>
+  <div id="resultsSection" style="display: none;">
+    <h2>Race Field Breakdown & Criteria Flags</h2>
+    <div id="fieldTables"></div>
   </div>
-
-  <div class="fr" id="fr">
-    <button class="fc a" onclick="fr('all')">All</button>
-    <button class="fc" onclick="fr('best')">Best</button>
-    <button class="fc" onclick="fr('dirt')">Dirt</button>
-    <button class="fc" onclick="fr('turf')">Turf</button>
-  </div>
-
-  <div id="pr" class="p a"></div>
-  <div id="pb" class="p"></div>
-  <div id="px" class="p"></div>
-  <div id="pc" class="p"></div>
-  <div id="pw" class="p"></div>
-
-  <div style="height:70px"></div>
-</div>
-
-<div class="bb" id="bb" style="display:none">
-  <button onclick="xc()">CSV</button>
-  <button onclick="xp()" class="p">PDF</button>
-  <button onclick="location.reload()">New</button>
 </div>
 
 <script>
-let td={races:[]},cf='all',er=new Set();
-
-function hf(f){
-if(!f)return;
-document.getElementById('us').style.display='none';
-document.getElementById('ls').style.display='block';
-const r=new FileReader();
-r.onload=function(e){pc(e.target.result);setTimeout(()=>{document.getElementById('ls').style.display='none';document.getElementById('ap').style.display='block';document.getElementById('bb').style.display='flex';ia();},300);};
-r.readAsText(f);
-}
-
-function parseLine(line){
-const r=[];let c='',q=false;
-for(let i=0;i<line.length;i++){const ch=line[i];if(ch==='"'){if(q&&line[i+1]==='"'){c+='"';i++;}else{q=!q;}}else if(ch===','&&!q){r.push(c.trim());c='';}else c+=ch;}
-r.push(c.trim());return r;
-}
-
-function fmtDist(y){
-const m={1100:'5f',1210:'5.5f',1320:'6f',1430:'6.5f',1540:'7f',1650:'7.5f',1760:'1m',1830:'1 1/16m',1870:'1 1/16m',1980:'1 1/8m',2640:'1 1/2m'};
-return m[y]||y+'y';
-}
-
-function grabPostTime(txt){
-const m=txt.match(/\((\d{1,2}:\d{2})\)/);
-return m?m[1]:'';
-}
-
-function parseOdds(oddsStr){
-if(!oddsStr)return 10;
-const s=oddsStr.trim();
-if(s.includes('-')){
-const p=s.split('-');
-if(p.length===2){const num=parseFloat(p[0]),den=parseFloat(p[1]);if(num>0&&den>0)return den/num;}
-}
-const v=parseFloat(s);
-return v>0?v:10;
-}
-
-function surfMatch(raceSurf, workSurf){
-if(!raceSurf||!workSurf)return true;
-const rs=raceSurf.toUpperCase().trim();
-const ws=workSurf.toUpperCase().trim();
-if(rs===ws)return true;
-if(ws==='MT')return true;
-if(rs==='D'&&ws==='DIRT')return true;
-if(rs==='T'&&ws==='TURF')return true;
-if(rs==='A'&&(ws==='SYNTHETIC'||ws==='ALL W'))return true;
-if(ws==='D'&&rs==='DIRT')return true;
-if(ws==='T'&&rs==='TURF')return true;
-if(ws.startsWith(rs)||rs.startsWith(ws))return true;
-return false;
-}
-
-/* BRISNET workout codes:
-   Bullet = fastest work of day (negative time value, or rank 1)
-   B      = Breezing (no urging from rider)
-   H      = Handily (urged with hands/whip)
-*/
-function workoutColor(isBullet, rating){
-if(isBullet)return 'g';
-const r=(rating||'').toUpperCase().trim();
-if(r==='B'||r==='BREEZING'||r.startsWith('B'))return 'b';
-if(r==='H'||r==='HANDILY'||r==='HND'||r.startsWith('H'))return 'a';
-return 'r';
-}
-
-function workoutLabel(isBullet, rating){
-if(isBullet)return 'BULLET';
-const r=(rating||'').toUpperCase().trim();
-if(r==='B'||r==='BREEZING'||r.startsWith('B'))return 'BREEZING';
-if(r==='H'||r==='HANDILY'||r==='HND'||r.startsWith('H'))return 'HANDILY';
-return r||'—';
-}
-
-function scanRow(c, raceSurf){
-let primePower=0,classRating=0,speedFig=0,bestFigs=[],workouts=[],rawWorkouts=[],jockeyWinPct=0,trainerWinPct=0,lastPos='',lastFig=0,notes='',dslr=0,lastTrack='';
-let ppDateIdx=-1;
-
-for(let j=60;j<c.length;j++){
-const v=c[j].trim();
-if(/^\d{8}$/.test(v)&&(v.startsWith('20')||v.startsWith('19'))){
-if(j>=101&&j<=112)continue;
-ppDateIdx=j;break;
-}
-}
-
-for(let j=55;j<75&&j<c.length;j++){
-const v=parseInt(c[j]);
-if(v>=30&&v<=120&&!primePower){primePower=v;}
-}
-
-for(let j=60;j<80&&j<c.length;j++){
-const v=parseInt(c[j]);
-if(v>=50&&v<=150&&!classRating){classRating=v;}
-}
-
-if(ppDateIdx>0){
-for(let j=ppDateIdx;j<ppDateIdx+30&&j<c.length;j++){
-const v=parseInt(c[j]);
-if(v>=20&&v<=140){bestFigs.push(v);}
-}
-if(bestFigs.length){speedFig=bestFigs[0];}
-}
-
-let lastRaceDate=null;
-if(ppDateIdx>0){
-  const ld=c[ppDateIdx].trim();
-  if(ld.length===8) lastRaceDate=ld;
-}
-
-let workDetails=[];
-
-for(let i=0;i<12;i++){
-const dateIdx=101+i;
-const timeIdx=113+i;
-const trackIdx=125+i;
-const surfIdx=173+i;
-const ratingIdx=161+i;
-const rankIdx=197+i;
-if(dateIdx>=c.length)break;
-
-const wDate=c[dateIdx].trim();
-if(!wDate)continue;
-const wTime=(c[timeIdx]||'').trim();
-const wTrack=(c[trackIdx]||'').trim();
-const wSurf=(c[surfIdx]||'').trim();
-const wRating=(c[ratingIdx]||'').toUpperCase().trim();
-const wRank=(c[rankIdx]||'').trim();
-
-let isBullet=false;
-const timeVal=parseFloat(wTime);
-if(!isNaN(timeVal)&&timeVal<0)isBullet=true;
-if(wRank==='1'||wRank.startsWith('1/'))isBullet=true;
-
-rawWorkouts.push({date:wDate,time:wTime,track:wTrack,surf:wSurf,rating:wRating,rank:wRank,isBullet,kept:false});
-
-if(lastRaceDate && wDate.length===8 && wDate<=lastRaceDate) continue;
-if(!surfMatch(raceSurf,wSurf))continue;
-
-rawWorkouts[rawWorkouts.length-1].kept=true;
-
-const color=workoutColor(isBullet,wRating);
-const label=workoutLabel(isBullet,wRating);
-
-workDetails.push({date:wDate,time:wTime,track:wTrack,surf:wSurf,rating:wRating,rank:wRank,isBullet,color,label});
-workouts.push(color);
-}
-
-if(workDetails.length>4){workDetails=workDetails.slice(-4); workouts=workouts.slice(-4);}
-if(rawWorkouts.length>4)rawWorkouts=rawWorkouts.slice(-4);
-
-for(let j=28;j<45&&j<c.length;j++){
-const v=parseFloat(c[j]);
-if(v>=0&&v<=100){
-if(!jockeyWinPct&&v>5&&v<60)jockeyWinPct=v;
-else if(!trainerWinPct&&v>5&&v<60)trainerWinPct=v;
-}
-}
-
-if(ppDateIdx>0){
-const ld=c[ppDateIdx].trim();
-if(ld.length===8){
-const ly=ld.slice(0,4),lm=ld.slice(4,6),lday=ld.slice(6,8);
-const lastD=new Date(`${ly}-${lm}-${lday}T12:00:00`);
-const today=new Date();
-dslr=Math.floor((today-lastD)/(86400000));
-}
-const trackIdx=ppDateIdx+24;
-if(trackIdx<c.length)lastTrack=c[trackIdx].trim();
-const figIdx=ppDateIdx+18;
-if(figIdx<c.length){const f=parseInt(c[figIdx]);if(f>=0&&f<=140)lastFig=f;}
-const posIdx=ppDateIdx+12;
-if(posIdx<c.length)lastPos=c[posIdx].trim();
-}
-
-for(let j=0;j<c.length;j++){
-const v=c[j].trim();
-if(/^\d{2}-\d{2}-\d{2}\s/.test(v)){notes=v;break;}
-}
-
-return{primePower,classRating,speedFig,bestFigs,workouts,workDetails,rawWorkouts,jockeyWinPct,trainerWinPct,lastPos,lastFig,notes,dslr,lastTrack};
-}
-
-function calculateScore(h, race){
-const ml=parseOdds(h.odds);
-let bd={primePower:0,class:0,form:0,speed:0,works:0,changes:0,connections:0,value:0};
-
-if(h.primePower>=90)bd.primePower=20;
-else if(h.primePower>=80)bd.primePower=16;
-else if(h.primePower>=70)bd.primePower=12;
-else if(h.primePower>=60)bd.primePower=8;
-else if(h.primePower>=50)bd.primePower=4;
-else if(h.primePower>0)bd.primePower=1;
-
-const avgClass=race.horses.reduce((s,x)=>s+(x.classRating||0),0)/race.horses.length||70;
-if(h.classRating>=avgClass+10)bd.class=15;
-else if(h.classRating>=avgClass+5)bd.class=12;
-else if(h.classRating>=avgClass)bd.class=9;
-else if(h.classRating>=avgClass-5)bd.class=5;
-else if(h.classRating>0)bd.class=2;
-
-if(h.dslr>=14&&h.dslr<=28)bd.form=15;
-else if(h.dslr>=7&&h.dslr<14)bd.form=12;
-else if(h.dslr>28&&h.dslr<=42)bd.form=7;
-else if(h.dslr>42)bd.form=-5;
-else if(h.dslr===0)bd.form=5;
-
-const avgSpeed=race.horses.reduce((s,x)=>s+(x.speedFig||0),0)/race.horses.length||60;
-if(h.speedFig>=avgSpeed+8)bd.speed=15;
-else if(h.speedFig>=avgSpeed+4)bd.speed=12;
-else if(h.speedFig>=avgSpeed)bd.speed=8;
-else if(h.speedFig>=avgSpeed-4)bd.speed=4;
-else if(h.speedFig>0)bd.speed=1;
-
-const bullets=h.workouts.filter(w=>w==='g').length;
-const breezes=h.workouts.filter(w=>w==='b').length;
-const handily=h.workouts.filter(w=>w==='a').length;
-const wCount=h.workouts.length;
-if(wCount===0)bd.works=0;
-else if(bullets>=2)bd.works=12;
-else if(bullets===1)bd.works=9;
-else if(breezes>=2)bd.works=7;
-else if(breezes===1)bd.works=5;
-else if(handily>=1)bd.works=2;
-else bd.works=1;
-
-if(h.blinkersOn)bd.changes+=6;
-if(h.jockeyUp)bd.changes+=3;
-if(h.lasix)bd.changes+=1;
-
-const jw=h.jockeyWinPct, tw=h.trainerWinPct;
-if(jw>=20||tw>=20)bd.connections=10;
-else if(jw>=15||tw>=15)bd.connections=8;
-else if(jw>=10||tw>=10)bd.connections=5;
-else if(jw>0||tw>0)bd.connections=2;
-
-const expectedOdds=h.score>=85?2.5:h.score>=75?4:h.score>=65?6:h.score>=55?10:15;
-if(ml>=expectedOdds+3)bd.value=5;
-else if(ml>=expectedOdds+1)bd.value=3;
-else if(ml<expectedOdds-2)bd.value=-3;
-
-let score=50+bd.primePower+bd.class+bd.form+bd.speed+bd.works+bd.changes+bd.connections+bd.value;
-score=Math.min(98,Math.max(20,Math.round(score)));
-
-h.isValue=ml>expectedOdds+2;
-
-return {score,breakdown:bd};
-}
-
-/* ========== THIS WAS MISSING ========== */
-function pc(t){
-const lines=t.trim().split(/\r?\n/);
-if(lines.length<2)return;
-
-const firstCols=parseLine(lines[1]);
-const rd=(firstCols[1]||'').replace(/"/g,'').trim();
-let raceDate=null;
-if(rd.length===8){
-const ry=rd.slice(0,4),rm=rd.slice(4,6),rday=rd.slice(6,8);
-td.date=`${rm}/${rday}/${ry}`;
-raceDate=new Date(`${ry}-${rm}-${rday}T12:00:00`);
-}else{
-td.date=new Date().toLocaleDateString();
-}
-
-const trackMap={'GP':'Gulfstream Park','SA':'Santa Anita','CD':'Churchill Downs','KEE':'Keeneland','BEL':'Belmont','AQU':'Aqueduct','MTH':'Monmouth','SAR':'Saratoga'};
-td.name=trackMap[(firstCols[0]||'').replace(/"/g,'').trim()]||'Imported';
-
-const rs={};
-
-for(let i=1;i<lines.length;i++){
-const c=parseLine(lines[i]);
-if(c.length<45)continue;
-
-const raceNum=parseInt(c[2]);
-if(!raceNum)continue;
-
-const progNum=parseInt(c[3])||99;
-const distYds=parseInt(c[5])||0;
-const surfCode=(c[6]||'').trim();
-const surf=surfCode==='T'?'Turf':surfCode==='D'?'Dirt':surfCode==='A'?'Synthetic':surfCode||'Dirt';
-const raceClass=(c[10]||'').trim();
-const purse=(c[11]||'').trim();
-const conditions=(c[15]||'');
-const postTime=grabPostTime(conditions);
-const trainer=(c[27]||'').trim();
-const jockey=(c[32]||'').trim();
-const odds=(c[43]||'').trim();
-const name=(c[44]||'').trim();
-const weight=parseInt(c[50])||120;
-
-const scanned=scanRow(c, surfCode);
-
-let blinkersOn=false,lasix=true,jockeyUp=false;
-for(let j=0;j<c.length;j++){
-const v=(c[j]||'').toLowerCase();
-if(v.includes('blinkers on')||v.includes('1sttimeblinkers'))blinkersOn=true;
-if(v.includes('blinkers off'))blinkersOn=false;
-if(v.includes('no lasix')||v.includes('lasix off'))lasix=false;
-if(v.includes('jockey change')||v.includes('jock change'))jockeyUp=true;
-}
-
-if(!rs[raceNum])rs[raceNum]={
-num:raceNum,
-name:raceClass,
-dist:fmtDist(distYds),
-surf:surf,
-purse:purse?'$'+Number(purse).toLocaleString():'',
-time:postTime,
-play:'fair',
-horses:[]
-};
-
-rs[raceNum].horses.push({
-name:name,
-progNum:progNum,
-odds:odds,
-jockey:jockey,
-trainer:trainer,
-weight:weight,
-dslr:scanned.dslr>0?scanned.dslr:0,
-workouts:scanned.workouts,
-workDetails:scanned.workDetails,
-rawWorkouts:scanned.rawWorkouts,
-blinkersOn:blinkersOn,
-lasix:lasix,
-jockeyUp:jockeyUp,
-primePower:scanned.primePower,
-classRating:scanned.classRating,
-speedFig:scanned.speedFig,
-bestFigs:scanned.bestFigs,
-jockeyWinPct:scanned.jockeyWinPct,
-trainerWinPct:scanned.trainerWinPct,
-lastPos:scanned.lastPos,
-lastTrack:scanned.lastTrack,
-lastFig:scanned.lastFig,
-notes:scanned.notes,
-beats:[],
-isValue:false,
-score:0,
-breakdown:null
-});
-}
-
-td.races=Object.values(rs).sort((a,b)=>a.num-b.num);
-
-td.races.forEach(r=>{
-r.horses.forEach(h=>{
-const sc=calculateScore(h,r);
-h.score=sc.score;
-h.breakdown=sc.breakdown;
-});
-});
-
-td.races.forEach(r=>{
-r.horses.forEach(h=>{
-if(!h.bestFigs.length)return;
-let h2hWins=0,h2hRaces=0;
-r.horses.forEach(opp=>{
-if(opp.name===h.name||!opp.bestFigs.length)return;
-if(h.bestFigs[0]>opp.bestFigs[0])h2hWins++;
-h2hRaces++;
-});
-if(h2hRaces>0){
-const h2hBonus=Math.round((h2hWins/h2hRaces)*6);
-h.score+=h2hBonus;
-h.breakdown.head2head=h2hBonus;
-}
-});
-});
-
-td.races.forEach(r=>{
-r.horses.sort((a,b)=>b.score-a.score);
-r.horses.forEach((h,idx)=>{h.rank=idx+1;});
-const t=r.horses[0], s=r.horses[1];
-const gap=s?t.score-s.score:99;
-if(t&&t.score>=80&&gap>=6)r.play='best';
-else if(t&&t.score>=70)r.play='good';
-});
-}
-/* ========== END MISSING FUNCTION ========== */
-
-function ia(){
-document.getElementById('tn').textContent=td.name;
-document.getElementById('td').textContent=td.date;
-rr();rb();rx();rc();rw();
-}
-
-function wcolor(c){
-if(c==='g')return '#00c853';
-if(c==='b')return '#448aff';
-if(c==='a')return '#ffab00';
-return '#ff5252';
-}
-
-function wd(a){
-if(!a.length)return '<span style="font-size:10px;color:#666">—</span>';
-return '<span style="display:flex;gap:3px">'+a.map(x=>'<span style="width:6px;height:6px;border-radius:50%;background:'+wcolor(x)+'"></span>').join('')+'</span>';
-}
-function rcn(r){return r===1?'r1':r===2?'r2':r===3?'r3':'ro';}
-function pcl(p){return p==='best'?'b':p==='good'?'g':'';}
-function plb(p){return p==='best'?'BEST':p==='good'?'GOOD':'FAIR';}
-function sc(s){return s>=80?'#00c853':s>=70?'#448aff':s>=60?'#ffab00':'#ff5252';}
-
-function dt(h){
-let t=[];
-if(h.dslr<=14&&h.dslr>0)t.push('<span class="dt bf">'+h.dslr+'d</span>');
-else if(h.dslr>=42)t.push('<span class="dt al">'+h.dslr+'d off</span>');
-else if(h.dslr>0)t.push('<span class="dt">'+h.dslr+'d</span>');
-else t.push('<span class="dt" style="color:#ffab00">DEBUT</span>');
-
-const bullets=h.workouts.filter(w=>w==='g').length;
-const breezes=h.workouts.filter(w=>w==='b').length;
-const wCount=h.workouts.length;
-if(wCount===0)t.push('<span class="dt al">NO WORK</span>');
-else if(bullets>=1)t.push('<span class="dt bf">'+bullets+'BL/'+(breezes>0?breezes+'BR ':'')+wCount+'W</span>');
-else if(breezes>=2)t.push('<span class="dt bf">'+breezes+'BR/'+wCount+'W</span>');
-else t.push('<span class="dt">'+breezes+'BR/'+wCount+'W</span>');
-
-if(h.blinkersOn)t.push('<span class="dt bf">BLINK</span>');
-if(!h.lasix)t.push('<span class="dt al">NO L</span>');
-if(h.jockeyUp)t.push('<span class="dt bf">J+</span>');
-if(h.isValue)t.push('<span class="dt vl">VALUE</span>');
-if(h.primePower>0)t.push('<span class="dt">PP '+h.primePower+'</span>');
-if(h.classRating>0)t.push('<span class="dt">CL '+h.classRating+'</span>');
-return t.join('');
-}
-
-function sb(h){
-const b=h.breakdown;
-return `<div style="margin-top:6px;padding:8px;border-radius:8px;background:#1e1e1e">
-<div style="font-size:10px;color:#888;margin-bottom:4px;font-weight:600">SCORE BREAKDOWN</div>
-<div class="sb-row"><span>PrimePower</span><span class="${b.primePower>=12?'sb-pos':''}">+${b.primePower}</span></div>
-<div class="sb-row"><span>Class</span><span class="${b.class>=9?'sb-pos':''}">+${b.class}</span></div>
-<div class="sb-row"><span>Form</span><span class="${b.form>=12?'sb-pos':b.form<0?'sb-neg':''}">${b.form>=0?'+':''}${b.form}</span></div>
-<div class="sb-row"><span>Speed</span><span class="${b.speed>=12?'sb-pos':''}">+${b.speed}</span></div>
-<div class="sb-row"><span>Works</span><span class="${b.works>=7?'sb-pos':b.works===0?'sb-neg':''}">+${b.works}</span></div>
-<div class="sb-row"><span>Changes</span><span>+${b.changes}</span></div>
-<div class="sb-row"><span>Connections</span><span>+${b.connections}</span></div>
-<div class="sb-row"><span>Value</span><span class="${b.value>=3?'sb-pos':b.value<0?'sb-neg':''}">${b.value>=0?'+':''}${b.value}</span></div>
-${b.head2head!==undefined?`<div class="sb-row"><span>Head-to-Head</span><span class="sb-pos">+${b.head2head}</span></div>`:''}
-<div class="sb-row sb-total"><span>Total</span><span style="color:#fff">${h.score}</span></div>
-</div>`;
-}
-
-function wdebug(h, raceSurf){
-if(!h.rawWorkouts||!h.rawWorkouts.length)return '';
-let rows=h.rawWorkouts.map(w=>{
-const kept=w.kept?'<span style="color:#00c853">✓</span>':'<span style="color:#ff5252">✗</span>';
-const bullet=w.isBullet?'<span style="color:#00c853">●</span>':'';
-return `<tr><td>${kept}</td><td>${bullet}</td><td>${w.date}</td><td>${w.time}</td><td>${w.track}</td><td>${w.surf}</td><td>${w.rating}</td><td>${w.rank}</td></tr>`;
-}).join('');
-return `<div style="margin-top:6px;font-size:10px;color:#888">Raw CSV workouts (race surface: ${raceSurf||'?'}) — ✓ = counted, ● = bullet</div>
-<table class="wd-tbl"><tr><th>Use</th><th>Blt</th><th>Date</th><th>Time</th><th>Track</th><th>Surf</th><th>Rating</th><th>Rank</th></tr>${rows}</table>`;
-}
-
-function hr(h,sh,raceSurf){
-const d=sh?`<div style="margin:6px 0 2px 32px;padding:8px;border-radius:8px;background:#242424;font-size:11px"><div style="color:#888;margin-bottom:2px">${h.lastPos?h.lastPos+' '+h.lastTrack+(h.lastFig?' Fig:'+h.lastFig:''):'DEBUT'}</div><div style="color:#666;font-size:10px">${h.notes}</div><div class="tg">${dt(h)}</div>${sb(h)}${wdebug(h,raceSurf)}</div>`:'';
-return `<div class="hr"><div class="rn ${rcn(h.rank)}">${h.rank}</div><div class="hi"><div class="hn">${h.name}</div><div class="hd">${h.jockey} / ${h.trainer} ${wd(h.workouts)}</div><div class="sb"><div class="sf" style="width:${h.score}%;background:${sc(h.score)}"></div></div></div><div class="ob"><div class="ov">${h.odds}</div></div></div>${d}`;
-}
-
-function rca(r){
-const e=er.has('r-'+r.num);
-return `<div class="rc"><div class="rh"><div><div class="rt">Race ${r.num} — ${r.name}</div><div class="rm">${r.time} · ${r.dist} · ${r.surf} · ${r.purse}</div></div><span class="pb ${pcl(r.play)}">${plb(r.play)}</span></div>${r.horses.map(h=>hr(h,e,r.surf)).join('')}<button class="eb" onclick="te(${r.num})">${e?'Collapse':'Expand'}</button></div>`;
-}
-
-function rr(){
-let r=td.races;
-if(cf==='best')r=r.filter(x=>x.play==='best');
-else if(cf==='good')r=r.filter(x=>x.play==='good');
-else if(cf==='dirt')r=r.filter(x=>x.surf.toLowerCase()==='dirt');
-else if(cf==='turf')r=r.filter(x=>x.surf.toLowerCase()==='turf');
-document.getElementById('pr').innerHTML=r.map(x=>rca(x)).join('')||'<div class="es">No races</div>';
-}
-
-function rb(){
-const b=td.races.filter(r=>r.play==='best').sort((a,b)=>b.horses[0].score-a.horses[0].score);
-const g=td.races.filter(r=>r.play==='good').sort((a,b)=>b.horses[0].score-a.horses[0].score);
-let h='';
-if(b.length)h+='<div class="sl">Best Plays</div>'+b.map(r=>rca(r)).join('');
-if(g.length)h+='<div class="sl">Good Plays</div>'+g.map(r=>rca(r)).join('');
-document.getElementById('pb').innerHTML=h||'<div class="es">No best plays</div>';
-}
-
-function rx(){
-let h='';
-const strong=[],play=[],lean=[];
-
-td.races.forEach(r=>{
-if(r.horses.length<2)return;
-const t=r.horses[0],s=r.horses[1],th=r.horses[2];
-const gap=t.score-s.score;
-if(t.score>=80&&gap>=10)strong.push({r,t,s,th,gap});
-else if(t.score>=75&&gap>=6)play.push({r,t,s,th,gap});
-else if(t.score>=70&&gap>=3)lean.push({r,t,s,th,gap});
-});
-
-function renderBetCard(o, tierClass, tierLabel){
-const{r,t,s,th,gap}=o;
-let winHtml=`<div class="bw win"><span class="bl">WIN</span><span class="bp">${t.name} <span style="color:#888">(${t.odds})</span></span><span class="bo">Score ${t.score}</span></div>`;
-let exHtml=`<div class="bw ex"><span class="bl">EXACTA</span><span class="bp">${t.name} / ${s.name} <span style="color:#888">(${t.odds} / ${s.odds})</span></span><span class="bo">Gap ${gap}</span></div>`;
-let triHtml=th?`<div class="bw tri"><span class="bl">TRIFECTA</span><span class="bp">${t.name} / ${s.name} / ${th.name} <span style="color:#888">(${t.odds} / ${s.odds} / ${th.odds})</span></span><span class="bo">${r.horses.length} runners</span></div>`:'';
-return `<div class="bc ${tierClass}">
-<div class="bconf ${tierClass}">${tierLabel}</div>
-<div class="bh"><div><div class="rt">Race ${r.num} — ${r.name}</div><div class="rm">${r.time} · ${r.dist} · ${r.surf}</div></div><span class="pb ${pcl(r.play)}">${plb(r.play)}</span></div>
-<div class="bt">${winHtml}${exHtml}${triHtml}</div>
-</div>`;
-}
-
-if(strong.length){h+='<div class="sl">Strong Bets</div>'+strong.map(o=>renderBetCard(o,'strong','STRONG')).join('');}
-if(play.length){h+='<div class="sl">Play Bets</div>'+play.map(o=>renderBetCard(o,'play','PLAY')).join('');}
-if(lean.length){h+='<div class="sl">Lean Bets</div>'+lean.map(o=>renderBetCard(o,'lean','LEAN')).join('');}
-
-if(!h)h='<div class="es">No confident bets today</div>';
-document.getElementById('px').innerHTML=h;
-}
-
-function rc(){
-const ch=[];
-td.races.forEach(r=>r.horses.forEach(h=>{if(h.jockeyUp||h.blinkersOn||!h.lasix||h.dslr>=42||h.notes.toLowerCase().includes('scratch'))ch.push({...h,rn:r.num,rnm:r.name});}));
-let h='<div class="sl">Changes</div>';
-h+=ch.map(x=>`<div class="cc"><div style="display:flex;justify-content:space-between"><span class="cn">${x.name}</span><span style="font-size:10px;color:#666">R${x.rn}</span></div><div class="cr">${x.rnm}</div><div class="tg">${x.blinkersOn?'<span class="dt bf">BLINK</span>':''}${x.jockeyUp?'<span class="dt bf">J+</span>':''}${!x.lasix?'<span class="dt al">NO L</span>':''}${x.dslr>=42?'<span class="dt al">'+x.dslr+'d off</span>':''}${x.notes.toLowerCase().includes('scratch')?'<span class="dt al">SCRATCH</span>':''}</div></div>`).join('');
-document.getElementById('pc').innerHTML=h;
-}
-
-function rw(){
-const a=[];td.races.forEach(r=>r.horses.forEach(h=>a.push({...h,rn:r.num})));
-a.sort((a,b)=>b.workouts.filter(w=>w==='g').length-a.workouts.filter(w=>w==='g').length);
-let h='<div class="sl">Workouts</div>';
-h+=a.slice(0,20).map(x=>{
-const bullets=x.workouts.filter(w=>w==='g').length;
-const breezes=x.workouts.filter(w=>w==='b').length;
-const total=x.workouts.length;
-let rows='';
-if(x.workDetails&&x.workDetails.length){
-rows='<div style="margin-top:6px;display:flex;flex-direction:column;gap:4px">'+x.workDetails.map(w=>{
-const d=w.date.slice(4,6)+'/'+w.date.slice(6,8)+'/'+w.date.slice(0,4);
-const c=wcolor(w.color);
-const bulletTag=w.isBullet?'<span style="color:#00c853;font-weight:700">● </span>':'';
-return `<div style="display:flex;align-items:center;gap:6px;font-size:11px"><span style="width:6px;height:6px;border-radius:50%;background:${c};flex-shrink:0"></span><span style="color:#aaa;width:70px">${d}</span><span style="color:#888;width:28px">${w.track}</span><span style="color:#666;width:28px">${w.surf}</span><span style="color:${c};font-weight:600">${bulletTag}${w.label}</span>${w.rank?'<span style="color:#666;font-size:10px">('+w.rank+')</span>':''}</div>`;
-}).join('')+'</div>';
-}
-return `<div class="cc"><div style="display:flex;justify-content:space-between"><span class="cn">${x.name}</span><span style="font-size:10px;color:#666">R${x.rn}</span></div><div style="display:flex;align-items:center;gap:8px;margin-top:5px">${wd(x.workouts)}<span style="font-size:11px;color:#888">${bullets}BL ${breezes}BR / ${total}W</span></div>${rows}</div>`;
-}).join('');
-document.getElementById('pw').innerHTML=h;
-}
-
-function st(t){
-document.querySelectorAll('.t').forEach(x=>x.classList.remove('a'));
-document.querySelectorAll('.p').forEach(x=>x.classList.remove('a'));
-if(t==='r'){document.querySelector('.t').classList.add('a');document.getElementById('pr').classList.add('a');document.getElementById('fr').style.display='flex';}
-if(t==='b'){document.querySelectorAll('.t')[1].classList.add('a');document.getElementById('pb').classList.add('a');document.getElementById('fr').style.display='none';}
-if(t==='x'){document.querySelectorAll('.t')[2].classList.add('a');document.getElementById('px').classList.add('a');document.getElementById('fr').style.display='none';}
-if(t==='c'){document.querySelectorAll('.t')[3].classList.add('a');document.getElementById('pc').classList.add('a');document.getElementById('fr').style.display='none';}
-if(t==='w'){document.querySelectorAll('.t')[4].classList.add('a');document.getElementById('pw').classList.add('a');document.getElementById('fr').style.display='none';}
-}
-
-function fr(t){cf=t;document.querySelectorAll('.fc').forEach(c=>c.classList.remove('a'));event.target.classList.add('a');rr();}
-function te(n){const k='r-'+n;if(er.has(k))er.delete(k);else er.add(k);rr();rb();}
-
-function tlg(){
-const h=document.querySelector('.lh');
-const c=document.getElementById('lc');
-h.classList.toggle('o');
-c.classList.toggle('o');
-}
-
-function xc(){
-let csv='Track,Race #,Race Name,Distance,Surface,Purse,Horse,Rank,Odds,Score,PrimePower,Class,SpeedFig,Jockey,Trainer,Weight,DSLR,Workouts,Blinkers,Lasix,Jockey Change,Notes\n';
-td.races.forEach(r=>r.horses.forEach(h=>{csv+=`${td.name},${r.num},"${r.name}",${r.dist},${r.surf},${r.purse},${h.name},${h.rank},${h.odds},${h.score},${h.primePower},${h.classRating},${h.speedFig},${h.jockey},${h.trainer},${h.weight},${h.dslr},${h.workouts.join('/')},${h.blinkersOn?'ON':'OFF'},${h.lasix?'Yes':'No'},${h.jockeyUp?'Yes':'No'},"${h.notes}"\n`;}));
-const b=new Blob([csv],{type:'text/csv'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='brisnet_pp.csv';a.click();
-}
-
-function xp(){
-let h=`<!DOCTYPE html><html><head><meta charset="utf-8"><title>BRISNET</title><style>body{font-family:Arial,sans-serif;font-size:10px;padding:16px}h1{font-size:16px}h2{font-size:13px;margin-top:16px}table{border-collapse:collapse;width:100%;margin-top:6px;font-size:9px}th,td{border:1px solid #ccc;padding:3px}th{background:#f0f0f0}</style></head><body><h1>BRISNET PP - ${td.name} - ${td.date}</h1>`;
-td.races.forEach(r=>{h+=`<h2>Race ${r.num}: ${r.name} - ${r.dist} ${r.surf}</h2><table><tr><th>Rk</th><th>Horse</th><th>Odds</th><th>Score</th><th>PP</th><th>Class</th><th>Fig</th><th>Jockey</th><th>Trainer</th><th>DSLR</th><th>Work</th><th>Notes</th></tr>`;r.horses.forEach(x=>{h+=`<tr><td>${x.rank}</td><td><b>${x.name}</b></td><td>${x.odds}</td><td>${x.score}</td><td>${x.primePower}</td><td>${x.classRating}</td><td>${x.speedFig}</td><td>${x.jockey}</td><td>${x.trainer}</td><td>${x.dslr}</td><td>${x.workouts.join('')}</td><td>${x.notes}</td></tr>`;});h+=`</table>`;});h+=`</body></html>`;
-const b=new Blob([h],{type:'text/html'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='brisnet_pp.html';a.click();
-alert('Open HTML in browser, then Print > Save as PDF');
-}
+  let rows = [];
+  let computedRaces = [];
+  let currentSort = 'post';
+
+  const DRF_CLASS_RANK = {
+    'G1': 10, 'G2': 9, 'G3': 8, 'N': 7, 'A': 6, 'C': 5, 'S': 4, 'M': 2
+  };
+
+  function escAttr(str) {
+    if (!str) return '';
+    return String(str).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  function titleCase(str) {
+    return str ? str.toLowerCase().replace(/(?:^|\s)\w/g, match => match.toUpperCase()) : '';
+  }
+
+  /* ---------------- Core File Parsers ---------------- */
+
+  function parseBrisnetSingleFile(text) {
+    const lines = text.split(/\r?\n/);
+    const out = [];
+
+    lines.forEach(line => {
+      if (!line.trim()) return;
+      const fields = line.split(/,(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)/).map(f => f.replace(/^"|"$/g, '').trim());
+      if (fields.length < 50) return;
+
+      const get = (idx) => fields[idx - 1] || '';
+      const num = (idx) => {
+        const val = parseFloat(get(idx));
+        return isNaN(val) ? 0 : val;
+      };
+
+      const race = get(3);
+      const post = get(4);
+      const horse = get(6);
+      const odds = get(14) || get(15) || '5/1';
+      const primePower = num(251); 
+      const runStyle = get(252);
+      const todayClassTxt = get(12);
+      const rtype = get(11);
+
+      // Extract Recent Past Performance Speed Figures
+      const ppSpeedFigs = [];
+      const ppRaces = [];
+      for (let i = 0; i < 10; i++) {
+        const pDate = get(256 + i);
+        if (!pDate) continue;
+        const pSpeed = num(716 + i);
+        if (pSpeed > 0) ppSpeedFigs.push(pSpeed);
+
+        ppRaces.push({
+          date: pDate,
+          track: get(266 + i),
+          distYds: num(316 + i),
+          surface: get(286 + i),
+          classCode: get(336 + i),
+          speedFig: pSpeed,
+          finishPos: get(616 + i),
+          beatenL: num(736 + i),
+          comment: get(396 + i)
+        });
+      }
+
+      // High-Probability Criteria Calculation: Best 2 of Last 3 Speed Figs
+      const last3 = ppSpeedFigs.slice(0, 3);
+      let best2Of3Avg = 0;
+      if (last3.length >= 2) {
+        last3.sort((a, b) => b - a);
+        best2Of3Avg = (last3[0] + last3[1]) / 2;
+      } else if (last3.length === 1) {
+        best2Of3Avg = last3[0];
+      }
+
+      out.push({
+        race: race,
+        post: post,
+        horse: titleCase(horse),
+        odds: odds,
+        finalOdds: '',
+        score: primePower || num(211) || 100,
+        primePower: primePower,
+        runStyle: runStyle,
+        best2Of3Avg: best2Of3Avg,
+        raceClassTxt: todayClassTxt,
+        raceType: rtype,
+        scratched: false,
+        ppRaces: ppRaces
+      });
+    });
+
+    return out;
+  }
+
+  function parseEquibaseRss(xmlText) {
+    const parser = new DOMParser();
+    const xmlDoc = parser.parseFromString(xmlText, "text/xml");
+    const items = xmlDoc.querySelectorAll("item");
+    const out = [];
+
+    items.forEach(item => {
+      const title = item.querySelector("title") ? item.querySelector("title").textContent : "";
+      const description = item.querySelector("description") ? item.querySelector("description").textContent : "";
+      
+      const raceMatch = title.match(/Race\s+(\d+)/i);
+      const race = raceMatch ? raceMatch[1] : "1";
+
+      const lines = description.split(/\n|<br\s*\/?>/i);
+      lines.forEach((line, idx) => {
+        if (!line.trim()) return;
+        const parts = line.split(',');
+        if (parts.length >= 3) {
+          out.push({
+            race: race,
+            post: (idx + 1).toString(),
+            horse: parts[0].replace(/<\/?[^>]+(>|$)/g, "").trim(),
+            odds: parts[1] ? parts[1].trim() : '5/1',
+            finalOdds: '',
+            score: 100,
+            primePower: 0,
+            runStyle: 'E',
+            best2Of3Avg: 0,
+            scratched: false,
+            ppRaces: []
+          });
+        }
+      });
+    });
+
+    return out;
+  }
+
+  /* ---------------- File Event Listeners ---------------- */
+
+  document.getElementById('drfInput').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(evt) {
+      try {
+        const parsedRows = parseBrisnetSingleFile(evt.target.result);
+        if (parsedRows.length > 0) {
+          rows = parsedRows;
+          document.getElementById('drfStatus').className = 'status ok';
+          document.getElementById('drfStatus').textContent = `Loaded ${parsedRows.length} entries from Brisnet DRF.`;
+        } else throw new Error("No valid race rows found.");
+      } catch (err) {
+        document.getElementById('drfStatus').className = 'status err';
+        document.getElementById('drfStatus').textContent = `Parse error: ${err.message}`;
+      }
+    };
+    reader.readAsText(file);
+  });
+
+  document.getElementById('rssInput').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(evt) {
+      try {
+        const parsedRows = parseEquibaseRss(evt.target.result);
+        if (parsedRows.length > 0) {
+          rows = parsedRows;
+          document.getElementById('rssStatus').className = 'status ok';
+          document.getElementById('rssStatus').textContent = `Loaded ${parsedRows.length} entries from Equibase RSS.`;
+        } else throw new Error("No valid entries in XML/RSS.");
+      } catch (err) {
+        document.getElementById('rssStatus').className = 'status err';
+        document.getElementById('rssStatus').textContent = `Parse error: ${err.message}`;
+      }
+    };
+    reader.readAsText(file);
+  });
+
+  /* ---------------- Odds & Criteria Processing ---------------- */
+
+  function oddsToProbability(oddsStr) {
+    if (!oddsStr) return 0;
+    const clean = oddsStr.trim();
+    if (clean.includes('/')) {
+      const parts = clean.split('/');
+      const num = parseFloat(parts[0]), den = parseFloat(parts[1]);
+      if (!isNaN(num) && !isNaN(den) && (num + den) > 0) return den / (num + den);
+    }
+    const dec = parseFloat(clean);
+    return (!isNaN(dec) && dec > 0) ? (dec > 1 ? 1 / dec : dec) : 0;
+  }
+
+  function computeCard() {
+    const activeRows = rows.filter(r => !r.scratched && r.race && r.horse);
+    if (!activeRows.length) return;
+
+    const racesMap = {};
+    activeRows.forEach(r => {
+      if (!racesMap[r.race]) racesMap[r.race] = [];
+      racesMap[r.race].push(r);
+    });
+
+    computedRaces = [];
+
+    Object.keys(racesMap).sort((a,b) => parseInt(a,10) - parseInt(b,10)).forEach(raceNum => {
+      const entries = racesMap[raceNum];
+
+      // Field Stats for Criteria Processing
+      const primePowers = entries.map(e => e.primePower).sort((a,b) => b - a);
+      const speedAvgs = entries.map(e => e.best2Of3Avg).sort((a,b) => b - a);
+      const earlyRunners = entries.filter(e => e.runStyle && e.runStyle.startsWith('E'));
+
+      let totalRawProb = 0;
+      let totalScore = 0;
+
+      entries.forEach(r => {
+        r._rawProb = oddsToProbability(r.finalOdds || r.odds);
+        totalRawProb += r._rawProb;
+        r._scoreVal = parseFloat(r.score) || 0;
+        totalScore += r._scoreVal;
+      });
+
+      const processedEntries = entries.map(r => {
+        const fairMktProb = totalRawProb > 0 ? (r._rawProb / totalRawProb) : 0;
+        const modelProb = totalScore > 0 ? (r._scoreVal / totalScore) : 0;
+        const edge = modelProb - fairMktProb;
+
+        // Apply High-Probability Criteria Rules
+        const flags = [];
+        let criteriaScore = 0;
+
+        // 1. Prime Power 3.0+ Point Gap
+        if (r.primePower > 0 && primePowers.length > 1 && r.primePower === primePowers[0]) {
+          const gap = r.primePower - primePowers[1];
+          if (gap >= 3.0) {
+            flags.push(`Prime Gap (+${gap.toFixed(1)})`);
+            criteriaScore += 3;
+          }
+        }
+
+        // 2. Best 2 of 3 Speed Figure Leader
+        if (r.best2Of3Avg > 0 && r.best2Of3Avg === speedAvgs[0]) {
+          flags.push(`Speed #1 (${r.best2Of3Avg.toFixed(0)})`);
+          criteriaScore += 2;
+        }
+
+        // 3. Lone Speed Setup
+        if (r.runStyle && r.runStyle.startsWith('E') && earlyRunners.length === 1) {
+          flags.push('Lone Speed');
+          criteriaScore += 2;
+        }
+
+        return {
+          ...r,
+          fairMktProb: fairMktProb,
+          modelProb: modelProb,
+          edge: edge,
+          flags: flags,
+          criteriaScore: criteriaScore
+        };
+      });
+
+      computedRaces.push({
+        raceNum: raceNum,
+        entries: processedEntries
+      });
+    });
+
+    renderCardOutput();
+  }
+
+  document.getElementById('computeBtn').addEventListener('click', computeCard);
+  document.getElementById('sortOption').addEventListener('change', (e) => {
+    currentSort = e.target.value;
+    if (computedRaces.length) renderCardOutput();
+  });
+
+  function renderCardOutput() {
+    document.getElementById('resultsSection').style.display = 'block';
+    const container = document.getElementById('fieldTables');
+    container.innerHTML = '';
+
+    computedRaces.forEach(r => {
+      const raceBox = document.createElement('div');
+      raceBox.className = 'field-race';
+
+      let entries = [...r.entries];
+      if (currentSort === 'edge') {
+        entries.sort((a,b) => b.edge - a.edge);
+      } else if (currentSort === 'criteria') {
+        entries.sort((a,b) => b.criteriaScore - a.criteriaScore);
+      } else {
+        entries.sort((a,b) => parseInt(a.post,10) - parseInt(b.post,10));
+      }
+
+      const rowsHtml = entries.map(e => {
+        const edgePct = (e.edge * 100).toFixed(1);
+        const edgeClass = e.edge > 0.02 ? 'pos' : (e.edge < -0.02 ? 'neg' : 'dash');
+        const formattedEdge = e.edge > 0 ? `+${edgePct}%` : `${edgePct}%`;
+        const badges = e.flags.map(f => `<span class="badge ${f.includes('Prime') ? 'badge-prime' : f.includes('Speed') ? 'badge-speed' : 'badge-pace'}">${f}</span>`).join('');
+
+        return `
+          <tr>
+            <td>${e.post}</td>
+            <td><b>${escAttr(e.horse)}</b></td>
+            <td>${escAttr(e.odds)}</td>
+            <td>${(e.fairMktProb * 100).toFixed(1)}%</td>
+            <td>${(e.modelProb * 100).toFixed(1)}%</td>
+            <td><span class="field-edge ${edgeClass}">${formattedEdge}</span></td>
+            <td>${badges || '<span style="color:var(--text-muted)">-</span>'}</td>
+          </tr>
+        `;
+      }).join('');
+
+      raceBox.innerHTML = `
+        <div class="field-race-head">
+          <strong>Race ${r.raceNum}</strong>
+        </div>
+        <table class="field-table">
+          <thead>
+            <tr>
+              <th style="width:50px">Post</th>
+              <th>Horse</th>
+              <th style="width:70px">ML</th>
+              <th style="width:80px">Mkt %</th>
+              <th style="width:80px">Model %</th>
+              <th style="width:80px">Edge</th>
+              <th>High-Probability Signals</th>
+            </tr>
+          </thead>
+          <tbody>${rowsHtml}</tbody>
+        </table>
+      `;
+      container.appendChild(raceBox);
+    });
+  }
 </script>
 </body>
 </html>
