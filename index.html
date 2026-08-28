@@ -3,51 +3,70 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Live Equibase Scratch Monitor</title>
+    <title>Equibase Scratch & Late Changes Monitor</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             margin: 20px;
             background-color: #f4f6f8;
-            color: #333;
+            color: #222;
         }
         .container {
-            max-width: 950px;
+            max-width: 1000px;
             margin: 0 auto;
             background: #ffffff;
             padding: 24px;
             border-radius: 8px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
-        .controls {
+        h2 { margin-top: 0; color: #1a252f; }
+        .section-box {
+            background: #f8f9fa;
+            border: 1px solid #e2e8f0;
+            padding: 16px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+        .controls-row {
             display: flex;
             gap: 12px;
             align-items: center;
-            margin-bottom: 20px;
             flex-wrap: wrap;
         }
-        input, select, button {
-            padding: 8px 12px;
+        label { font-weight: 600; font-size: 14px; }
+        input[type="text"], input[type="number"], select {
+            padding: 8px 10px;
             font-size: 14px;
             border: 1px solid #ccc;
             border-radius: 4px;
         }
         button {
+            padding: 8px 16px;
+            font-size: 14px;
+            font-weight: bold;
             background-color: #0066cc;
             color: white;
             border: none;
+            border-radius: 4px;
             cursor: pointer;
-            font-weight: bold;
         }
-        button:hover {
-            background-color: #0052a3;
+        button:hover { background-color: #0052a3; }
+        button.stop-btn { background-color: #d9381e; }
+        button.stop-btn:hover { background-color: #b02a16; }
+        .file-input-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
         .status-bar {
-            margin-bottom: 15px;
+            margin: 15px 0 10px 0;
             font-size: 13px;
-            color: #666;
+            color: #555;
             display: flex;
             justify-content: space-between;
+            background: #eef2f7;
+            padding: 8px 12px;
+            border-radius: 4px;
         }
         table {
             width: 100%;
@@ -58,62 +77,110 @@
             text-align: left;
             padding: 10px 12px;
             border-bottom: 1px solid #e1e4e8;
+            font-size: 14px;
         }
-        th {
-            background-color: #f8f9fa;
-            font-weight: 600;
-        }
-        tr:hover {
-            background-color: #f1f5f9;
-        }
+        th { background-color: #f1f5f9; font-weight: 600; }
+        tr:hover { background-color: #f8fafc; }
         .badge-scratch {
             background-color: #ffebe9;
             color: #cf222e;
-            padding: 2px 8px;
+            padding: 3px 8px;
             border-radius: 12px;
-            font-size: 12px;
+            font-size: 11px;
             font-weight: bold;
         }
-        .no-data {
-            text-align: center;
-            padding: 20px;
-            color: #888;
+        .badge-change {
+            background-color: #fff8c5;
+            color: #9a6700;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: bold;
         }
+        .badge-info {
+            background-color: #ddf4ff;
+            color: #0969da;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+        .no-data { text-align: center; padding: 20px; color: #888; }
+        .clear-btn { background-color: #6c757d; font-size: 12px; padding: 4px 8px; }
+        .clear-btn:hover { background-color: #5a6268; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>Live Equibase Scratch Monitor</h2>
+    <h2>Equibase Scratches & Changes Monitor</h2>
 
-    <div class="controls">
-        <label for="trackCode"><strong>Track Code:</strong></label>
-        <input type="text" id="trackCode" value="SAR-USA" placeholder="e.g. SAR-USA, GP-USA, MNR-USA">
-
-        <label for="pollInterval"><strong>Refresh (Sec):</strong></label>
-        <input type="number" id="pollInterval" value="30" min="5" style="width: 70px;">
-
-        <button id="startBtn" onclick="toggleMonitoring()">Start Monitoring</button>
+    <!-- Option 1: File Upload -->
+    <div class="section-box">
+        <label>📁 Option 1: Process Saved File (.rss, .xml, .csv)</label>
+        <div class="file-input-wrapper" style="margin-top: 8px;">
+            <input type="file" id="rssFileInput" accept=".rss,.xml,.csv,.txt">
+            <button onclick="handleFileUpload()">Upload & Process</button>
+        </div>
     </div>
 
+    <!-- Option 2: Live Track Web Monitor -->
+    <div class="section-box">
+        <label>🌐 Option 2: Live Feed Monitoring</label>
+        <div class="controls-row" style="margin-top: 8px;">
+            <div>
+                <label for="trackSelect">Track Preset:</label>
+                <select id="trackSelect" onchange="updateTrackCodeInput()">
+                    <option value="SAR-USA" selected>Saratoga (SAR-USA)</option>
+                    <option value="AQU-USA">Aqueduct (AQU-USA)</option>
+                    <option value="BEL-USA">Belmont (BEL-USA)</option>
+                    <option value="GP-USA">Gulfstream (GP-USA)</option>
+                    <option value="DMR-USA">Del Mar (DMR-USA)</option>
+                    <option value="WO-CAN">Woodbine (WO-CAN)</option>
+                    <option value="PRX-USA">Parx (PRX-USA)</option>
+                    <option value="MNR-USA">Mountaineer (MNR-USA)</option>
+                    <option value="CUSTOM">Custom Code...</option>
+                </select>
+            </div>
+
+            <div>
+                <label for="trackCode">Code:</label>
+                <input type="text" id="trackCode" value="SAR-USA" style="width: 90px;">
+            </div>
+
+            <div>
+                <label for="pollInterval">Poll (Sec):</label>
+                <input type="number" id="pollInterval" value="30" min="5" style="width: 60px;">
+            </div>
+
+            <button id="startBtn" onclick="toggleMonitoring()" style="margin-top: 18px;">Start Live Fetch</button>
+        </div>
+    </div>
+
+    <!-- Status & Results -->
     <div class="status-bar">
-        <span id="statusText">Status: Idle</span>
-        <span id="lastUpdated">Last Checked: Never</span>
+        <span id="statusText">Status: Ready (Upload a file or start live fetch)</span>
+        <span id="lastUpdated">Last Action: None</span>
+    </div>
+
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px;">
+        <h3 style="margin: 0;">Parsed Scratches & Track Updates</h3>
+        <button class="clear-btn" onclick="clearResults()">Clear Table</button>
     </div>
 
     <table>
         <thead>
             <tr>
-                <th>Time Detected</th>
+                <th>Detected Time</th>
                 <th>Race #</th>
-                <th>Program # & Horse</th>
+                <th>Runner / Item</th>
                 <th>Details / Reason</th>
-                <th>Status</th>
+                <th>Type</th>
             </tr>
         </thead>
         <tbody id="scratchTableBody">
             <tr>
-                <td colspan="5" class="no-data">No scratches loaded yet. Click "Start Monitoring".</td>
+                <td colspan="5" class="no-data">No data parsed yet. Upload an .rss file or start live monitoring.</td>
             </tr>
         </tbody>
     </table>
@@ -122,19 +189,51 @@
 <script>
     let isMonitoring = false;
     let timerId = null;
-    const seenScratches = new Set();
+    const seenEntries = new Set();
 
-    async function fetchAndParseScratches() {
-        const trackCode = document.getElementById("trackCode").value.trim().toUpperCase();
-        const statusText = document.getElementById("statusText");
-        const lastUpdated = document.getElementById("lastUpdated");
+    function updateTrackCodeInput() {
+        const select = document.getElementById("trackSelect");
+        const codeInput = document.getElementById("trackCode");
+        if (select.value !== "CUSTOM") {
+            codeInput.value = select.value;
+        }
+    }
+
+    // --- FILE UPLOAD PARSER ---
+    function handleFileUpload() {
+        const fileInput = document.getElementById("rssFileInput");
+        const file = fileInput.files[0];
         
-        if (!trackCode) {
-            alert("Please enter a valid track code.");
+        if (!file) {
+            alert("Please select an .rss, .xml, or .csv file first.");
             return;
         }
 
-        statusText.innerText = `Status: Fetching updates for ${trackCode}...`;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const content = e.target.result;
+            const statusText = document.getElementById("statusText");
+            const lastUpdated = document.getElementById("lastUpdated");
+            
+            parsePayload(content, `File: ${file.name}`);
+            statusText.innerText = `Status: Successfully processed local file "${file.name}"`;
+            lastUpdated.innerText = `Last Action: Uploaded at ${new Date().toLocaleTimeString()}`;
+        };
+        reader.readAsText(file);
+    }
+
+    // --- LIVE WEB FETCH ---
+    async function fetchLiveFeed() {
+        const trackCode = document.getElementById("trackCode").value.trim().toUpperCase();
+        const statusText = document.getElementById("statusText");
+        const lastUpdated = document.getElementById("lastUpdated");
+
+        if (!trackCode) {
+            alert("Please specify a track code.");
+            return;
+        }
+
+        statusText.innerText = `Status: Fetching feed for ${trackCode}...`;
         
         const cacheBuster = Date.now();
         const targetUrl = `https://www.equibase.com/static/latechanges/html/latechanges${trackCode}.html?cb=${cacheBuster}`;
@@ -142,96 +241,110 @@
 
         try {
             const response = await fetch(proxyUrl);
-            if (!response.ok) throw new Error("Network response failed");
-            
-            const data = await response.json();
-            const rawHtmlOrXml = data.contents;
+            if (!response.ok) throw new Error("HTTP connection failed");
 
-            if (rawHtmlOrXml) {
-                parseFeedPayload(rawHtmlOrXml);
-                statusText.innerText = `Status: Active (Monitoring ${trackCode})`;
+            const data = await response.json();
+            if (data.contents) {
+                parsePayload(data.contents, `Live Feed (${trackCode})`);
+                statusText.innerText = `Status: Live Monitoring Active (${trackCode})`;
             } else {
-                statusText.innerText = `Status: Received empty payload from track feed.`;
+                statusText.innerText = `Status: Received empty response for ${trackCode}`;
             }
 
-            const now = new Date();
-            lastUpdated.innerText = `Last Checked: ${now.toLocaleTimeString()}`;
-
-        } catch (error) {
-            console.error("Fetch error:", error);
-            statusText.innerText = `Status: Error fetching feed (${error.message})`;
+            lastUpdated.innerText = `Last Checked: ${new Date().toLocaleTimeString()}`;
+        } catch (err) {
+            console.error("Fetch Error:", err);
+            statusText.innerText = `Status: Error fetching ${trackCode} feed (${err.message})`;
         }
     }
 
-    function parseFeedPayload(payload) {
+    // --- CORE EQUIBASE PARSER ---
+    function parsePayload(payload, sourceName) {
         const parser = new DOMParser();
-        
-        // Handle RSS/XML payload vs raw HTML page payload seamlessly
-        let descriptions = [];
-        if (payload.includes("<rss") || payload.includes("<xml")) {
-            const xmlDoc = parser.parseFromString(payload, 'text/xml');
-            const items = xmlDoc.querySelectorAll("item description");
-            items.forEach(item => descriptions.push(item.textContent));
+        let textBlocks = [];
+
+        // Determine if content is XML/RSS or raw text/HTML
+        if (payload.includes("<rss") || payload.includes("<xml") || payload.includes("<channel")) {
+            const xmlDoc = parser.parseFromString(payload, "text/xml");
+            const items = xmlDoc.querySelectorAll("item");
+            
+            items.forEach(item => {
+                const desc = item.querySelector("description");
+                const pubDate = item.querySelector("pubDate") || item.querySelector("date");
+                if (desc) {
+                    textBlocks.push({
+                        time: pubDate ? pubDate.textContent : new Date().toLocaleTimeString(),
+                        text: desc.textContent
+                    });
+                }
+            });
         } else {
-            descriptions.push(payload);
+            textBlocks.push({
+                time: new Date().toLocaleTimeString(),
+                text: payload
+            });
         }
 
-        descriptions.forEach(desc => {
-            // Split entries separated by HTML line breaks <br/> or newlines
-            const entries = desc.split(/<br\s*\/?>|\n/gi);
+        textBlocks.forEach(block => {
+            // Equibase separates updates by <br/> or newlines inside description elements
+            const lines = block.text.split(/<br\s*\/?>|\n/gi);
 
-            entries.forEach(line => {
-                // Strip inline HTML tags (<b>, <i>, etc.) to evaluate clean text
-                const cleanLine = line.replace(/<[^>]*>/g, '').trim();
-                if (!cleanLine) return;
+            lines.forEach(line => {
+                // Strip all HTML tags like <b>, <i> to get clean text
+                const clean = line.replace(/<[^>]*>/g, '').trim();
+                if (!clean) return;
 
-                // Check for Scratch indicators
-                if (cleanLine.includes("Scratched") || cleanLine.includes("Scratch Reason")) {
-                    
-                    // Extract Race Number (e.g., "Race 01:" or "Race 5:")
-                    const raceMatch = cleanLine.match(/Race\s*(\d+):/i);
-                    const raceNum = raceMatch ? parseInt(raceMatch[1], 10) : "N/A";
+                // Extract Race Number
+                const raceMatch = clean.match(/Race\s*(\d+):/i);
+                const raceNum = raceMatch ? raceMatch[1] : "--";
 
-                    // Extract Program # and Horse Name (e.g., "# 7 Classy Runner" or "#11 Funny Words")
-                    const horseMatch = cleanLine.match(/#\s*(\d+[A-Z]?\s+[^S-]+)/i);
-                    const horseInfo = horseMatch ? `#${horseMatch[1].trim()}` : "N/A";
+                // Classify update type
+                let type = "INFO";
+                let badgeClass = "badge-info";
+                
+                if (clean.includes("Scratched") || clean.includes("Scratch Reason")) {
+                    type = "SCRATCH";
+                    badgeClass = "badge-scratch";
+                } else if (clean.includes("Jockey") || clean.includes("changed to")) {
+                    type = "CHANGE";
+                    badgeClass = "badge-change";
+                }
 
-                    // Extract Reason / Details after the hyphen or keyword
-                    let reason = "Scratched";
-                    if (cleanLine.includes("-")) {
-                        reason = cleanLine.split("-").pop().trim();
-                    } else if (cleanLine.includes("changed to")) {
-                        reason = cleanLine.split("changed to").pop().trim();
-                    }
+                // Extract Runner/Horse details if present (# 7 Classy Runner)
+                const runnerMatch = clean.match(/#\s*(\d+[A-Z]?\s+[^S-]+)/i);
+                const runner = runnerMatch ? `#${runnerMatch[1].trim()}` : "Track Info";
 
-                    // Deduplication ID
-                    const scratchId = `R${raceNum}_${horseInfo}_${reason}`;
+                // Extract reason or description detail
+                let detail = clean;
+                if (clean.includes("Race " + raceNum + ":")) {
+                    detail = clean.replace(/Race\s*\d+:\s*/i, '');
+                }
 
-                    if (!seenScratches.has(scratchId)) {
-                        seenScratches.add(scratchId);
-                        appendScratchToTable(raceNum, horseInfo, reason, cleanLine);
-                    }
+                // Unique Key for Deduplication
+                const uniqueKey = `${raceNum}_${clean}`;
+
+                if (!seenEntries.has(uniqueKey)) {
+                    seenEntries.add(uniqueKey);
+                    addResultRow(block.time, raceNum, runner, detail, type, badgeClass);
                 }
             });
         });
     }
 
-    function appendScratchToTable(race, horse, reason, rawLine) {
+    function addResultRow(timeStr, raceNum, runner, detail, type, badgeClass) {
         const tbody = document.getElementById("scratchTableBody");
-        
+
         if (tbody.querySelector(".no-data")) {
             tbody.innerHTML = "";
         }
 
-        const now = new Date().toLocaleTimeString();
         const row = document.createElement("tr");
-
         row.innerHTML = `
-            <td>${now}</td>
-            <td><strong>Race ${race}</strong></td>
-            <td><strong>${horse}</strong></td>
-            <td>${reason} <br><small style="color:#777;">${rawLine}</small></td>
-            <td><span class="badge-scratch">SCRATCHED</span></td>
+            <td><small>${timeStr}</small></td>
+            <td><strong>Race ${raceNum}</strong></td>
+            <td><strong>${runner}</strong></td>
+            <td>${detail}</td>
+            <td><span class="${badgeClass}">${type}</span></td>
         `;
 
         tbody.insertBefore(row, tbody.firstChild);
@@ -244,19 +357,27 @@
         if (isMonitoring) {
             clearInterval(timerId);
             isMonitoring = false;
-            btn.innerText = "Start Monitoring";
-            btn.style.backgroundColor = "#0066cc";
-            statusText.innerText = "Status: Stopped";
+            btn.innerText = "Start Live Fetch";
+            btn.classList.remove("stop-btn");
+            statusText.innerText = "Status: Live monitoring stopped";
         } else {
             isMonitoring = true;
-            btn.innerText = "Stop Monitoring";
-            btn.style.backgroundColor = "#d9381e";
-            
-            fetchAndParseScratches();
-            
+            btn.innerText = "Stop Live Fetch";
+            btn.classList.add("stop-btn");
+
+            fetchLiveFeed();
             const intervalSec = parseInt(document.getElementById("pollInterval").value, 10) || 30;
-            timerId = setInterval(fetchAndParseScratches, intervalSec * 1000);
+            timerId = setInterval(fetchLiveFeed, intervalSec * 1000);
         }
+    }
+
+    function clearResults() {
+        seenEntries.clear();
+        document.getElementById("scratchTableBody").innerHTML = `
+            <tr>
+                <td colspan="5" class="no-data">Table cleared. Upload a file or start live monitoring.</td>
+            </tr>
+        `;
     }
 </script>
 
