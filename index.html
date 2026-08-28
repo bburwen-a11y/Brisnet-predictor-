@@ -84,6 +84,7 @@
     .status {
       font-size: 0.8rem;
       margin-top: 4px;
+      font-family: monospace;
     }
 
     .status.ok { color: var(--green-text); }
@@ -127,7 +128,7 @@
     .field-table tr:hover { background: #273549; }
 
     .tr-scratched {
-      opacity: 0.4;
+      opacity: 0.45;
       text-decoration: line-through;
       background: #1a1010 !important;
     }
@@ -159,14 +160,14 @@
   <div class="control-panel">
     <div class="input-group">
       <label for="drfInput">1. Upload Brisnet CSV (.CSV)</label>
-      <input type="file" id="drfInput" accept=".csv,.drf,.txt">
-      <div id="drfStatus" class="status"></div>
+      <input type="file" id="drfInput" accept="*/*">
+      <div id="drfStatus" class="status">Waiting for file...</div>
     </div>
 
     <div class="input-group">
       <label for="rssInput">2. Upload Equibase RSS (.RSS / .XML)</label>
-      <input type="file" id="rssInput" accept=".rss,.xml,.csv,.txt">
-      <div id="rssStatus" class="status"></div>
+      <input type="file" id="rssInput" accept="*/*">
+      <div id="rssStatus" class="status">Waiting for file...</div>
     </div>
 
     <div class="input-group">
@@ -179,9 +180,11 @@
     </div>
 
     <div class="input-group" style="justify-content: flex-end;">
-      <button id="computeBtn">Analyze Field & Calculate Edges</button>
+      <button id="computeBtn">Force Run Calculation</button>
     </div>
   </div>
+
+  <div id="logConsole" style="background:#000; color:#0f0; padding:10px; border-radius:6px; font-family:monospace; font-size:0.8rem; margin-bottom:20px; display:none;"></div>
 
   <div id="resultsSection" style="display: none;">
     <h2>Race Field Breakdown & Market Edges</h2>
@@ -194,6 +197,12 @@
   let scratchesSet = new Set();
   let computedRaces = [];
   let currentSort = 'post';
+
+  function log(msg) {
+    const consoleDiv = document.getElementById('logConsole');
+    consoleDiv.style.display = 'block';
+    consoleDiv.innerHTML += `<div>> ${msg}</div>`;
+  }
 
   function titleCase(str) {
     return str ? str.toLowerCase().replace(/(?:^|\s)\w/g, m => m.toUpperCase()) : '';
@@ -223,27 +232,49 @@
     return (!isNaN(dec) && dec > 0) ? 1 / (dec + 1) : 0;
   }
 
-  /* ---------------- 1. Parse Brisnet DRF CSV ---------------- */
+  /* ---------------- Robust CSV Splitter ---------------- */
+  function splitCSVLine(line) {
+    const fields = [];
+    let cur = '';
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+      const c = line[i];
+      if (c === '"') {
+        inQuotes = !inQuotes;
+      } else if (c === ',' && !inQuotes) {
+        fields.push(cur.replace(/^"|"$/g, '').trim());
+        cur = '';
+      } else {
+        cur += c;
+      }
+    }
+    fields.push(cur.replace(/^"|"$/g, '').trim());
+    return fields;
+  }
+
   function parseBrisnetCSV(text) {
     const lines = text.split(/\r?\n/);
     const out = [];
 
-    lines.forEach(line => {
+    lines.forEach((line) => {
       if (!line.trim()) return;
-      const fields = line.split(/,(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)/).map(f => f.replace(/^"|"$/g, '').trim());
-      if (fields.length < 50) return;
+      const fields = splitCSVLine(line);
+      if (fields.length < 45) return;
 
-      const race = parseInt(fields[2], 10).toString(); // Field 3
-      const post = parseInt(fields[3], 10).toString(); // Field 4
-      const horse = titleCase(fields[44] || `Horse ${post}`); // Field 45 (Horse Name)
-      const trainer = titleCase(fields[27] || ''); 
-      const jockey = titleCase(fields[32] || ''); 
-      const rawOdds = fields[43] || ''; 
+      const raceVal = parseInt(fields[2], 10);
+      const postVal = parseInt(fields[3], 10);
+      if (isNaN(raceVal) || isNaN(postVal)) return;
+
+      const race = raceVal.toString();
+      const post = postVal.toString();
+      const horse = titleCase(fields[44] || `Horse ${post}`);
+      const trainer = titleCase(fields[27] || '');
+      const jockey = titleCase(fields[32] || '');
+      const rawOdds = fields[43] || '';
       const odds = formatOdds(rawOdds);
-      const primePower = parseFloat(fields[250]) || 0; 
-      const runStyle = fields[251] || ''; 
+      const primePower = parseFloat(fields[250]) || 0;
+      const runStyle = fields[251] || '';
 
-      // Extract last 3 Speed Figures
       const speedFigs = [];
       for (let i = 0; i < 10; i++) {
         const fig = parseFloat(fields[715 + i]);
@@ -272,52 +303,63 @@
       });
     });
 
+    log(`Successfully parsed ${out.length} horses from CSV.`);
     return out;
   }
 
-  /* ---------------- 2. Parse Equibase RSS XML ---------------- */
-  function parseEquibaseRss(xmlText) {
-    const parser = new DOMParser();
-    const xmlDoc = parser.parseFromString(xmlText, "text/xml");
-    const items = xmlDoc.querySelectorAll("item");
-    const extractedScratches = [];
+  function parseEquibaseRss(text) {
     scratchesSet.clear();
+    let count = 0;
 
-    items.forEach(item => {
-      const desc = item.querySelector("description") ? item.querySelector("description").textContent : "";
-      const lines = desc.split(/<br\s*\/?>|\n/i);
+    const regex = /Race\s+(\d+):\s*<b>#\s*(\d+)\s+([^<]+)<\/b>/gi;
+    let match;
+    while ((match = regex.exec(text)) !== null) {
+      const raceNum = parseInt(match[1], 10).toString();
+      const postNum = parseInt(match[2], 10).toString();
+      const horseName = match[3].trim().toLowerCase();
 
-      lines.forEach(line => {
-        if (/scratched|scratch/i.test(line)) {
-          const match = line.match(/Race\s+(\d+):\s*<b>#\s*(\d+)\s+([^<]+)</b>/i);
-          if (match) {
-            const raceNum = parseInt(match[1], 10).toString(); // Strip leading zero ("01" -> "1")
-            const postNum = parseInt(match[2], 10).toString();
-            const horseName = match[3].trim().toLowerCase();
+      scratchesSet.add(`${raceNum}_${postNum}`);
+      scratchesSet.add(`${raceNum}_${horseName}`);
+      count++;
+    }
 
-            extractedScratches.push({ race: raceNum, post: postNum, horse: match[3].trim() });
-            scratchesSet.add(`${raceNum}_${postNum}`);
-            scratchesSet.add(`${raceNum}_${horseName}`);
-          }
+    if (count === 0) {
+      const fallbackRegex = /Race\s+(\d+):\s*#?\s*(\d+)\s+([^\n<]+)/gi;
+      while ((match = fallbackRegex.exec(text)) !== null) {
+        if (/scratch/i.test(match[0])) {
+          const raceNum = parseInt(match[1], 10).toString();
+          const postNum = parseInt(match[2], 10).toString();
+          const horseName = match[3].trim().toLowerCase();
+          scratchesSet.add(`${raceNum}_${postNum}`);
+          scratchesSet.add(`${raceNum}_${horseName}`);
+          count++;
         }
-      });
-    });
+      }
+    }
 
-    return extractedScratches;
+    log(`Successfully extracted ${count} scratches from RSS.`);
+    return count;
   }
 
-  /* ---------------- Apply Scratches & Compute ---------------- */
   function computeCard() {
-    if (!cardEntries.length) return;
+    if (!cardEntries.length) {
+      log("Awaiting CSV file before computing...");
+      return;
+    }
 
-    // Apply Scratch Matching
+    let scratchMatchCount = 0;
     cardEntries.forEach(entry => {
       const keyPos = `${entry.race}_${entry.post}`;
       const keyName = `${entry.race}_${entry.horse.toLowerCase()}`;
       if (scratchesSet.has(keyPos) || scratchesSet.has(keyName)) {
         entry.scratched = true;
+        scratchMatchCount++;
+      } else {
+        entry.scratched = false;
       }
     });
+
+    log(`Matched ${scratchMatchCount} scratches in race card.`);
 
     const racesMap = {};
     cardEntries.forEach(r => {
@@ -356,7 +398,6 @@
         const flags = [];
         let criteriaScore = 0;
 
-        // Prime Power Gap >= 3.0 pts
         if (r.primePower > 0 && primePowers.length > 1 && r.primePower === primePowers[0]) {
           const gap = r.primePower - primePowers[1];
           if (gap >= 3.0) {
@@ -365,13 +406,11 @@
           }
         }
 
-        // Speed Figure Leader
         if (r.best2Of3Avg > 0 && r.best2Of3Avg === speedAvgs[0]) {
           flags.push(`Speed #1 (${r.best2Of3Avg.toFixed(0)})`);
           criteriaScore += 2;
         }
 
-        // Lone Speed Setup
         if (r.runStyle && r.runStyle.startsWith('E') && earlyRunners.length === 1) {
           flags.push('Lone Speed');
           criteriaScore += 2;
@@ -387,16 +426,12 @@
         };
       });
 
-      computedRaces.push({
-        raceNum: raceNum,
-        entries: processedEntries
-      });
+      computedRaces.push({ raceNum: raceNum, entries: processedEntries });
     });
 
     renderCardOutput();
   }
 
-  /* ---------------- Render Output Table ---------------- */
   function renderCardOutput() {
     const resultsSec = document.getElementById('resultsSection');
     resultsSec.style.display = 'block';
@@ -463,18 +498,19 @@
       `;
       container.appendChild(raceBox);
     });
+
+    log("Rendered full output table successfully.");
   }
 
-  /* ---------------- Event Handlers ---------------- */
   document.getElementById('drfInput').addEventListener('change', function(e) {
     const file = e.target.files[0];
     if (!file) return;
+    log(`Selected CSV file: ${file.name}`);
     const reader = new FileReader();
     reader.onload = function(evt) {
       cardEntries = parseBrisnetCSV(evt.target.result);
-      const statusEl = document.getElementById('drfStatus');
-      statusEl.className = 'status ok';
-      statusEl.textContent = `Loaded ${cardEntries.length} entries from CSV.`;
+      document.getElementById('drfStatus').className = 'status ok';
+      document.getElementById('drfStatus').textContent = `Loaded ${cardEntries.length} horses.`;
       computeCard();
     };
     reader.readAsText(file);
@@ -483,12 +519,12 @@
   document.getElementById('rssInput').addEventListener('change', function(e) {
     const file = e.target.files[0];
     if (!file) return;
+    log(`Selected RSS file: ${file.name}`);
     const reader = new FileReader();
     reader.onload = function(evt) {
-      const parsedScratches = parseEquibaseRss(evt.target.result);
-      const statusEl = document.getElementById('rssStatus');
-      statusEl.className = 'status ok';
-      statusEl.textContent = `Extracted ${parsedScratches.length} scratches from RSS.`;
+      const cnt = parseEquibaseRss(evt.target.result);
+      document.getElementById('rssStatus').className = 'status ok';
+      document.getElementById('rssStatus').textContent = `Loaded ${cnt} scratches.`;
       computeCard();
     };
     reader.readAsText(file);
