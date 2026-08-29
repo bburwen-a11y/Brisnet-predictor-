@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Brisnet Overlay Board — Strict Single-File Parser</title>
+    <title>Brisnet Overlay Board — With Visual Column Inspector</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -13,7 +13,7 @@
             padding: 20px;
         }
         .container {
-            max-width: 1000px;
+            max-width: 1100px;
             margin: 0 auto;
         }
         h1 {
@@ -46,7 +46,7 @@
             font-size: 14px;
             color: #334155;
         }
-        input[type="file"] {
+        input[type="file"], select {
             padding: 10px;
             border: 1px solid #cbd5e1;
             border-radius: 6px;
@@ -67,24 +67,62 @@
         }
         button:hover { background-color: #1d4ed8; }
         
-        .status-badge {
-            padding: 12px;
-            border-radius: 6px;
-            font-weight: bold;
-            margin-bottom: 20px;
+        /* DIAGNOSTIC INSPECTOR PANEL */
+        .inspector-panel {
+            background: #ffffff;
+            border: 2px solid #3b82f6;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 25px;
             display: none;
         }
-        .status-badge.error {
-            background-color: #fef2f2;
-            border: 1px solid #fca5a5;
-            color: #991b1b;
+        .inspector-header {
+            font-size: 16px;
+            font-weight: bold;
+            color: #1d4ed8;
+            margin-bottom: 12px;
         }
-        .status-badge.success {
-            background-color: #f0fdf4;
-            border: 1px solid #86efac;
-            color: #166534;
+        .mapping-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .mapping-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .mapping-item label {
+            font-size: 12px;
+            color: #475569;
+        }
+        .raw-table-wrapper {
+            max-height: 250px;
+            overflow: auto;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            margin-top: 10px;
+        }
+        .raw-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+            font-family: monospace;
+        }
+        .raw-table th, .raw-table td {
+            border: 1px solid #e2e8f0;
+            padding: 6px 8px;
+            white-space: nowrap;
+        }
+        .raw-table th {
+            background: #f1f5f9;
+            position: sticky;
+            top: 0;
+            z-index: 10;
         }
 
+        /* RACE CARDS */
         .race-card {
             background: #ffffff;
             border-radius: 8px;
@@ -175,7 +213,7 @@
             font-size: 14px;
         }
 
-        /* --- POPUP MODAL FOR PAST PERFORMANCES --- */
+        /* MODAL POPUP */
         .modal-overlay {
             display: none;
             position: fixed;
@@ -222,21 +260,18 @@
             padding: 8px 10px;
             text-align: left;
         }
-        .pp-table th {
-            background-color: #f1f5f9;
-            color: #334155;
-        }
+        .pp-table th { background-color: #f1f5f9; color: #334155; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <h1>🏇 Brisnet Overlay Board</h1>
-    <p class="subtitle">Upload Brisnet Single-File data (.DRF / .CSV) and RSS Scratch Feed</p>
+    <p class="subtitle">With Built-In Visual Column Inspector & Interactive Mapper</p>
 
     <div class="upload-section">
         <div class="upload-box">
-            <label for="csvFile">1. Select Brisnet Single-File (.drf / .csv)</label>
+            <label for="csvFile">1. Select Brisnet Single-File (.drf / .csv / .txt)</label>
             <input type="file" id="csvFile" accept=".csv,.txt,.drf">
         </div>
         
@@ -245,10 +280,49 @@
             <input type="file" id="rssFile" accept=".rss,.xml,.txt">
         </div>
 
-        <button onclick="processFiles()">Validate & Process Single-File Data</button>
+        <button onclick="inspectAndProcess()">Inspect File & Compute Board</button>
     </div>
 
-    <div id="statusBadge" class="status-badge"></div>
+    <!-- DIAGNOSTIC INSPECTOR PANEL -->
+    <div id="inspectorPanel" class="inspector-panel">
+        <div class="inspector-header">🔍 Data Field Mapping Inspector</div>
+        <p style="font-size: 13px; color: #475569; margin-top:0;">Verify or adjust how columns are mapped from your file:</p>
+
+        <div class="mapping-grid">
+            <div class="mapping-item">
+                <label>Horse Name Column:</label>
+                <select id="mapHorseName"></select>
+            </div>
+            <div class="mapping-item">
+                <label>Morning Line Column:</label>
+                <select id="mapMLOdds"></select>
+            </div>
+            <div class="mapping-item">
+                <label>Program Number Column:</label>
+                <select id="mapProgNum"></select>
+            </div>
+            <div class="mapping-item">
+                <label>Prime Power Column:</label>
+                <select id="mapPrimePower"></select>
+            </div>
+            <div class="mapping-item">
+                <label>Trainer Column:</label>
+                <select id="mapTrainer"></select>
+            </div>
+            <div class="mapping-item">
+                <label>Jockey Column:</label>
+                <select id="mapJockey"></select>
+            </div>
+        </div>
+
+        <button onclick="recalculateWithMappings()" style="margin-top:0; background-color:#16a34a;">Apply Column Mapping & Refresh Board</button>
+
+        <h4 style="margin:15px 0 5px 0; color:#334155; font-size:14px;">First Row Raw Data Inspection:</h4>
+        <div class="raw-table-wrapper">
+            <table class="raw-table" id="rawTable"></table>
+        </div>
+    </div>
+
     <div id="results"></div>
 </div>
 
@@ -262,45 +336,35 @@
 </div>
 
 <script>
+    let globalParsedRows = [];
+    let globalScratches = new Set();
     let globalRacesData = [];
 
-    async function processFiles() {
+    async function inspectAndProcess() {
         const csvFileInput = document.getElementById('csvFile');
         const rssFileInput = document.getElementById('rssFile');
-        const statusBadge = document.getElementById('statusBadge');
-        const resultsDiv = document.getElementById('results');
-
-        statusBadge.style.display = 'none';
-        resultsDiv.innerHTML = '';
 
         if (!csvFileInput.files[0] || !rssFileInput.files[0]) {
-            showStatus('Error: Please select both a Brisnet Single-File data file and an RSS scratch feed.', 'error');
+            alert('Please select both the Brisnet data file and the RSS scratch feed.');
             return;
         }
 
         const csvText = await csvFileInput.files[0].text();
         const rssText = await rssFileInput.files[0].text();
 
-        // 1. Validate File Format First
-        const validation = validateBrisnetSingleFile(csvText);
-        if (!validation.isValid) {
-            showStatus(`⛔ FILE REJECTED: ${validation.errorMessage}`, 'error');
+        globalScratches = parseRSSScratches(rssText);
+        globalParsedRows = parseCSVRows(csvText);
+
+        if (globalParsedRows.length === 0) {
+            alert('Could not parse any rows from the file.');
             return;
         }
 
-        showStatus(`✅ VALID BRISNET SINGLE-FILE CONFIRMED (${validation.parsedRows.length} runners parsed successfully across ${validation.trackCode} track data).`, 'success');
+        // Show Inspector Panel
+        setupInspectorPanel(globalParsedRows);
 
-        // 2. Parse Scratches & Build Card
-        const scratches = parseRSSScratches(rssText);
-        globalRacesData = processSingleFileData(validation.parsedRows, scratches);
-        renderBoard(globalRacesData);
-    }
-
-    function showStatus(message, type) {
-        const badge = document.getElementById('statusBadge');
-        badge.className = `status-badge ${type}`;
-        badge.innerHTML = message;
-        badge.style.display = 'block';
+        // Compute initial board
+        recalculateWithMappings();
     }
 
     function parseCSVLine(line) {
@@ -323,100 +387,90 @@
         return result;
     }
 
-    // --- STRICT BRISNET SINGLE-FILE VALIDATOR ENGINE ---
-    function validateBrisnetSingleFile(csvText) {
+    function parseCSVRows(csvText) {
         const lines = csvText.split(/\r?\n/).filter(l => l.trim().length > 0);
-        if (lines.length === 0) {
-            return { isValid: false, errorMessage: "Uploaded file is completely empty." };
-        }
-
-        const parsedRows = [];
-        let detectedTrack = '';
-
-        for (let i = 0; i < lines.length; i++) {
-            const cols = parseCSVLine(lines[i]);
-
-            // Requirement 1: Field count check (Brisnet Single File has 100+ data columns)
-            if (cols.length < 90) {
-                return { 
-                    isValid: false, 
-                    errorMessage: `Invalid format. Line ${i + 1} contains only ${cols.length} fields. Standard Brisnet Single-File (.DRF) requires 100+ columns per row.` 
-                };
-            }
-
-            // Requirement 2: Track Code check (Col 0 must be 2-4 uppercase letters)
-            const track = cols[0] ? cols[0].trim().toUpperCase() : '';
-            if (!/^[A-Z]{2,4}$/.test(track)) {
-                return { 
-                    isValid: false, 
-                    errorMessage: `Invalid Track Code '${cols[0]}' on line ${i + 1}. Expected standard 2-4 letter track abbreviation (e.g., SAR, GP, CD).` 
-                };
-            }
-            detectedTrack = track;
-
-            // Requirement 3: Date check (Col 1 must be 8 digits: YYYYMMDD)
-            const dateStr = cols[1] ? cols[1].trim() : '';
-            if (!/^\d{8}$/.test(dateStr)) {
-                return { 
-                    isValid: false, 
-                    errorMessage: `Invalid Date format '${cols[1]}' on line ${i + 1}. Expected 8-digit date string (YYYYMMDD).` 
-                };
-            }
-
-            parsedRows.push(cols);
-        }
-
-        return { isValid: true, parsedRows, trackCode: detectedTrack };
+        return lines.map(line => parseCSVLine(line));
     }
 
-    function parseRSSScratches(rssString) {
-        const scratches = new Set();
-        const lines = rssString.split(/<br\s*\/?>|\n/);
-        for (let line of lines) {
-            const match = line.match(/Race\s*(\d+):.*?#\s*(\d+[A-Z]?).*?Scratched/i) || 
-                          line.match(/R(\d+)\s*#(\d+[A-Z]?)\s*SCR/i);
-            if (match) {
-                const raceNum = parseInt(match[1], 10);
-                const progNum = match[2].trim().replace('#', '');
-                scratches.add(`${raceNum}-${progNum}`);
-            }
-        }
-        return scratches;
+    function setupInspectorPanel(rows) {
+        const firstRow = rows[0];
+        const inspectorPanel = document.getElementById('inspectorPanel');
+        const rawTable = document.getElementById('rawTable');
+
+        // Build Dropdown Options
+        const dropdownIds = ['mapHorseName', 'mapMLOdds', 'mapProgNum', 'mapPrimePower', 'mapTrainer', 'mapJockey'];
+        
+        dropdownIds.forEach(id => {
+            const sel = document.getElementById(id);
+            sel.innerHTML = '';
+            firstRow.forEach((val, idx) => {
+                const opt = document.createElement('option');
+                opt.value = idx;
+                opt.textContent = `Col ${idx}: "${val.substring(0, 20)}"`;
+                sel.appendChild(opt);
+            });
+        });
+
+        // Set Auto-Guessed Default Indices
+        document.getElementById('mapProgNum').value    = autoFindCol(firstRow, [4, 3, 2], /^\d+[A-Z]?$/i) || 4;
+        document.getElementById('mapHorseName').value  = autoFindCol(firstRow, [12, 10, 11, 13], /[A-Z]{3,}/i) || 12;
+        document.getElementById('mapTrainer').value    = autoFindCol(firstRow, [18, 17, 19, 21], /[A-Za-z]/) || 18;
+        document.getElementById('mapJockey').value     = autoFindCol(firstRow, [19, 18, 20, 22], /[A-Za-z]/) || 19;
+        document.getElementById('mapMLOdds').value     = autoFindCol(firstRow, [21, 23, 24, 25], /^\d+\/\d+$|^\d+(\.\d+)?$/) || 21;
+        document.getElementById('mapPrimePower').value = autoFindCol(firstRow, [115, 116, 114, 100], /^\d{3}\.\d$/) || 115;
+
+        // Populate Raw Inspection Table
+        let thHTML = '<tr>';
+        let tdHTML = '<tr>';
+        firstRow.forEach((val, idx) => {
+            thHTML += `<th>Col ${idx}</th>`;
+            tdHTML += `<td>${val}</td>`;
+        });
+        thHTML += '</tr>';
+        tdHTML += '</tr>';
+
+        rawTable.innerHTML = `<thead>${thHTML}</thead><tbody>${tdHTML}</tbody>`;
+        inspectorPanel.style.display = 'block';
     }
 
-    // --- EXACT MAPPER FOR VALIDATED SINGLE-FILE DATA ---
-    function processSingleFileData(rows, scratches) {
+    function autoFindCol(row, candidates, regex) {
+        for (let idx of candidates) {
+            if (row[idx] && regex.test(row[idx])) return idx;
+        }
+        return candidates[0];
+    }
+
+    function recalculateWithMappings() {
+        const mapProgNum    = parseInt(document.getElementById('mapProgNum').value, 10);
+        const mapHorseName  = parseInt(document.getElementById('mapHorseName').value, 10);
+        const mapMLOdds     = parseInt(document.getElementById('mapMLOdds').value, 10);
+        const mapPrimePower = parseInt(document.getElementById('mapPrimePower').value, 10);
+        const mapTrainer    = parseInt(document.getElementById('mapTrainer').value, 10);
+        const mapJockey     = parseInt(document.getElementById('mapJockey').value, 10);
+
         const racesMap = {};
 
-        for (let cols of rows) {
-            const trackCode = cols[0].trim();
-            const raceNum   = parseInt(cols[2], 10) || 1;
-            const progNum   = cols[4] ? cols[4].trim() : (cols[3] || '1');
-            const horseName = cols[12] ? cols[12].trim() : 'Unknown Runner';
-            const trainer   = cols[18] ? cols[18].trim() : '';
-            const jockey    = cols[19] ? cols[19].trim() : '';
-            const mlOdds    = cols[21] ? cols[21].trim() : 'N/A';
+        for (let cols of globalParsedRows) {
+            if (cols.length < 10) continue;
 
-            // Prime Power (Col 115 in standard 0-indexed single file)
+            const trackCode = cols[0] ? cols[0].trim() : 'SAR';
+            const raceNum   = parseInt(cols[2], 10) || 1;
+            const progNum   = cols[mapProgNum] ? cols[mapProgNum].trim() : '1';
+            const horseName = cols[mapHorseName] ? cols[mapHorseName].trim() : 'Unknown Runner';
+            const mlOdds    = cols[mapMLOdds] ? cols[mapMLOdds].trim() : 'N/A';
+            const trainer   = cols[mapTrainer] ? cols[mapTrainer].trim() : '';
+            const jockey    = cols[mapJockey] ? cols[mapJockey].trim() : '';
+
             let primePower = 'N/A';
-            if (cols[115] && !isNaN(parseFloat(cols[115]))) {
-                primePower = parseFloat(cols[115]).toFixed(1);
-            } else {
-                // Scanning backup range if slight shift
-                for (let c = 105; c <= 125 && c < cols.length; c++) {
-                    const val = parseFloat(cols[c]);
-                    if (!isNaN(val) && val >= 100 && val <= 170) {
-                        primePower = val.toFixed(1);
-                        break;
-                    }
-                }
+            if (cols[mapPrimePower] && !isNaN(parseFloat(cols[mapPrimePower]))) {
+                primePower = parseFloat(cols[mapPrimePower]).toFixed(1);
             }
 
-            // Extract Speed Figures
+            // Extract Speed Figs across trailing fields
             const speedFigs = [];
-            for (let c = 250; c < 265 && c < cols.length; c++) {
+            for (let c = 200; c < cols.length; c++) {
                 const fig = parseInt(cols[c], 10);
-                if (!isNaN(fig) && fig >= 30 && fig <= 140) {
+                if (!isNaN(fig) && fig >= 40 && fig <= 140) {
                     speedFigs.push(fig);
                 }
             }
@@ -438,7 +492,7 @@
                 });
             }
 
-            const isScratched = scratches.has(`${raceNum}-${progNum}`);
+            const isScratched = globalScratches.has(`${raceNum}-${progNum}`);
 
             const runner = {
                 progNum,
@@ -465,7 +519,23 @@
             }
         }
 
-        return Object.values(racesMap);
+        globalRacesData = Object.values(racesMap);
+        renderBoard(globalRacesData);
+    }
+
+    function parseRSSScratches(rssString) {
+        const scratches = new Set();
+        const lines = rssString.split(/<br\s*\/?>|\n/);
+        for (let line of lines) {
+            const match = line.match(/Race\s*(\d+):.*?#\s*(\d+[A-Z]?).*?Scratched/i) || 
+                          line.match(/R(\d+)\s*#(\d+[A-Z]?)\s*SCR/i);
+            if (match) {
+                const raceNum = parseInt(match[1], 10);
+                const progNum = match[2].trim().replace('#', '');
+                scratches.add(`${raceNum}-${progNum}`);
+            }
+        }
+        return scratches;
     }
 
     function renderBoard(races) {
