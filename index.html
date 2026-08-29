@@ -1,475 +1,338 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Overlay Board — Race Value Finder</title>
-  <style>
-    :root {
-      --bg: #0f172a;
-      --card-bg: #1e293b;
-      --border: #334155;
-      --accent: #3b82f6;
-      --accent-hover: #2563eb;
-      --overlay-green: #10b981;
-      --overlay-red: #ef4444;
-      --scratch-bg: #451a1a;
-      --scratch-text: #fca5a5;
-      --text: #f8fafc;
-      --text-muted: #94a3b8;
-    }
-
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
-    body { background: var(--bg); color: var(--text); padding: 20px; font-size: 13px; }
-    .container { max-width: 1400px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
-
-    h1 { font-size: 1.5rem; color: #fff; margin-bottom: 2px; }
-    p.subtitle { color: var(--text-muted); font-size: 0.85rem; }
-
-    .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; padding: 14px; }
-    .card-title { font-weight: 600; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
-
-    .import-tools { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
-    @media(max-width: 1024px) { .import-tools { grid-template-columns: 1fr; } }
-
-    textarea { width: 100%; height: 80px; background: #0f172a; border: 1px solid var(--border); color: #fff; border-radius: 4px; padding: 6px; font-family: monospace; font-size: 0.75rem; resize: vertical; }
-    
-    .mapping-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 6px; margin-top: 8px; }
-    .mapping-grid label { font-size: 0.7rem; color: var(--text-muted); display: block; margin-bottom: 2px; }
-    .mapping-grid select { width: 100%; background: #0f172a; border: 1px solid var(--border); color: #fff; padding: 3px; border-radius: 4px; font-size: 0.75rem; }
-
-    button { background: var(--accent); color: white; border: none; padding: 6px 10px; border-radius: 4px; font-weight: 600; cursor: pointer; font-size: 0.8rem; transition: background 0.2s; }
-    button:hover { background: var(--accent-hover); }
-    button.secondary { background: transparent; border: 1px solid var(--border); color: var(--text); }
-    button.secondary:hover { background: var(--border); }
-    button.danger { background: #dc2626; }
-    button.danger:hover { background: #b91c1c; }
-
-    .status { margin-top: 6px; font-size: 0.75rem; font-weight: 600; }
-    .status.err { color: #f87171; }
-    .status.ok { color: #34d399; }
-
-    .table-container { overflow-x: auto; margin-top: 8px; }
-    table { width: 100%; border-collapse: collapse; font-size: 0.8rem; white-space: nowrap; }
-    th, td { padding: 6px 8px; text-align: left; border-bottom: 1px solid var(--border); }
-    th { color: var(--text-muted); font-weight: 600; font-size: 0.7rem; text-transform: uppercase; background: #131d31; }
-    
-    input[type="text"], input[type="number"] { background: #0f172a; border: 1px solid var(--border); color: #fff; padding: 3px 5px; border-radius: 4px; width: 100%; font-size: 0.8rem; }
-    
-    tr.scratched { background-color: var(--scratch-bg) !important; color: var(--scratch-text); opacity: 0.65; }
-    tr.scratched input { text-decoration: line-through; color: var(--scratch-text); }
-
-    .overlay-tag { font-weight: 700; padding: 2px 6px; border-radius: 4px; display: inline-block; font-size: 0.75rem; }
-    .overlay-positive { background: rgba(16, 185, 129, 0.2); color: var(--overlay-green); }
-    .overlay-negative { background: rgba(239, 68, 68, 0.2); color: var(--overlay-red); }
-    .status-scratch-tag { background: #991b1b; color: #fecaca; font-weight: bold; padding: 2px 4px; border-radius: 3px; font-size: 0.7rem; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Equibase Overlay Board & Race Analyzer</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f4f6f8;
+            color: #1a1a1a;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            color: #0f172a;
+            margin-bottom: 5px;
+        }
+        p.subtitle {
+            text-align: center;
+            color: #64748b;
+            margin-bottom: 25px;
+        }
+        .upload-section {
+            display: flex;
+            gap: 20px;
+            background: #ffffff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            margin-bottom: 25px;
+        }
+        .upload-box {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        label {
+            font-weight: bold;
+            font-size: 14px;
+            color: #334155;
+        }
+        input[type="file"] {
+            padding: 8px;
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+            background: #f8fafc;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        button:hover {
+            background-color: #1d4ed8;
+        }
+        .race-card {
+            background: #ffffff;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .race-header {
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #0f172a;
+        }
+        .columns {
+            display: flex;
+            gap: 20px;
+        }
+        .column {
+            flex: 1;
+            background: #f8fafc;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #e2e8f0;
+        }
+        .column-title {
+            font-weight: bold;
+            font-size: 16px;
+            margin-bottom: 12px;
+            padding-bottom: 6px;
+            border-bottom: 2px solid;
+        }
+        .contenders .column-title { color: #15803d; border-color: #22c55e; }
+        .pretenders .column-title { color: #b91c1c; border-color: #ef4444; }
+        .horse-row {
+            background: #ffffff;
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #cbd5e1;
+            margin-bottom: 8px;
+        }
+        .horse-name {
+            font-weight: bold;
+            color: #0f172a;
+        }
+        .horse-meta {
+            font-size: 13px;
+            color: #64748b;
+            margin-top: 4px;
+        }
+        .scratches-row {
+            margin-top: 15px;
+            padding: 10px;
+            background: #fef2f2;
+            border: 1px solid #fca5a5;
+            border-radius: 6px;
+            color: #991b1b;
+            font-size: 14px;
+        }
+    </style>
 </head>
 <body>
 
 <div class="container">
-  <div>
-    <h1>Overlay Board — Race Value Finder</h1>
-    <p class="subtitle">Handicapping card with Equibase RSS scratch parsing, performance metrics, and live odds overlay calculation.</p>
-  </div>
+    <h1>🏇 Equibase Overlay Board</h1>
+    <p class="subtitle">Upload your Past Performances HTML and Equibase Changes XML feed to compute overlays.</p>
 
-  <!-- Data Import Section -->
-  <div class="card">
-    <div class="card-title">Data &amp; Scratch Feeds</div>
-    <div class="import-tools">
-      <!-- CSV Upload -->
-      <div>
-        <label style="font-size: 0.75rem; color: var(--text-muted); font-weight:600; display: block; margin-bottom: 4px;">1. Load Race Card / Past CSV Data</label>
-        <input type="file" id="csvFileInput" accept=".csv, .txt" style="font-size: 0.75rem; color: var(--text-muted); width: 100%;">
-        <div id="mappingArea" style="display:none;">
-          <div class="mapping-grid">
-            <div><label>Race #</label><select id="mapRace"></select></div>
-            <div><label>PP</label><select id="mapPost"></select></div>
-            <div><label>Horse Name</label><select id="mapHorse"></select></div>
-            <div><label>Fair / ML</label><select id="mapOdds"></select></div>
-            <div><label>Live Odds</label><select id="mapFinalOdds"></select></div>
-            <div><label>Speed</label><select id="mapSpeed"></select></div>
-            <div><label>Class</label><select id="mapClass"></select></div>
-            <div><label>Pace</label><select id="mapPace"></select></div>
-            <div><label>PP Notes</label><select id="mapPP"></select></div>
-          </div>
-          <button id="importCsvBtn" style="margin-top: 8px;">Import Mapped CSV</button>
+    <div class="upload-section">
+        <div class="upload-box">
+            <label for="ppFile">1. Select Past Performance HTML (.html)</label>
+            <input type="file" id="ppFile" accept=".html,.htm">
         </div>
-      </div>
-
-      <!-- Equibase Scratches RSS -->
-      <div>
-        <label style="font-size: 0.75rem; color: var(--text-muted); font-weight:600; display: block; margin-bottom: 4px;">2. Apply Equibase RSS Scratches</label>
-        <textarea id="rssXmlInput" placeholder="Paste Equibase Changes/Scratches RSS XML here..."></textarea>
-        <button id="parseRssBtn" style="margin-top: 4px;">Apply RSS Scratches</button>
-      </div>
-
-      <!-- Raw Entries Text Paste -->
-      <div>
-        <label style="font-size: 0.75rem; color: var(--text-muted); font-weight:600; display: block; margin-bottom: 4px;">3. Paste Raw Entries / Text</label>
-        <textarea id="rawPasteInput" placeholder="Format: [Race] [PP] [Horse Name] [ML Odds]&#10;Example: 1 3 Horse Name 5-2"></textarea>
-        <button id="parseTextBtn" style="margin-top: 4px;">Parse &amp; Append Text</button>
-      </div>
+        <div class="upload-box">
+            <label for="xmlFile">2. Select Equibase Changes Feed (.xml)</label>
+            <input type="file" id="xmlFile" accept=".xml">
+        </div>
     </div>
-    <div id="statusMsg" class="status"></div>
-  </div>
+    <button onclick="processFiles()">Compute Overlay Board</button>
 
-  <!-- Main Race Card Table -->
-  <div class="card">
-    <div class="card-title">
-      <span>Race Card Ratings &amp; Overlay Board</span>
-      <div>
-        <button id="addRowBtn" class="secondary">+ Add Horse</button>
-        <button id="clearAllBtn" class="danger">Clear Card</button>
-      </div>
-    </div>
-
-    <div class="table-container">
-      <table id="runnerTable">
-        <thead>
-          <tr>
-            <th style="width: 50px;">Race</th>
-            <th style="width: 45px;">PP</th>
-            <th style="width: 180px;">Horse Name</th>
-            <th style="width: 75px;">ML / Fair</th>
-            <th style="width: 75px;">Live Odds</th>
-            <th style="width: 55px;">Speed</th>
-            <th style="width: 55px;">Class</th>
-            <th style="width: 55px;">Pace</th>
-            <th style="width: 160px;">PP Notes / Last Out</th>
-            <th style="width: 70px;">Fair Prob</th>
-            <th style="width: 70px;">Live Prob</th>
-            <th style="width: 85px;">Overlay Edge</th>
-            <th style="width: 75px;">Status</th>
-            <th style="width: 35px;"></th>
-          </tr>
-        </thead>
-        <tbody id="runnerBody"></tbody>
-      </table>
-    </div>
-  </div>
+    <div id="results" style="margin-top: 25px;"></div>
 </div>
 
 <script>
-  let rows = [];
-  let lastCsvData = null;
-  let headers = [];
+    async function processFiles() {
+        const ppFileInput = document.getElementById('ppFile');
+        const xmlFileInput = document.getElementById('xmlFile');
+        const resultsDiv = document.getElementById('results');
 
-  const mapSelects = {
-    race: document.getElementById('mapRace'),
-    post: document.getElementById('mapPost'),
-    horse: document.getElementById('mapHorse'),
-    odds: document.getElementById('mapOdds'),
-    finalOdds: document.getElementById('mapFinalOdds'),
-    speed: document.getElementById('mapSpeed'),
-    class: document.getElementById('mapClass'),
-    pace: document.getElementById('mapPace'),
-    pp: document.getElementById('mapPP')
-  };
-
-  const csvFileInput = document.getElementById('csvFileInput');
-  const mappingArea = document.getElementById('mappingArea');
-  const statusMsg = document.getElementById('statusMsg');
-  const runnerBody = document.getElementById('runnerBody');
-
-  function parseOddsToDecimal(val) {
-    if (!val) return null;
-    let s = val.toString().trim().replace('$', '').replace(':1', '');
-    if (s.includes('/')) {
-      const parts = s.split('/');
-      const num = parseFloat(parts[0]), den = parseFloat(parts[1]);
-      if (!isNaN(num) && !isNaN(den) && den !== 0) return num / den;
-    }
-    if (s.includes('-')) {
-      const parts = s.split('-');
-      const num = parseFloat(parts[0]), den = parseFloat(parts[1]);
-      if (!isNaN(num) && !isNaN(den) && den !== 0) return num / den;
-    }
-    const parsed = parseFloat(s);
-    return isNaN(parsed) ? null : parsed;
-  }
-
-  function parseCSVLine(line) {
-    const result = [];
-    let cur = '', inQuotes = false;
-    for (let i = 0; i < line.length; i++) {
-      const c = line[i];
-      if (c === '"') { inQuotes = !inQuotes; }
-      else if (c === ',' && !inQuotes) { result.push(cur.trim()); cur = ''; }
-      else { cur += c; }
-    }
-    result.push(cur.trim());
-    return result;
-  }
-
-  function parseCSV(text) {
-    const lines = text.split(/\r?\n/).filter(l => l.trim().length > 0);
-    if (lines.length < 2) return null;
-    const rawHeaders = parseCSVLine(lines[0]);
-    const data = [];
-    for (let i = 1; i < lines.length; i++) {
-      const vals = parseCSVLine(lines[i]);
-      const obj = {};
-      rawHeaders.forEach((h, idx) => { obj[h] = vals[idx] || ''; });
-      data.push(obj);
-    }
-    return { headers: rawHeaders, data };
-  }
-
-  function newRow(data = {}) {
-    return {
-      id: Date.now() + Math.random(),
-      race: data.race || '1',
-      post: data.post || '',
-      horse: data.horse || '',
-      odds: data.odds || '',
-      finalOdds: data.finalOdds || '',
-      speed: data.speed || '',
-      classRating: data.classRating || '',
-      pace: data.pace || '',
-      ppNotes: data.ppNotes || '',
-      scratched: data.scratched || false
-    };
-  }
-
-  function renderTable() {
-    runnerBody.innerHTML = '';
-    if (rows.length === 0) {
-      runnerBody.innerHTML = `<tr><td colspan="14" style="text-align:center; color: var(--text-muted); padding: 20px;">No runners loaded. Import a CSV file, paste text entries, or click "+ Add Horse".</td></tr>`;
-      return;
-    }
-
-    rows.forEach(r => {
-      const tr = document.createElement('tr');
-      if (r.scratched) tr.classList.add('scratched');
-
-      const mlDec = parseOddsToDecimal(r.odds);
-      const liveDec = parseOddsToDecimal(r.finalOdds);
-
-      let fairProb = null, liveProb = null, edge = null;
-
-      if (!r.scratched) {
-        fairProb = mlDec !== null ? (1 / (mlDec + 1)) * 100 : null;
-        liveProb = liveDec !== null ? (1 / (liveDec + 1)) * 100 : null;
-        if (mlDec !== null && liveDec !== null && mlDec > 0) {
-          edge = ((liveDec - mlDec) / mlDec) * 100;
+        if (!ppFileInput.files[0] || !xmlFileInput.files[0]) {
+            alert('Please select both the HTML and XML files before processing.');
+            return;
         }
-      }
 
-      tr.innerHTML = `
-        <td><input type="text" value="${r.race}" data-id="${r.id}" data-field="race"></td>
-        <td><input type="text" value="${r.post}" data-id="${r.id}" data-field="post"></td>
-        <td><input type="text" value="${r.horse}" data-id="${r.id}" data-field="horse"></td>
-        <td><input type="text" value="${r.odds}" placeholder="5-2" data-id="${r.id}" data-field="odds"></td>
-        <td><input type="text" value="${r.finalOdds}" placeholder="7-2" data-id="${r.id}" data-field="finalOdds"></td>
-        <td><input type="text" value="${r.speed}" data-id="${r.id}" data-field="speed"></td>
-        <td><input type="text" value="${r.classRating}" data-id="${r.id}" data-field="classRating"></td>
-        <td><input type="text" value="${r.pace}" data-id="${r.id}" data-field="pace"></td>
-        <td><input type="text" value="${r.ppNotes}" placeholder="Form / Notes" data-id="${r.id}" data-field="ppNotes"></td>
-        <td>${fairProb !== null ? fairProb.toFixed(1) + '%' : '-'}</td>
-        <td>${liveProb !== null ? liveProb.toFixed(1) + '%' : '-'}</td>
-        <td>
-          ${edge !== null 
-            ? `<span class="overlay-tag ${edge >= 0 ? 'overlay-positive' : 'overlay-negative'}">${edge >= 0 ? '+' : ''}${edge.toFixed(1)}%</span>` 
-            : '-'}
-        </td>
-        <td>${r.scratched ? '<span class="status-scratch-tag">SCRATCH</span>' : '<span style="color:#10b981; font-weight:600;">ACTIVE</span>'}</td>
-        <td><button class="danger" style="padding: 1px 5px; font-size: 0.75rem;" onclick="removeRow(${r.id})">&times;</button></td>
-      `;
-      runnerBody.appendChild(tr);
-    });
+        resultsDiv.innerHTML = '<p style="text-align:center;">Processing race data...</p>';
 
-    runnerBody.querySelectorAll('input').forEach(inp => {
-      inp.addEventListener('input', (e) => {
-        const id = parseFloat(e.target.getAttribute('data-id'));
-        const field = e.target.getAttribute('data-field');
-        const targetRow = rows.find(x => x.id === id);
-        if (targetRow) {
-          targetRow[field] = e.target.value;
-          renderTable();
-        }
-      });
-    });
-  }
+        const ppText = await ppFileInput.files[0].text();
+        const xmlText = await xmlFileInput.files[0].text();
 
-  window.removeRow = function(id) {
-    rows = rows.filter(r => r.id !== id);
-    renderTable();
-  };
+        // 1. Parse XML Feed for Scratches and Track Conditions
+        const { scratches, trackConds, rails } = parseXMLFeed(xmlText);
 
-  csvFileInput.addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+        // 2. Parse HTML Past Performances
+        const raceCards = parsePPHTML(ppText, scratches);
 
-    const reader = new FileReader();
-    reader.onload = (evt) => {
-      const parsed = parseCSV(evt.target.result);
-      if (!parsed || parsed.headers.length === 0) {
-        statusMsg.textContent = 'Error parsing CSV file.';
-        statusMsg.className = 'status err';
-        return;
-      }
-
-      headers = parsed.headers;
-      lastCsvData = parsed.data;
-
-      Object.keys(mapSelects).forEach(key => {
-        const sel = mapSelects[key];
-        sel.innerHTML = '<option value="">-- None --</option>';
-        headers.forEach(h => {
-          const opt = document.createElement('option');
-          opt.value = h;
-          opt.textContent = h;
-          sel.appendChild(opt);
-        });
-      });
-
-      headers.forEach(h => {
-        const l = h.toLowerCase();
-        if (l.includes('race')) mapSelects.race.value = h;
-        if (l.includes('post') || l.includes('pp') || l === 'num' || l === 'program') mapSelects.post.value = h;
-        if (l.includes('horse') || l.includes('name') || l.includes('runner')) mapSelects.horse.value = h;
-        if (l.includes('ml') || l.includes('morning') || l.includes('fair') || l.includes('line')) mapSelects.odds.value = h;
-        if (l.includes('live') || l.includes('final') || l.includes('current')) mapSelects.finalOdds.value = h;
-        if (l.includes('speed') || l.includes('spd') || l.includes('beyer')) mapSelects.speed.value = h;
-        if (l.includes('class') || l.includes('cls')) mapSelects.class.value = h;
-        if (l.includes('pace') || l.includes('pac')) mapSelects.pace.value = h;
-        if (l.includes('note') || l.includes('pp') || l.includes('form') || l.includes('past')) mapSelects.pp.value = h;
-      });
-
-      mappingArea.style.display = 'block';
-      statusMsg.textContent = `Loaded CSV with ${lastCsvData.length} records. Confirm column mapping and click Import.`;
-      statusMsg.className = 'status ok';
-    };
-    reader.readAsText(file);
-  });
-
-  document.getElementById('importCsvBtn').addEventListener('click', () => {
-    if (!lastCsvData) return;
-    const m = Object.fromEntries(Object.entries(mapSelects).map(([k, s]) => [k, s.value]));
-    if (!m.horse) {
-      statusMsg.textContent = 'Horse name mapping column is required.';
-      statusMsg.className = 'status err';
-      return;
+        // 3. Render Output
+        renderBoard(raceCards, trackConds, rails);
     }
 
-    let added = 0;
-    lastCsvData.forEach(r => {
-      const horse = (r[m.horse] || '').trim();
-      if (!horse) return;
-      rows.push(newRow({
-        race: m.race ? (r[m.race] || '').trim() : '1',
-        post: m.post ? (r[m.post] || '').trim() : '',
-        horse,
-        odds: m.odds ? (r[m.odds] || '').trim() : '',
-        finalOdds: m.finalOdds ? (r[m.finalOdds] || '').trim() : '',
-        speed: m.speed ? (r[m.speed] || '').trim() : '',
-        classRating: m.class ? (r[m.class] || '').trim() : '',
-        pace: m.pace ? (r[m.pace] || '').trim() : '',
-        ppNotes: m.pp ? (r[m.pp] || '').trim() : ''
-      }));
-      added++;
-    });
+    function parseXMLFeed(xmlString) {
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(xmlString, "text/xml");
+        const items = xmlDoc.getElementsByTagName("item");
 
-    statusMsg.textContent = `Successfully imported ${added} entries.`;
-    statusMsg.className = 'status ok';
-    renderTable();
-  });
+        const scratches = new Set();
+        const trackConds = {};
+        const rails = {};
 
-  document.getElementById('parseRssBtn').addEventListener('click', () => {
-    const xmlText = document.getElementById('rssXmlInput').value;
-    if (!xmlText.trim()) {
-      statusMsg.textContent = 'Please paste Equibase RSS XML content.';
-      statusMsg.className = 'status err';
-      return;
-    }
+        for (let item of items) {
+            const desc = item.getElementsByTagName("description")[0]?.textContent || "";
+            const lines = desc.split(/<br\s*\/?>|\n/);
 
-    try {
-      const parser = new DOMParser();
-      const xmlDoc = parser.parseFromString(xmlText, "text/xml");
-      const items = xmlDoc.getElementsByTagName("item");
+            for (let line of lines) {
+                // Scratches
+                const scrMatch = line.match(/Race\s*(\d+):.*?#\s*(\d+[A-Z]?).*?Scratched/i);
+                if (scrMatch) {
+                    scratches.add(`${parseInt(scrMatch[1])}-${scrMatch[2].trim()}`);
+                }
 
-      let totalScratchesFound = 0;
+                // Track Conditions
+                const condMatch = line.match(/Race\s*(\d+):\s*Current\s*(Dirt|Turf)\s*Track Condition\s*-\s*changed to\s*(.*)/i);
+                if (condMatch) {
+                    trackConds[parseInt(condMatch[1])] = `${condMatch[2]}: ${condMatch[3].trim()}`;
+                }
 
-      for (let i = 0; i < items.length; i++) {
-        const desc = items[i].getElementsByTagName("description")[0]?.textContent || "";
-        const regex = /Race\s+(\d+):.*?#\s*(\d+)\s+([^<]+?)\s*Scratched/gi;
-        let match;
-
-        while ((match = regex.exec(desc)) !== null) {
-          const raceNum = parseInt(match[1], 10).toString();
-          const postNum = parseInt(match[2], 10).toString();
-          const horseName = match[3].trim().toLowerCase();
-
-          rows.forEach(r => {
-            const rowRace = parseInt(r.race, 10).toString();
-            const rowPost = parseInt(r.post, 10).toString();
-            const rowHorse = r.horse.trim().toLowerCase();
-
-            if (rowRace === raceNum && (rowPost === postNum || rowHorse.includes(horseName) || horseName.includes(rowHorse))) {
-              r.scratched = true;
-              totalScratchesFound++;
+                // Rails
+                const railMatch = line.match(/Race\s*(\d+):\s*(.*Rail.*)/i);
+                if (railMatch) {
+                    rails[parseInt(railMatch[1])] = railMatch[2].trim();
+                }
             }
-          });
         }
-      }
-
-      statusMsg.textContent = `Applied scratches! ${totalScratchesFound} matching runner(s) set to SCRATCHED.`;
-      statusMsg.className = 'status ok';
-      renderTable();
-    } catch (e) {
-      statusMsg.textContent = 'Error reading XML. Ensure full XML string is pasted.';
-      statusMsg.className = 'status err';
+        return { scratches, trackConds, rails };
     }
-  });
 
-  document.getElementById('parseTextBtn').addEventListener('click', () => {
-    const raw = document.getElementById('rawPasteInput').value;
-    if (!raw.trim()) return;
+    function parsePPHTML(htmlString, scratches) {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(htmlString, "text/html");
 
-    const lines = raw.split(/\r?\n/);
-    let count = 0;
+        // Locate race containers (or fallback to full document)
+        let raceBlocks = doc.querySelectorAll("[class*='race'], [class*='card'], [class*='header']");
+        if (raceBlocks.length === 0) raceBlocks = [doc.body];
 
-    lines.forEach(line => {
-      const l = line.trim();
-      if (!l) return;
+        const races = [];
 
-      const match = l.match(/^(?:(\d+)\s+)?(?:(\d+)\s+)?([A-Za-z0-9'\s\.\-]+?)\s+(\d+(?:[\/\-]\d+|\.\d+)?)$/);
-      if (match) {
-        rows.push(newRow({
-          race: match[1] || '1',
-          post: match[2] || '',
-          horse: match[3].trim(),
-          odds: match[4] || ''
-        }));
-        count++;
-      }
-    });
+        raceBlocks.forEach((block, idx) => {
+            const raceNum = idx + 1;
+            const contenders = [];
+            const pretenders = [];
+            const scratchedHorses = [];
 
-    if (count > 0) {
-      statusMsg.textContent = `Parsed ${count} entries.`;
-      statusMsg.className = 'status ok';
-      renderTable();
-    } else {
-      statusMsg.textContent = 'Could not parse text line. Format: [Race] [PP] [Horse Name] [ML Odds]';
-      statusMsg.className = 'status err';
+            // Grab all runner rows/entries inside this block
+            const horseRows = block.querySelectorAll("tr, div[class*='runner'], div[class*='horse'], div[class*='entry']");
+
+            horseRows.forEach(row => {
+                const text = row.textContent.replace(/\s+/g, ' ').trim();
+                if (text.length < 15) return;
+
+                // Extract Program Number
+                const progMatch = text.match(/\b(#?\d{1,2}[A-Z]?)\b/);
+                const progNum = progMatch ? progMatch[1].replace('#', '') : '?';
+
+                // Check scratch status
+                const isScratched = scratches.has(`${raceNum}-${progNum}`) || text.toLowerCase().includes("scratched");
+
+                // Extract Speed Figures
+                const numbers = text.match(/\b\d{2,3}\b/g) || [];
+                const speedFigs = numbers.map(Number).filter(n => n >= 45 && n <= 135);
+                const avgRating = speedFigs.length > 0 
+                    ? (speedFigs.slice(0, 3).reduce((a, b) => a + b, 0) / Math.min(3, speedFigs.length)).toFixed(1)
+                    : 0;
+
+                // Extract Horse Name
+                const nameMatch = text.match(/([A-Z\s\']{3,20})\s*\(/);
+                const horseName = nameMatch ? nameMatch[1].trim() : `Runner #${progNum}`;
+
+                const horseObj = {
+                    progNum,
+                    name: horseName,
+                    rating: parseFloat(avgRating),
+                    figs: speedFigs.slice(0, 5),
+                    lineSnippet: text.substring(0, 100) + '...'
+                };
+
+                if (isScratched) {
+                    scratchedHorses.push(horseObj);
+                } else if (parseFloat(avgRating) >= 80) { // Contender Threshold
+                    contenders.push(horseObj);
+                } else {
+                    pretenders.push(horseObj);
+                }
+            });
+
+            if (contenders.length > 0 || pretenders.length > 0 || scratchedHorses.length > 0) {
+                races.push({ raceNum, contenders, pretenders, scratchedHorses });
+            }
+        });
+
+        return races;
     }
-  });
 
-  document.getElementById('addRowBtn').addEventListener('click', () => {
-    rows.push(newRow());
-    renderTable();
-  });
+    function renderBoard(races, trackConds, rails) {
+        const resultsDiv = document.getElementById('results');
+        resultsDiv.innerHTML = '';
 
-  document.getElementById('clearAllBtn').addEventListener('click', () => {
-    if (confirm('Clear the entire card?')) {
-      rows = [];
-      renderTable();
+        if (races.length === 0) {
+            resultsDiv.innerHTML = '<p style="text-align:center;">No race data could be parsed from the HTML file.</p>';
+            return;
+        }
+
+        races.forEach(race => {
+            const cond = trackConds[race.raceNum] || 'Fast / Firm';
+            const rail = rails[race.raceNum] || 'No Temp Rail';
+
+            const card = document.createElement('div');
+            card.className = 'race-card';
+
+            let contendersHTML = race.contenders.map(h => `
+                <div class="horse-row">
+                    <div class="horse-name">#${h.progNum} ${h.name}</div>
+                    <div class="horse-meta">Rating: <strong>${h.rating}</strong> | Figs: [${h.figs.join(', ')}]</div>
+                </div>
+            `).join('') || '<p style="color:#64748b; font-size:14px;">No contenders identified.</p>';
+
+            let pretendersHTML = race.pretenders.map(h => `
+                <div class="horse-row">
+                    <div class="horse-name">#${h.progNum} ${h.name}</div>
+                    <div class="horse-meta">Rating: <strong>${h.rating}</strong> | Figs: [${h.figs.join(', ')}]</div>
+                </div>
+            `).join('') || '<p style="color:#64748b; font-size:14px;">No pretenders identified.</p>';
+
+            let scratchesHTML = race.scratchedHorses.length > 0
+                ? `<div class="scratches-row"><strong>❌ Scratched:</strong> ${race.scratchedHorses.map(h => `#${h.progNum} ${h.name}`).join(', ')}</div>`
+                : '';
+
+            card.innerHTML = `
+                <div class="race-header">
+                    RACE ${race.raceNum} &nbsp;—&nbsp; <span style="font-size:15px; font-weight:normal; color:#475569;">Track: ${cond} | Rail: ${rail}</span>
+                </div>
+                <div class="columns">
+                    <div class="column contenders">
+                        <div class="column-title">🔥 CONTENDERS / OVERLAYS</div>
+                        ${contendersHTML}
+                    </div>
+                    <div class="column pretenders">
+                        <div class="column-title">⚠️ PRETENDERS</div>
+                        ${pretendersHTML}
+                    </div>
+                </div>
+                ${scratchesHTML}
+            `;
+
+            resultsDiv.appendChild(card);
+        });
     }
-  });
-
-  // Initial render with clean state
-  renderTable();
 </script>
+
 </body>
 </html>
