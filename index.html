@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Brisnet Overlay Board & Race Analyzer</title>
+    <title>Brisnet Overlay Board — Saratoga SAR0828 Parser</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -112,6 +112,7 @@
         .horse-name {
             font-weight: bold;
             color: #0f172a;
+            font-size: 15px;
         }
         .horse-meta {
             font-size: 13px;
@@ -133,11 +134,11 @@
 
 <div class="container">
     <h1>🏇 Brisnet Overlay Board</h1>
-    <p class="subtitle">Upload your Brisnet CSV past performance file and RSS scratch feed to compute contenders and pretenders.</p>
+    <p class="subtitle">Upload sar0828.csv and your RSS scratch feed to view contenders and pretenders.</p>
 
     <div class="upload-section">
         <div class="upload-box">
-            <label for="csvFile">1. Select Brisnet File (.csv)</label>
+            <label for="csvFile">1. Select Brisnet File (sar0828.csv)</label>
             <input type="file" id="csvFile" accept=".csv,.txt">
         </div>
         
@@ -163,7 +164,7 @@
             return;
         }
 
-        resultsDiv.innerHTML = '<p style="text-align:center;">Processing CSV and RSS feeds...</p>';
+        resultsDiv.innerHTML = '<p style="text-align:center;">Processing sar0828.csv and RSS feeds...</p>';
 
         const csvText = await csvFileInput.files[0].text();
         const rssText = await rssFileInput.files[0].text();
@@ -171,8 +172,8 @@
         // 1. Parse RSS Feed for Scratches
         const scratches = parseRSSScratches(rssText);
 
-        // 2. Parse Brisnet CSV
-        const races = parseBrisnetCSV(csvText, scratches);
+        // 2. Parse Brisnet CSV with Exact Column Mappings for sar0828.csv
+        const races = parseBrisnetSARCSV(csvText, scratches);
 
         // 3. Render Output
         renderBoard(races);
@@ -180,8 +181,6 @@
 
     function parseRSSScratches(rssString) {
         const scratches = new Set();
-        
-        // Scan for Race # and Program # in RSS text/XML
         const lines = rssString.split(/<br\s*\/?>|\n/);
         for (let line of lines) {
             const match = line.match(/Race\s*(\d+):.*?#\s*(\d+[A-Z]?).*?Scratched/i) || 
@@ -196,7 +195,6 @@
     }
 
     function parseCSVLine(line) {
-        // Robust CSV splitter handling quoted fields
         const result = [];
         let cell = '';
         let inQuotes = false;
@@ -216,25 +214,52 @@
         return result;
     }
 
-    function parseBrisnetCSV(csvText, scratches) {
+    function parseBrisnetSARCSV(csvText, scratches) {
         const lines = csvText.split(/\r?\n/);
         const racesMap = {};
 
         for (let line of lines) {
             if (!line.trim()) continue;
             const cols = parseCSVLine(line);
-            if (cols.length < 10) continue;
+            if (cols.length < 6) continue;
 
-            // Standard Brisnet Single File Export Column Layout:
-            // Col 1: Track Code, Col 2: Date, Col 3: Race Number, Col 4: Post Position / Program Number, Col 5: Horse Name
-            const raceNum = parseInt(cols[2]) || parseInt(cols[1]) || 1;
-            const progNum = cols[3] ? cols[3].replace('#', '') : (cols[0] || '?');
-            const horseName = cols[4] || cols[5] || 'Unknown Runner';
+            // -------------------------------------------------------------
+            // BRISNET DRF CSV COLUMN MAP (sar0828.csv):
+            // Col 0: Track Code (e.g. "SAR")
+            // Col 1: Date (e.g. 20260828)
+            // Col 2: Race Number (e.g. 1, 2, 3...)
+            // Col 3: Post Position / Program Number (e.g. "1", "1A", "2")
+            // Col 4: Entry / Odds Indicator
+            // Col 5: HORSE NAME (e.g. "MO DONA", "ALWAYS FORWARD")
+            // Col 6: Age / Sex
+            // Col 7: Jockey Name
+            // Col 8: Trainer Name
+            // -------------------------------------------------------------
 
-            // Extract Prime Power / Speed Rating numbers from Brisnet fields
-            const possibleFigs = cols.slice(10, 40)
+            const trackCode = cols[0] || 'SAR';
+            const raceNum = parseInt(cols[2]) || 1;
+            const progNum = cols[3] ? cols[3].replace('#', '') : '?';
+            
+            // Extract Horse Name cleanly from Column 5 (or fallback to Col 4 if non-numeric)
+            let horseName = cols[5] ? cols[5].trim() : '';
+            if (!horseName || /^\d+$/.test(horseName)) {
+                // If col 5 was a number, search adjacent text columns for the actual name
+                for (let c = 4; c <= 8; c++) {
+                    if (cols[c] && !/^\d+$/.test(cols[c]) && cols[c].length > 2) {
+                        horseName = cols[c].trim();
+                        break;
+                    }
+                }
+            }
+            if (!horseName) horseName = `Runner #${progNum}`;
+
+            const jockey = cols[7] ? cols[7].trim() : '';
+            const trainer = cols[8] ? cols[8].trim() : '';
+
+            // Extract Prime Power / Speed Rating numbers from Brisnet fields (cols 10-50)
+            const possibleFigs = cols.slice(10, 50)
                 .map(v => parseInt(v))
-                .filter(n => !isNaN(n) && n >= 45 && n <= 135);
+                .filter(n => !isNaN(n) && n >= 40 && n <= 135);
 
             const avgRating = possibleFigs.length > 0 
                 ? (possibleFigs.slice(0, 3).reduce((a, b) => a + b, 0) / Math.min(3, possibleFigs.length)).toFixed(1)
@@ -245,13 +270,15 @@
             const runner = {
                 progNum,
                 name: horseName,
+                jockey,
+                trainer,
                 rating: parseFloat(avgRating),
                 figs: possibleFigs.slice(0, 5),
                 isScratched
             };
 
             if (!racesMap[raceNum]) {
-                racesMap[raceNum] = { raceNum, contenders: [], pretenders: [], scratches: [] };
+                racesMap[raceNum] = { trackCode, raceNum, contenders: [], pretenders: [], scratches: [] };
             }
 
             if (isScratched) {
@@ -271,7 +298,7 @@
         resultsDiv.innerHTML = '';
 
         if (races.length === 0) {
-            resultsDiv.innerHTML = '<p style="text-align:center;">No race data found in the CSV file.</p>';
+            resultsDiv.innerHTML = '<p style="text-align:center;">No race data found in sar0828.csv.</p>';
             return;
         }
 
@@ -284,14 +311,14 @@
             let contendersHTML = race.contenders.map(h => `
                 <div class="horse-row">
                     <div class="horse-name">#${h.progNum} ${h.name}</div>
-                    <div class="horse-meta">Rating / Speed: <strong>${h.rating}</strong> ${h.figs.length ? '| Figs: [' + h.figs.join(', ') + ']' : ''}</div>
+                    <div class="horse-meta">Rating / Speed: <strong>${h.rating}</strong> ${h.jockey ? '| J: ' + h.jockey : ''} ${h.figs.length ? '| Figs: [' + h.figs.join(', ') + ']' : ''}</div>
                 </div>
             `).join('') || '<p style="color:#64748b; font-size:14px;">No contenders identified.</p>';
 
             let pretendersHTML = race.pretenders.map(h => `
                 <div class="horse-row">
                     <div class="horse-name">#${h.progNum} ${h.name}</div>
-                    <div class="horse-meta">Rating / Speed: <strong>${h.rating}</strong></div>
+                    <div class="horse-meta">Rating / Speed: <strong>${h.rating}</strong> ${h.jockey ? '| J: ' + h.jockey : ''}</div>
                 </div>
             `).join('') || '<p style="color:#64748b; font-size:14px;">No pretenders identified.</p>';
 
@@ -300,7 +327,7 @@
                 : '';
 
             card.innerHTML = `
-                <div class="race-header">RACE ${race.raceNum}</div>
+                <div class="race-header">${race.trackCode} — RACE ${race.raceNum}</div>
                 <div class="columns">
                     <div class="column contenders">
                         <div class="column-title">🔥 CONTENDERS / OVERLAYS</div>
