@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Overlay Board — Race Value Finder</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <style>
+    :root {
+      --board-950: #0F2A20;
+      --board-900: #15332A;
+      --board-800: #1B3A2C;
+      --paper: #F1E9D6;
+      --paper-dim: #E4D9BE;
+      --paper-line: #CFC2A0;
+      --amber: #D9A73B;
+      --amber-dim: #8A6A26;
+      --red: #8B2A2A;
+      --ink: #1E1B14;
+      --ink-soft: #4A4433;
+      --mono: ui-monospace, "SF Mono", "Roboto Mono", "Courier New", monospace;
+      --sans: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0; background: #ffffff; color: var(--ink);
+      font-family: var(--sans); -webkit-font-smoothing: antialiased;
+    }
+
+    .wrap { max-width: 1120px; margin: 0 auto; }
+
+    header {
+      background: linear-gradient(180deg, var(--board-900), var(--board-950));
+      padding: 32px 24px 24px; border-bottom: 3px solid var(--amber-dim);
+    }
+
+    .eyebrow {
+      font-family: var(--mono); color: var(--amber); font-size: 11px;
+      letter-spacing: .22em; text-transform: uppercase; margin: 0 0 8px;
+    }
+
+    h1 {
+      margin: 0; color: var(--paper); font-weight: 800;
+      font-size: clamp(26px, 4vw, 40px); line-height: 1.05;
+    }
+
+    .tagline { color: #B9C9BE; font-size: 14px; max-width: 60ch; margin: 8px 0 0; line-height: 1.4; }
+
+    main { background: var(--paper); padding: 24px 24px 60px; }
+    section { margin: 0 0 28px; }
+
+    h2 {
+      font-size: 12px; letter-spacing: .16em; text-transform: uppercase;
+      color: var(--ink-soft); margin: 0 0 12px; font-weight: 700;
+      display: flex; align-items: center; gap: 10px;
+    }
+    h2::after { content: ""; flex: 1; height: 1px; background: var(--paper-line); }
+
+    .step-num {
+      font-family: var(--mono); background: var(--board-950); color: var(--amber);
+      font-size: 11px; padding: 2px 6px; border-radius: 2px;
+    }
+
+    .upload-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
+
+    .upload-card {
+      border: 1.5px dashed var(--paper-line); border-radius: 4px; padding: 16px;
+      background: var(--paper-dim);
+    }
+    .upload-card h3 { margin: 0 0 4px; font-size: 14px; color: var(--ink); }
+    .upload-card p { margin: 0 0 12px; font-size: 12px; color: var(--ink-soft); line-height: 1.4; }
+
+    .file-btn {
+      display: inline-flex; align-items: center;
+      background: var(--board-950); color: var(--paper); border: none;
+      padding: 8px 14px; border-radius: 3px; font-size: 12px; font-weight: 600;
+      cursor: pointer;
+    }
+    .file-btn:hover { background: var(--board-800); }
+    input[type=file] { display: none; }
+
+    .status { font-family: var(--mono); font-size: 11px; margin-top: 8px; min-height: 15px; }
+    .status.ok { color: #2E5C3E; font-weight: bold; }
+    .status.err { color: var(--red); font-weight: bold; }
+
+    select, input[type=text], textarea {
+      font-family: var(--sans); font-size: 12px; padding: 5px 7px;
+      border: 1px solid var(--paper-line); border-radius: 3px; background: #fff; color: var(--ink); width: 100%;
+    }
+
+    .small-btn {
+      background: transparent; border: 1px solid var(--board-950); color: var(--board-950);
+      padding: 6px 10px; border-radius: 3px; font-size: 11px; font-weight: 600; cursor: pointer; margin-top: 6px;
+    }
+    .small-btn:hover { background: var(--board-950); color: var(--paper); }
+
+    .table-wrap { overflow-x: auto; border: 1px solid var(--paper-line); border-radius: 3px; background: #fff; }
+    table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+    thead th {
+      text-align: left; font-family: var(--mono); font-size: 10px; letter-spacing: .08em;
+      text-transform: uppercase; color: var(--paper); background: var(--board-900);
+      padding: 8px 8px; white-space: nowrap;
+    }
+    thead th.live-col { background: var(--amber-dim); color: #fff; }
+    tbody td { padding: 4px 6px; border-bottom: 1px solid var(--paper-line); vertical-align: middle; }
+    tbody td.live-col { background: rgba(217, 167, 59, .12); }
+    tbody tr:nth-child(even) { background: rgba(0, 0, 0, 0.02); }
+    tbody tr.scratched-row { opacity: .45; background: #e8e0d0; }
+    tbody tr.scratched-row input[data-f="horse"] { text-decoration: line-through; }
+    
+    tbody input { border: 1px solid transparent; background: transparent; padding: 3px 4px; font-size: 12px; width: 100%; }
+    tbody input:hover, tbody input:focus { border-color: var(--paper-line); background: #fff; }
+    tbody input[type=checkbox] { width: auto; cursor: pointer; accent-color: var(--red); }
+    .col-num input { font-family: var(--mono); }
+    .del-btn { background: none; border: none; color: var(--red); cursor: pointer; font-size: 14px; padding: 0 4px; }
+
+    .scratch-panel {
+      border: 1.5px dashed var(--paper-line); border-radius: 4px; padding: 14px;
+      background: var(--paper-dim); margin: 0 0 12px;
+    }
+    .scratch-panel h3 { margin: 0 0 4px; font-size: 14px; }
+    .scratch-panel p { margin: 0 0 8px; font-size: 12px; color: var(--ink-soft); }
+
+    .table-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+    .primary-btn {
+      background: var(--amber); color: var(--ink); border: none; padding: 10px 18px;
+      border-radius: 3px; font-weight: 700; font-size: 13px; cursor: pointer;
+    }
+    .primary-btn:hover { background: #c69528; }
+    .ghost-btn {
+      background: none; border: 1px solid var(--ink-soft); color: var(--ink-soft);
+      padding: 9px 14px; border-radius: 3px; font-size: 12px; cursor: pointer;
+    }
+    .ghost-btn:hover { border-color: var(--ink); color: var(--ink); }
+    .empty-note { font-size: 12px; color: var(--ink-soft); padding: 16px; text-align: center; }
+
+    .field-table { width: 100%; border-collapse: collapse; font-size: 13px; border: 1px solid var(--paper-line); margin-bottom: 18px; background: #fff; }
+    .field-table thead th {
+      text-align: left; font-family: var(--mono); font-size: 10.5px; letter-spacing: .06em;
+      text-transform: uppercase; color: var(--paper); background: var(--board-900); padding: 7px 10px;
+    }
+    .field-table td { padding: 7px 10px; border-bottom: 1px solid var(--paper-line); font-family: var(--mono); font-size: 12.5px; }
+
+    .disclaimer {
+      font-size: 11px; color: var(--ink-soft); line-height: 1.5; padding-top: 14px;
+      border-top: 1px solid var(--paper-line); margin-top: 28px;
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Handicapping utility · odds &amp; ratings, no black box</div>
+    <h1>Overlay Board</h1>
+    <div class="tagline">Load Brisnet .DRF data files or past performance program files to organize your card, process Equibase scratches, and calculate normalized win probabilities.</div>
+  </header>
+
+  <main>
+    <!-- STEP 1: UPLOAD -->
+    <section>
+      <h2><span class="step-num">1</span> Bring in your data</h2>
+      <div class="upload-grid">
+        <div class="upload-card">
+          <h3>Brisnet Single Data File (.DRF)</h3>
+          <p>Parses standard comma-delimited .DRF files (Race, Post, Horse Name, Morning Line, Prime Power, Surface, and Class ratings).</p>
+          <label class="file-btn" for="drfInput">Choose .DRF File</label>
+          <input type="file" id="drfInput" accept=".drf,.csv,.txt,.DRF">
+          <div class="status" id="drfStatus"></div>
+        </div>
+
+        <div class="upload-card">
+          <h3>Equibase Scratches</h3>
+          <p>Paste text or XML from Equibase scratch logs to clear scratched runners automatically.</p>
+          <textarea id="rssPaste" rows="2" placeholder="Paste scratch text or XML…"></textarea>
+
+          <button class="small-btn" id="applyRssBtn">Apply Scratches →</button>
+          <div class="status" id="rssStatus"></div>
+        </div>
+
+        <div class="upload-card">
+          <h3>Program Sheet Text</h3>
+          <p>Paste plain past performance text to extract runners directly.</p>
+          <textarea id="pdfPasteText" rows="2" placeholder="Paste program text…"></textarea>
+          <button class="small-btn" id="extractPasteBtn">Extract Text →</button>
+          <div class="status" id="pdfPasteStatus"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- STEP 2: EDIT TABLE -->
+    <section>
+      <h2><span class="step-num">2</span> Entries &amp; Live Odds</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:55px">Race</th>
+              <th style="width:45px">Post</th>
+              <th>Horse Name</th>
+              <th style="width:80px">M/L Odds</th>
+              <th style="width:80px" class="live-col">Final Tote</th>
+              <th style="width:80px">Prime Pwr</th>
+              <th style="width:80px">Surface Fit</th>
+              <th style="width:75px">Class</th>
+              <th style="width:40px">Scr</th>
+              <th style="width:30px"></th>
+            </tr>
+          </thead>
+          <tbody id="rowsBody"></tbody>
+        </table>
+        <div class="empty-note" id="emptyNote">No entries loaded. Select a .DRF file above or click "+ Add row" below.</div>
+      </div>
+      <div class="table-actions">
+        <button class="ghost-btn" id="addRowBtn">+ Add row</button>
+        <button class="ghost-btn" id="clearBtn">Clear all</button>
+        <button class="primary-btn" id="computeBtn">Calculate Overlays →</button>
+      </div>
+    </section>
+
+    <!-- STEP 3: OUTPUT BOARD -->
+    <section id="fieldSection" style="display:none;">
+      <h2><span class="step-num">3</span> Normalized Odds &amp; Implied Probabilities</h2>
+      <div id="fieldTables"></div>
+    </section>
+
+    <div class="disclaimer">
+      <strong>Note:</strong> Probabilities are calculated by converting fraction or decimal odds to win percentages normalized across active (non-scratched) runners to eliminate track takeout.
+    </div>
+  </main>
+</div>
+
+<script>
+  let rows = [];
+  let rowId = 0;
+
+  const rowsBody = document.getElementById('rowsBody');
+  const emptyNote = document.getElementById('emptyNote');
+
+  function newRow(partial) {
+    return Object.assign({
+      id: rowId++, race: '1', post: '', horse: '', odds: '', finalOdds: '', 
+      score: '', surfaceRating: '', classMove: '', scratched: false
+    }, partial);
+  }
+
+  function renderRows() {
+    rowsBody.innerHTML = '';
+    emptyNote.style.display = rows.length ? 'none' : 'block';
+    rows.forEach(r => {
+      const tr = document.createElement('tr');
+      if (r.scratched) tr.classList.add('scratched-row');
+      tr.innerHTML = `
+        <td class="col-num"><input type="text" value="${escAttr(r.race)}" data-f="race"></td>
+        <td class="col-num"><input type="text" value="${escAttr(r.post)}" data-f="post"></td>
+        <td><input type="text" value="${escAttr(r.horse)}" data-f="horse"></td>
+        <td class="col-num"><input type="text" value="${escAttr(r.odds)}" data-f="odds" placeholder="5/2"></td>
+        <td class="col-num live-col"><input type="text" value="${escAttr(r.finalOdds)}" data-f="finalOdds" placeholder="live"></td>
+        <td class="col-num"><input type="text" value="${escAttr(r.score)}" data-f="score"></td>
+        <td class="col-num"><input type="text" value="${escAttr(r.surfaceRating)}" data-f="surfaceRating"></td>
+        <td class="col-num"><input type="text" value="${escAttr(r.classMove)}" data-f="classMove"></td>
+        <td style="text-align:center;"><input type="checkbox" ${r.scratched ? 'checked' : ''} data-f="scratched"></td>
+        <td><button class="del-btn" title="Delete">✕</button></td>
+      `;
+      
+      tr.querySelectorAll('input').forEach(inp => {
+        const isCheckbox = inp.type === 'checkbox';
+        inp.addEventListener(isCheckbox ? 'change' : 'input', e => {
+          r[e.target.dataset.f] = isCheckbox ? e.target.checked : e.target.value;
+          if (isCheckbox) tr.classList.toggle('scratched-row', r.scratched);
+        });
+      });
+
+      tr.querySelector('.del-btn').addEventListener('click', () => {
+        rows = rows.filter(x => x.id !== r.id);
+        renderRows();
+      });
+      rowsBody.appendChild(tr);
+    });
+  }
+
+  function escAttr(s) {
+    return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+  }
+
+  function parseOdds(str) {
+    if (!str) return null;
+    let s = String(str).trim();
+    if (s.includes('/')) {
+      const parts = s.split('/');
+      const num = parseFloat(parts[0]), den = parseFloat(parts[1]);
+      if (!isNaN(num) && !isNaN(den) && den !== 0) return num / den;
+    }
+    const val = parseFloat(s);
+    return isNaN(val) ? null : val;
+  }
+
+  /* CSV / DRF Splitter handling quotes */
+  function parseCSVLine(line) {
+    const res = [];
+    let cur = '', inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+      const c = line[i];
+      if (c === '"') { inQuotes = !inQuotes; }
+      else if (c === ',' && !inQuotes) { res.push(cur.trim()); cur = ''; }
+      else { cur += c; }
+    }
+    res.push(cur.trim());
+    return res.map(v => v.replace(/^"|"$/g, '').trim());
+  }
+
+  /* Brisnet .DRF File Reader */
+  document.getElementById('drfInput').addEventListener('change', e => {
+    const file = e.target.files[0];
+    const status = document.getElementById('drfStatus');
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = evt => {
+      const text = evt.target.result;
+      const lines = text.split(/\r?\n/).filter(l => l.trim().length > 0);
+      let count = 0;
+
+      lines.forEach(line => {
+        const fields = parseCSVLine(line);
+        // Brisnet DRF lines typically have 100+ fields
+        if (fields.length >= 12) {
+          const raceNum = fields[1] || '1';
+          const postPos = fields[3] || fields[2] || '';
+          const horseName = fields[11] || fields[10] || '';
+          const mlOdds = fields[25] || fields[24] || '';
+          const primePower = fields[27] || fields[26] || '';
+          const surfaceFit = fields[115] || '';
+          const classRating = fields[142] || '';
+
+          if (horseName) {
+            rows.push(newRow({
+              race: raceNum,
+              post: postPos,
+              horse: horseName,
+              odds: mlOdds,
+              score: primePower,
+              surfaceRating: surfaceFit,
+              classMove: classRating
+            }));
+            count++;
+          }
+        }
+      });
+
+      renderRows();
+      if (count > 0) {
+        status.textContent = `Successfully loaded ${count} entries.`;
+        status.className = 'status ok';
+      } else {
+        status.textContent = 'Could not parse DRF structure. Loaded standard lines if available.';
+        status.className = 'status err';
+      }
+    };
+    reader.readAsText(file);
+  });
+
+  /* Equibase Scratches Applier */
+  document.getElementById('applyRssBtn').addEventListener('click', () => {
+    const text = document.getElementById('rssPaste').value.toLowerCase();
+    const status = document.getElementById('rssStatus');
+    if (!text) {
+      status.textContent = 'Paste scratch text first.';
+      status.className = 'status err';
+      return;
+    }
+    
+    let scratchCount = 0;
+    rows.forEach(r => {
+      if (r.horse && r.horse.length > 2 && text.includes(r.horse.toLowerCase())) {
+        r.scratched = true;
+        scratchCount++;
+      }
+    });
+    renderRows();
+    status.textContent = `Scratched ${scratchCount} matching horse(s).`;
+    status.className = 'status ok';
+  });
+
+  /* Program Pasting Extraction */
+  document.getElementById('extractPasteBtn').addEventListener('click', () => {
+    const text = document.getElementById('pdfPasteText').value;
+    const status = document.getElementById('pdfPasteStatus');
+    const lines = text.split('\n');
+    let added = 0;
+
+    lines.forEach(line => {
+      if (line.trim().length > 3) {
+        // Look for pattern: [post] [horse name] [odds]
+        const m = line.match(/^(\d+)?\s*([A-Za-z0-9\s']+)\s+(\d+\/\d+|\d+\.\d+|\d+)/);
+        if (m) {
+          rows.push(newRow({
+            race: '1',
+            post: m[1] || '',
+            horse: m[2].trim(),
+            odds: m[3] || ''
+          }));
+          added++;
+        }
+      }
+    });
+    renderRows();
+    status.textContent = `Extracted ${added} runner(s).`;
+    status.className = 'status ok';
+  });
+
+  /* Calculation Engine */
+  document.getElementById('computeBtn').addEventListener('click', () => {
+    const container = document.getElementById('fieldTables');
+    container.innerHTML = '';
+    
+    const races = {};
+    rows.forEach(r => {
+      if (!r.race) return;
+      races[r.race] = races[r.race] || [];
+      races[r.race].push(r);
+    });
+
+    const raceKeys = Object.keys(races).sort((a,b) => parseInt(a) - parseInt(b));
+
+    if (raceKeys.length === 0) {
+      alert('Please add or load at least one race entry.');
+      return;
+    }
+
+    raceKeys.forEach(raceNum => {
+      const field = races[raceNum].filter(r => !r.scratched);
+      let totalProb = 0;
+      
+      field.forEach(r => {
+        const decOdds = parseOdds(r.finalOdds || r.odds);
+        r.rawProb = decOdds !== null ? (1 / (decOdds + 1)) : 0;
+        totalProb += r.rawProb;
+      });
+
+      const table = document.createElement('table');
+      table.className = 'field-table';
+      table.innerHTML = `
+        <thead>
+          <tr><th colspan="7">RACE ${raceNum} (${field.length} Active Runners)</th></tr>
+          <tr>
+            <th style="width:45px">Post</th>
+            <th>Horse Name</th>
+            <th style="width:90px">M/L / Final</th>
+            <th style="width:110px">Implied Win %</th>
+            <th style="width:90px">Prime Power</th>
+            <th style="width:80px">Surface</th>
+            <th style="width:75px">Class</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      `;
+      const tbody = table.querySelector('tbody');
+      
+      field.forEach(r => {
+        const normProb = totalProb > 0 ? ((r.rawProb / totalProb) * 100).toFixed(1) : '—';
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${escAttr(r.post)}</td>
+          <td><b>${escAttr(r.horse)}</b></td>
+          <td>${escAttr(r.odds)}${r.finalOdds ? ' → ' + escAttr(r.finalOdds) : ''}</td>
+          <td><b>${normProb}%</b></td>
+          <td>${escAttr(r.score) || '—'}</td>
+          <td>${escAttr(r.surfaceRating) || '—'}</td>
+          <td>${escAttr(r.classMove) || '—'}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      container.appendChild(table);
+    });
+
+    document.getElementById('fieldSection').style.display = 'block';
+  });
+
+  /* Controls */
+  document.getElementById('addRowBtn').addEventListener('click', () => {
+    const lastRace = rows.length ? rows[rows.length - 1].race : '1';
+    rows.push(newRow({ race: lastRace }));
+    renderRows();
+  });
+
+  document.getElementById('clearBtn').addEventListener('click', () => {
+    rows = [];
+    renderRows();
+    document.getElementById('fieldSection').style.display = 'none';
+    document.getElementById('drfStatus').textContent = '';
+    document.getElementById('rssStatus').textContent = '';
+  });
+</script>
+</body>
+</html>
