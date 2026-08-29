@@ -118,7 +118,7 @@
   /* PAST PERFORMANCE MODAL */
   #ppOverlay{display:none; position:fixed; inset:0; background:rgba(15,42,32,.65); z-index:100; overflow-y:auto; padding:16px;}
   #ppOverlay.show{display:block;}
-  .pp-card{max-width:820px; margin:20px auto; background:var(--paper); border-radius:4px; border:1px solid var(--paper-line); padding:20px; position:relative;}
+  .pp-card{max-width:920px; margin:20px auto; background:var(--paper); border-radius:4px; border:1px solid var(--paper-line); padding:20px; position:relative;}
   .pp-close{position:absolute; top:12px; right:14px; background:none; border:none; font-size:22px; color:var(--ink-soft); cursor:pointer;}
   .pp-back{
     display:inline-flex; align-items:center; gap:6px; margin-bottom:14px; padding:8px 14px;
@@ -126,9 +126,12 @@
     font-size:12px; font-weight:700; cursor:pointer;
   }
   .pp-back:hover{background:var(--board-800);}
-  .pp-table{width:100%; border-collapse:collapse; font-family:var(--mono); font-size:11.5px; margin:10px 0;}
+  .pp-table{width:100%; border-collapse:collapse; font-family:var(--mono); font-size:11px; margin:10px 0 20px;}
   .pp-table th{background:var(--board-900); color:var(--paper); padding:6px; font-size:10px; text-transform:uppercase; text-align:left;}
   .pp-table td{padding:5px 6px; border-bottom:1px solid var(--paper-line); vertical-align:top;}
+
+  .work-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:10px; margin-top:8px;}
+  .work-item{background:#fff; border:1px solid var(--paper-line); padding:8px; border-radius:3px; font-family:var(--mono); font-size:11px;}
 
   textarea{font-family:var(--mono); font-size:12px; padding:8px; width:100%; border:1px solid var(--paper-line); border-radius:3px; background:#fff;}
 </style>
@@ -149,7 +152,7 @@
       <div class="upload-grid">
         <div class="upload-card">
           <h3>Brisnet .DRF Single File</h3>
-          <p>Comma-delimited format (~1,435 fields per row). Parses Prime Power, Speed, Class, Pace, Trainer, Jockey, and PP lines automatically.</p>
+          <p>Comma-delimited format (~1,435 fields per row). Parses Prime Power, Speed, Class, Pace, Trainer, Jockey, up to 10 PP lines, and 4 workouts automatically.</p>
           <label class="file-btn" for="drfInput">Select .DRF / .CSV</label>
           <input type="file" id="drfInput" accept=".drf,.csv,.txt">
           <div class="status" id="drfStatus"></div>
@@ -205,7 +208,7 @@
     <section id="bestSection" style="display:none;">
       <div class="bestof">
         <h3>Top Bet Selections (Prime Power + Earnings + Pace)</h3>
-        <p style="font-size:12.5px; color:var(--ink-soft); margin-bottom:12px;">Constructed by combining high Prime Power differentials with top career Earnings Per Start (EPS) and favorable morning line overlay margins.</p>
+        <p style="font-size:12.5px; color:var(--ink-soft); margin-bottom:12px;">Ranked selections combining overall Prime Power ratings, high speed figures, earnings history, and betting overlays.</p>
         <div id="bestBetsList"></div>
       </div>
     </section>
@@ -243,7 +246,6 @@ function newRow(partial){
   return Object.assign({
     id: rowId++, race:'1', post:'1', horse:'', odds:'2/1', finalOdds:'',
     score:'', surfaceRating:'', scratched:false,
-    // Field Mappings matching Brisnet Single File standard
     primePower: 0, eps: 0, lastSpeed: 0, bestSpeed: 0,
     quirin: 0, runStyle: '', trainer: '', jockey: '',
     ppRaces: [], ppWorks: []
@@ -284,7 +286,7 @@ function renderRows(){
 document.getElementById('addRowBtn').addEventListener('click', () => { rows.push(newRow({})); renderRows(); });
 document.getElementById('clearBtn').addEventListener('click', () => { rows = []; renderRows(); });
 
-/* CSV / DRF PARSER (Brisnet Single File Specification Alignment) */
+/* CSV / DRF PARSER */
 function parseCSVLine(line){
   const out = []; let cur = ''; let inQ = false;
   for (let i = 0; i < line.length; i++){
@@ -313,34 +315,31 @@ document.getElementById('drfInput').addEventListener('change', e => {
     
     lines.forEach(line => {
       const f = parseCSVLine(line);
-      if(f.length < 50) return; // Basic validation for Brisnet DRF length
+      if(f.length < 50) return;
       
       const get = n => (f[n-1] !== undefined ? f[n-1].trim() : '');
       const num = n => { const v = parseFloat(get(n)); return isNaN(v) ? 0 : v; };
 
-      // Map Exact Brisnet Single File Data Fields
       const race = get(3);
       const post = get(4);
       const horse = get(45);
       const mlOdds = num(44).toFixed(2);
-      const primePower = num(201); // Prime Power Rating
+      const primePower = num(201);
       const trainer = get(27);
       const jockey = get(37);
       const runStyle = get(249);
       const quirin = num(250);
       
-      // Calculate Lifetime Earnings Per Start (EPS)
       const ltStarts = num(97);
       const ltEarn = num(101);
       const eps = ltStarts > 0 ? Math.round(ltEarn / ltStarts) : 0;
 
-      // Recent Speed Figures & PP extraction
-      const lastSpeed = num(626); // Speed rating of last race
-      const bestSpeed = num(1389); // Best speed figure at distance
+      const lastSpeed = num(626);
+      const bestSpeed = num(1389);
 
-      // Extract 3 Past Performance Lines
+      // Extract up to 10 Past Performance Lines
       const ppRaces = [];
-      for(let i = 0; i < 3; i++){
+      for(let i = 0; i < 10; i++){
         const date = get(256 + i);
         if(!date) continue;
         ppRaces.push({
@@ -354,10 +353,25 @@ document.getElementById('drfInput').addEventListener('change', e => {
         });
       }
 
+      // Extract Last 4 Workouts
+      const ppWorks = [];
+      for(let w = 0; w < 4; w++){
+        const wDate = get(1389 + (w * 6));
+        if(!wDate) continue;
+        ppWorks.push({
+          date: wDate,
+          track: get(1390 + (w * 6)),
+          dist: get(1391 + (w * 6)),
+          time: get(1392 + (w * 6)),
+          cond: get(1393 + (w * 6)),
+          rank: get(1394 + (w * 6))
+        });
+      }
+
       rows.push(newRow({
         race: race, post: post, horse: horse, odds: mlOdds,
         score: primePower, surfaceRating: lastSpeed, primePower,
-        eps, lastSpeed, bestSpeed, runStyle, quirin, trainer, jockey, ppRaces
+        eps, lastSpeed, bestSpeed, runStyle, quirin, trainer, jockey, ppRaces, ppWorks
       }));
     });
 
@@ -386,7 +400,6 @@ function applyScratchesFromXML(xmlText){
       });
     });
   } else {
-    // Fallback simple line match for raw text RSS feeds
     rows.forEach(r => {
       if(xmlText.toLowerCase().includes(r.horse.toLowerCase()) && r.horse.length > 2){
         r.scratched = true;
@@ -429,7 +442,6 @@ function computeRaceCard(){
   computedRaces = {};
   const activeRows = rows.filter(r => !r.scratched);
 
-  // Group by Race
   activeRows.forEach(r => {
     if(!computedRaces[r.race]) computedRaces[r.race] = [];
     computedRaces[r.race].push(r);
@@ -442,34 +454,36 @@ function computeRaceCard(){
   Object.keys(computedRaces).forEach(raceNum => {
     const field = computedRaces[raceNum];
     
-    // Sort field by Prime Power / Rating descending
-    field.sort((a,b) => (parseFloat(b.score) || 0) - (parseFloat(a.score) || 0));
+    field.sort((a,b) => (parseFloat(b.score || b.primePower) || 0) - (parseFloat(a.score || a.primePower) || 0));
 
     const topPower = field[0];
     const runnerCount = field.length;
 
-    // Classify Contenders vs Pretenders
     const contenders = [];
     const pretenders = [];
 
     field.forEach((h, idx) => {
-      const powerGap = (parseFloat(topPower.score) || 0) - (parseFloat(h.score) || 0);
+      const hPower = parseFloat(h.score || h.primePower) || 0;
+      const topPowerVal = parseFloat(topPower.score || topPower.primePower) || 0;
+      const powerGap = topPowerVal - hPower;
       const decimalOdds = parseOdds(h.finalOdds || h.odds);
       
-      // Contender logic: Within 10 pts of top Prime Power OR top Speed, or favorite < 3.0 decimal odds
       if(idx === 0 || powerGap <= 10.0 || decimalOdds <= 3.5){
         contenders.push(h);
       } else {
         pretenders.push(h);
       }
 
-      // Best Bets Logic: Top Prime Power + Top EPS + Odds Overlay
-      if(idx === 0 && powerGap >= 5.0 && decimalOdds >= 3.0){
-        bestBets.push({ race: raceNum, horse: h, reason: `Dominant Prime Power (+${powerGap.toFixed(1)} pts) at strong odds.` });
+      // Updated Best Bets Criteria: Surfaces top selection in each race or any horse meeting key power/speed thresholds
+      if(idx === 0){
+        let reason = `Top Prime Power (${hPower.toFixed(1)}) in Race ${raceNum}.`;
+        if(powerGap >= 3.0) reason += ` Holds a ${powerGap.toFixed(1)} pt lead over competitors.`;
+        if(decimalOdds >= 2.5) reason += ` Prime value potential at M/L ${h.odds}.`;
+        
+        bestBets.push({ race: raceNum, horse: h, reason: reason });
       }
     });
 
-    // Render Contenders vs Pretenders Panel
     contenderHTML.push(`
       <div style="margin-bottom:18px;">
         <h3 style="margin:0 0 8px;">Race ${raceNum}</h3>
@@ -496,7 +510,6 @@ function computeRaceCard(){
       </div>
     `);
 
-    // Render Full Race Cards
     cardHTML.push(`
       <div style="border:1px solid var(--paper-line); padding:14px; margin-bottom:14px; background:#fff; border-radius:4px;">
         <h3 style="margin:0 0 10px;">Race ${raceNum} (${runnerCount} Runners)</h3>
@@ -528,7 +541,6 @@ function computeRaceCard(){
     `);
   });
 
-  // Render Best Bets Output
   const bestBetsContainer = document.getElementById('bestBetsList');
   if(bestBets.length > 0){
     bestBetsContainer.innerHTML = bestBets.map((b, i) => `
@@ -542,7 +554,7 @@ function computeRaceCard(){
       </div>
     `).join('');
   } else {
-    bestBetsContainer.innerHTML = `<div style="font-size:13px; color:var(--ink-soft);">No dominant overlays detected on current card.</div>`;
+    bestBetsContainer.innerHTML = `<div style="font-size:13px; color:var(--ink-soft);">No entries found to compute best bets. Load a .DRF file first.</div>`;
   }
 
   document.getElementById('contenderCards').innerHTML = contenderHTML.join('');
@@ -568,7 +580,7 @@ document.querySelectorAll('.tabbar button').forEach(btn => {
   });
 });
 
-/* PAST PERFORMANCE MODAL WITH RETURN FUNCTION */
+/* PAST PERFORMANCE MODAL WITH WORKOUTS & RETURN FUNCTION */
 function openPP(horseName){
   const horse = rows.find(r => r.horse.toLowerCase() === horseName.toLowerCase());
   if(!horse) return;
@@ -580,7 +592,7 @@ function openPP(horseName){
       Trainer: <b>${horse.trainer || 'N/A'}</b> | Jockey: <b>${horse.jockey || 'N/A'}</b> | Prime Power: <b>${horse.score || horse.primePower}</b>
     </div>
     
-    <div style="font-size:12px; font-weight:700; text-transform:uppercase; margin-bottom:6px;">Past Performances</div>
+    <div style="font-size:12px; font-weight:700; text-transform:uppercase; margin-bottom:6px;">Past Performances (Up to 10 Races)</div>
     ${horse.ppRaces && horse.ppRaces.length > 0 ? `
       <table class="pp-table">
         <thead>
@@ -588,7 +600,7 @@ function openPP(horseName){
             <th>Date</th>
             <th>Track</th>
             <th>Dist</th>
-            <th>Surface</th>
+            <th>Surf</th>
             <th>Finish</th>
             <th>Speed</th>
             <th>Comment</th>
@@ -608,7 +620,20 @@ function openPP(horseName){
           `).join('')}
         </tbody>
       </table>
-    ` : '<div style="font-size:12.5px; color:var(--ink-soft);">No detailed PP lines available for this entry.</div>'}
+    ` : '<div style="font-size:12.5px; color:var(--ink-soft); margin-bottom:14px;">No detailed PP lines available for this entry.</div>'}
+
+    <div style="font-size:12px; font-weight:700; text-transform:uppercase; margin-bottom:6px;">Last 4 Workouts</div>
+    ${horse.ppWorks && horse.ppWorks.length > 0 ? `
+      <div class="work-grid">
+        ${horse.ppWorks.map(w => `
+          <div class="work-item">
+            <div><b>${w.date}</b> — ${w.track}</div>
+            <div>${w.dist} | ${w.time} (${w.cond})</div>
+            <div style="color:var(--ink-soft);">${w.rank ? 'Rank: ' + w.rank : ''}</div>
+          </div>
+        `).join('')}
+      </div>
+    ` : '<div style="font-size:12.5px; color:var(--ink-soft);">No workout lines parsed.</div>'}
   `;
 
   document.getElementById('ppOverlay').classList.add('show');
