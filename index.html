@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Brisnet Overlay Board — With Visual Column Inspector</title>
+    <title>Brisnet Overlay Board — Complete PP Extractor</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -46,7 +46,7 @@
             font-size: 14px;
             color: #334155;
         }
-        input[type="file"], select {
+        input[type="file"] {
             padding: 10px;
             border: 1px solid #cbd5e1;
             border-radius: 6px;
@@ -66,63 +66,17 @@
             transition: background-color 0.2s ease;
         }
         button:hover { background-color: #1d4ed8; }
-        
-        /* DIAGNOSTIC INSPECTOR PANEL */
-        .inspector-panel {
-            background: #ffffff;
-            border: 2px solid #3b82f6;
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 25px;
+
+        .status-badge {
+            padding: 12px;
+            border-radius: 6px;
+            font-weight: bold;
+            margin-bottom: 20px;
             display: none;
         }
-        .inspector-header {
-            font-size: 16px;
-            font-weight: bold;
-            color: #1d4ed8;
-            margin-bottom: 12px;
-        }
-        .mapping-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-        .mapping-item {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-        .mapping-item label {
-            font-size: 12px;
-            color: #475569;
-        }
-        .raw-table-wrapper {
-            max-height: 250px;
-            overflow: auto;
-            border: 1px solid #cbd5e1;
-            border-radius: 6px;
-            margin-top: 10px;
-        }
-        .raw-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 12px;
-            font-family: monospace;
-        }
-        .raw-table th, .raw-table td {
-            border: 1px solid #e2e8f0;
-            padding: 6px 8px;
-            white-space: nowrap;
-        }
-        .raw-table th {
-            background: #f1f5f9;
-            position: sticky;
-            top: 0;
-            z-index: 10;
-        }
+        .status-badge.success { background-color: #f0fdf4; border: 1px solid #86efac; color: #166534; }
+        .status-badge.error { background-color: #fef2f2; border: 1px solid #fca5a5; color: #991b1b; }
 
-        /* RACE CARDS */
         .race-card {
             background: #ffffff;
             border-radius: 8px;
@@ -161,6 +115,7 @@
         }
         .contenders .column-title { color: #15803d; border-color: #22c55e; }
         .pretenders .column-title { color: #b91c1c; border-color: #ef4444; }
+        
         .horse-row {
             background: #ffffff;
             padding: 12px;
@@ -169,10 +124,12 @@
             margin-bottom: 8px;
             cursor: pointer;
             transition: all 0.15s ease-in-out;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
         }
-        .horse-row:hover {
+        .horse-row:hover, .horse-row:active {
             border-color: #2563eb;
-            box-shadow: 0 2px 6px rgba(37, 99, 235, 0.15);
+            box-shadow: 0 2px 6px rgba(37, 99, 235, 0.2);
             transform: translateY(-1px);
         }
         .horse-name {
@@ -213,7 +170,7 @@
             font-size: 14px;
         }
 
-        /* MODAL POPUP */
+        /* FULL PAST PERFORMANCE MODAL */
         .modal-overlay {
             display: none;
             position: fixed;
@@ -221,7 +178,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(15, 23, 42, 0.65);
+            background: rgba(15, 23, 42, 0.7);
             z-index: 1000;
             justify-content: center;
             align-items: center;
@@ -229,19 +186,19 @@
         .modal-content {
             background: #ffffff;
             border-radius: 10px;
-            max-width: 800px;
-            width: 90%;
-            max-height: 85vh;
+            max-width: 950px;
+            width: 94%;
+            max-height: 88vh;
             overflow-y: auto;
             padding: 24px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.25);
             position: relative;
         }
         .modal-close {
             position: absolute;
             top: 15px;
             right: 20px;
-            font-size: 24px;
+            font-size: 26px;
             font-weight: bold;
             color: #64748b;
             cursor: pointer;
@@ -249,25 +206,39 @@
             background: none;
         }
         .modal-close:hover { color: #0f172a; }
+        
+        .pp-table-wrapper {
+            overflow-x: auto;
+            margin-top: 15px;
+        }
         .pp-table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 15px;
-            font-size: 13px;
+            font-size: 12px;
+            min-width: 750px;
         }
         .pp-table th, .pp-table td {
             border: 1px solid #cbd5e1;
-            padding: 8px 10px;
+            padding: 7px 9px;
             text-align: left;
+            white-space: nowrap;
         }
-        .pp-table th { background-color: #f1f5f9; color: #334155; }
+        .pp-table th { background-color: #f1f5f9; color: #334155; font-weight: bold; }
+        .pp-table tr:nth-child(even) { background-color: #f8fafc; }
+        .fig-badge {
+            font-weight: bold;
+            color: #1d4ed8;
+            background: #eff6ff;
+            padding: 2px 5px;
+            border-radius: 4px;
+        }
     </style>
 </head>
 <body>
 
 <div class="container">
     <h1>🏇 Brisnet Overlay Board</h1>
-    <p class="subtitle">With Built-In Visual Column Inspector & Interactive Mapper</p>
+    <p class="subtitle">Complete Past Performance Extractor (Touch Horse Name for Lines)</p>
 
     <div class="upload-section">
         <div class="upload-box">
@@ -280,49 +251,10 @@
             <input type="file" id="rssFile" accept=".rss,.xml,.txt">
         </div>
 
-        <button onclick="inspectAndProcess()">Inspect File & Compute Board</button>
+        <button onclick="processSingleFile()">Generate Board & Extract PPs</button>
     </div>
 
-    <!-- DIAGNOSTIC INSPECTOR PANEL -->
-    <div id="inspectorPanel" class="inspector-panel">
-        <div class="inspector-header">🔍 Data Field Mapping Inspector</div>
-        <p style="font-size: 13px; color: #475569; margin-top:0;">Verify or adjust how columns are mapped from your file:</p>
-
-        <div class="mapping-grid">
-            <div class="mapping-item">
-                <label>Horse Name Column:</label>
-                <select id="mapHorseName"></select>
-            </div>
-            <div class="mapping-item">
-                <label>Morning Line Column:</label>
-                <select id="mapMLOdds"></select>
-            </div>
-            <div class="mapping-item">
-                <label>Program Number Column:</label>
-                <select id="mapProgNum"></select>
-            </div>
-            <div class="mapping-item">
-                <label>Prime Power Column:</label>
-                <select id="mapPrimePower"></select>
-            </div>
-            <div class="mapping-item">
-                <label>Trainer Column:</label>
-                <select id="mapTrainer"></select>
-            </div>
-            <div class="mapping-item">
-                <label>Jockey Column:</label>
-                <select id="mapJockey"></select>
-            </div>
-        </div>
-
-        <button onclick="recalculateWithMappings()" style="margin-top:0; background-color:#16a34a;">Apply Column Mapping & Refresh Board</button>
-
-        <h4 style="margin:15px 0 5px 0; color:#334155; font-size:14px;">First Row Raw Data Inspection:</h4>
-        <div class="raw-table-wrapper">
-            <table class="raw-table" id="rawTable"></table>
-        </div>
-    </div>
-
+    <div id="statusBadge" class="status-badge"></div>
     <div id="results"></div>
 </div>
 
@@ -331,47 +263,52 @@
     <div class="modal-content">
         <button class="modal-close" onclick="closeModal()">×</button>
         <div id="modalHeader"></div>
-        <div id="modalBody"></div>
+        <div class="pp-table-wrapper">
+            <div id="modalBody"></div>
+        </div>
     </div>
 </div>
 
 <script>
-    let globalParsedRows = [];
-    let globalScratches = new Set();
     let globalRacesData = [];
 
-    async function inspectAndProcess() {
+    async function processSingleFile() {
         const csvFileInput = document.getElementById('csvFile');
         const rssFileInput = document.getElementById('rssFile');
 
         if (!csvFileInput.files[0] || !rssFileInput.files[0]) {
-            alert('Please select both the Brisnet data file and the RSS scratch feed.');
+            showStatus('Please select both the Brisnet Single-File data file and the Scratch feed.', 'error');
             return;
         }
 
         const csvText = await csvFileInput.files[0].text();
         const rssText = await rssFileInput.files[0].text();
 
-        globalScratches = parseRSSScratches(rssText);
-        globalParsedRows = parseCSVRows(csvText);
+        const scratches = parseRSSScratches(rssText);
+        const rows = parseCSVLines(csvText);
 
-        if (globalParsedRows.length === 0) {
-            alert('Could not parse any rows from the file.');
+        if (rows.length === 0) {
+            showStatus('Error: Data file is empty or could not be parsed.', 'error');
             return;
         }
 
-        // Show Inspector Panel
-        setupInspectorPanel(globalParsedRows);
+        globalRacesData = parseOfficialBrisnetWithPPs(rows, scratches);
 
-        // Compute initial board
-        recalculateWithMappings();
+        showStatus(`✅ Successfully loaded ${globalRacesData.length} race(s) with full Past Performance histories.`, 'success');
+        renderBoard(globalRacesData);
+    }
+
+    function showStatus(msg, type) {
+        const badge = document.getElementById('statusBadge');
+        badge.className = `status-badge ${type}`;
+        badge.innerHTML = msg;
+        badge.style.display = 'block';
     }
 
     function parseCSVLine(line) {
         const result = [];
         let cell = '';
         let inQuotes = false;
-        
         for (let i = 0; i < line.length; i++) {
             const char = line[i];
             if (char === '"') {
@@ -387,112 +324,83 @@
         return result;
     }
 
-    function parseCSVRows(csvText) {
-        const lines = csvText.split(/\r?\n/).filter(l => l.trim().length > 0);
-        return lines.map(line => parseCSVLine(line));
+    function parseCSVLines(text) {
+        return text.split(/\r?\n/)
+            .filter(l => l.trim().length > 0)
+            .map(line => parseCSVLine(line));
     }
 
-    function setupInspectorPanel(rows) {
-        const firstRow = rows[0];
-        const inspectorPanel = document.getElementById('inspectorPanel');
-        const rawTable = document.getElementById('rawTable');
-
-        // Build Dropdown Options
-        const dropdownIds = ['mapHorseName', 'mapMLOdds', 'mapProgNum', 'mapPrimePower', 'mapTrainer', 'mapJockey'];
-        
-        dropdownIds.forEach(id => {
-            const sel = document.getElementById(id);
-            sel.innerHTML = '';
-            firstRow.forEach((val, idx) => {
-                const opt = document.createElement('option');
-                opt.value = idx;
-                opt.textContent = `Col ${idx}: "${val.substring(0, 20)}"`;
-                sel.appendChild(opt);
-            });
-        });
-
-        // Set Auto-Guessed Default Indices
-        document.getElementById('mapProgNum').value    = autoFindCol(firstRow, [4, 3, 2], /^\d+[A-Z]?$/i) || 4;
-        document.getElementById('mapHorseName').value  = autoFindCol(firstRow, [12, 10, 11, 13], /[A-Z]{3,}/i) || 12;
-        document.getElementById('mapTrainer').value    = autoFindCol(firstRow, [18, 17, 19, 21], /[A-Za-z]/) || 18;
-        document.getElementById('mapJockey').value     = autoFindCol(firstRow, [19, 18, 20, 22], /[A-Za-z]/) || 19;
-        document.getElementById('mapMLOdds').value     = autoFindCol(firstRow, [21, 23, 24, 25], /^\d+\/\d+$|^\d+(\.\d+)?$/) || 21;
-        document.getElementById('mapPrimePower').value = autoFindCol(firstRow, [115, 116, 114, 100], /^\d{3}\.\d$/) || 115;
-
-        // Populate Raw Inspection Table
-        let thHTML = '<tr>';
-        let tdHTML = '<tr>';
-        firstRow.forEach((val, idx) => {
-            thHTML += `<th>Col ${idx}</th>`;
-            tdHTML += `<td>${val}</td>`;
-        });
-        thHTML += '</tr>';
-        tdHTML += '</tr>';
-
-        rawTable.innerHTML = `<thead>${thHTML}</thead><tbody>${tdHTML}</tbody>`;
-        inspectorPanel.style.display = 'block';
-    }
-
-    function autoFindCol(row, candidates, regex) {
-        for (let idx of candidates) {
-            if (row[idx] && regex.test(row[idx])) return idx;
-        }
-        return candidates[0];
-    }
-
-    function recalculateWithMappings() {
-        const mapProgNum    = parseInt(document.getElementById('mapProgNum').value, 10);
-        const mapHorseName  = parseInt(document.getElementById('mapHorseName').value, 10);
-        const mapMLOdds     = parseInt(document.getElementById('mapMLOdds').value, 10);
-        const mapPrimePower = parseInt(document.getElementById('mapPrimePower').value, 10);
-        const mapTrainer    = parseInt(document.getElementById('mapTrainer').value, 10);
-        const mapJockey     = parseInt(document.getElementById('mapJockey').value, 10);
-
+    // STRICT OFFICIAL BRISNET SINGLE-FILE & PP EXTRACTOR
+    function parseOfficialBrisnetWithPPs(rows, scratches) {
         const racesMap = {};
 
-        for (let cols of globalParsedRows) {
-            if (cols.length < 10) continue;
+        rows.forEach(cols => {
+            if (cols.length < 50) return;
 
-            const trackCode = cols[0] ? cols[0].trim() : 'SAR';
-            const raceNum   = parseInt(cols[2], 10) || 1;
-            const progNum   = cols[mapProgNum] ? cols[mapProgNum].trim() : '1';
-            const horseName = cols[mapHorseName] ? cols[mapHorseName].trim() : 'Unknown Runner';
-            const mlOdds    = cols[mapMLOdds] ? cols[mapMLOdds].trim() : 'N/A';
-            const trainer   = cols[mapTrainer] ? cols[mapTrainer].trim() : '';
-            const jockey    = cols[mapJockey] ? cols[mapJockey].trim() : '';
+            // Core Entry Header Fields
+            const trackCode  = cols[0] ? cols[0].trim().toUpperCase() : 'SAR';
+            const raceNum    = parseInt(cols[2], 10) || 1;
+            const progNum    = cols[4] ? cols[4].trim() : (cols[3] || '1');
+            const horseName  = cols[12] ? cols[12].trim() : 'Unknown Runner';
+            const trainer    = cols[18] ? cols[18].trim() : 'N/A';
+            const jockey     = cols[19] ? cols[19].trim() : 'N/A';
+            const mlOdds     = cols[21] ? cols[21].trim() : 'N/A';
 
             let primePower = 'N/A';
-            if (cols[mapPrimePower] && !isNaN(parseFloat(cols[mapPrimePower]))) {
-                primePower = parseFloat(cols[mapPrimePower]).toFixed(1);
+            if (cols[115] && !isNaN(parseFloat(cols[115]))) {
+                primePower = parseFloat(cols[115]).toFixed(1);
             }
 
-            // Extract Speed Figs across trailing fields
-            const speedFigs = [];
-            for (let c = 200; c < cols.length; c++) {
-                const fig = parseInt(cols[c], 10);
-                if (!isNaN(fig) && fig >= 40 && fig <= 140) {
-                    speedFigs.push(fig);
-                }
-            }
-
-            const avgRating = speedFigs.length > 0
-                ? (speedFigs.slice(0, 3).reduce((a, b) => a + b, 0) / Math.min(3, speedFigs.length)).toFixed(1)
-                : 75.0;
-
+            // Extract Real Past Performances (PP 1 through PP 10)
             const pastPerformances = [];
-            const ppCount = Math.max(speedFigs.length, 5);
-            for (let i = 0; i < ppCount; i++) {
-                const fig = speedFigs[i] || 75;
+            const ppStartCol = 200; // PP 1 starts at index 200
+            const ppBlockSize = 70; // 70 fields per PP block
+
+            for (let ppIdx = 0; ppIdx < 10; ppIdx++) {
+                const base = ppStartCol + (ppIdx * ppBlockSize);
+                if (base + 20 >= cols.length) break;
+
+                const dateStr = cols[base] ? cols[base].trim() : '';
+                if (!dateStr || dateStr.length < 8) continue; // No more PP records
+
+                const formattedDate = `${dateStr.substring(4,6)}/${dateStr.substring(6,8)}/${dateStr.substring(0,4)}`;
+                const ppTrack       = cols[base + 1] ? cols[base + 1].trim() : trackCode;
+                const ppCond        = cols[base + 2] ? cols[base + 2].trim() : 'FT';
+                const ppDist        = cols[base + 3] ? cols[base + 3].trim() : '';
+                const ppSurf        = cols[base + 4] ? cols[base + 4].trim() : 'D';
+                const ppClass       = cols[base + 5] ? cols[base + 5].trim() : 'STK';
+                const e1Pace        = cols[base + 8] ? cols[base + 8].trim() : '-';
+                const e2Pace        = cols[base + 9] ? cols[base + 9].trim() : '-';
+                const latePace      = cols[base + 10] ? cols[base + 10].trim() : '-';
+                const speedFig      = cols[base + 11] ? parseInt(cols[base + 11], 10) : null;
+                const finishPos     = cols[base + 16] ? cols[base + 16].trim() : '-';
+                const ppOdds        = cols[base + 18] ? cols[base + 18].trim() : '-';
+                const tripComment   = cols[base + 20] ? cols[base + 20].trim() : 'No comment';
+
                 pastPerformances.push({
-                    raceIdx: i + 1,
-                    track: trackCode,
-                    speedFig: fig,
-                    classRating: Math.floor(fig * 1.03),
-                    finish: (i === 0) ? "1st" : ((i % 2 === 0) ? "2nd" : "3rd/4th")
+                    date: formattedDate,
+                    track: ppTrack,
+                    cond: ppCond,
+                    dist: ppDist,
+                    surf: ppSurf,
+                    cls: ppClass,
+                    e1: e1Pace,
+                    e2: e2Pace,
+                    lp: latePace,
+                    speedFig: speedFig || 'N/A',
+                    finish: finishPos,
+                    odds: ppOdds,
+                    comment: tripComment
                 });
             }
 
-            const isScratched = globalScratches.has(`${raceNum}-${progNum}`);
+            // Calculate Speed Rating from last 3 valid figures
+            const validFigs = pastPerformances.map(p => p.speedFig).filter(f => typeof f === 'number');
+            const avgRating = validFigs.length > 0
+                ? (validFigs.slice(0, 3).reduce((a, b) => a + b, 0) / Math.min(3, validFigs.length)).toFixed(1)
+                : '75.0';
+
+            const isScratched = scratches.has(`${raceNum}-${progNum}`);
 
             const runner = {
                 progNum,
@@ -517,10 +425,9 @@
             } else {
                 racesMap[raceNum].pretenders.push(runner);
             }
-        }
+        });
 
-        globalRacesData = Object.values(racesMap);
-        renderBoard(globalRacesData);
+        return Object.values(racesMap);
     }
 
     function parseRSSScratches(rssString) {
@@ -555,7 +462,7 @@
                         <span class="badge-ml">ML: ${h.mlOdds}</span>
                     </div>
                     <div class="horse-meta">
-                        Rating: <strong>${h.rating}</strong> | 
+                        Avg Speed: <strong>${h.rating}</strong> | 
                         <span class="badge-power">Prime Power: ${h.primePower}</span>
                     </div>
                 </div>
@@ -567,7 +474,7 @@
                         <span>#${h.progNum} ${h.name}</span>
                         <span class="badge-ml">ML: ${h.mlOdds}</span>
                     </div>
-                    <div class="horse-meta">Rating: <strong>${h.rating}</strong></div>
+                    <div class="horse-meta">Avg Speed: <strong>${h.rating}</strong></div>
                 </div>
             `).join('') || '<p style="color:#64748b; font-size:14px;">No pretenders identified.</p>';
 
@@ -579,7 +486,7 @@
                 <div class="race-header">${race.trackCode} — RACE ${race.raceNum}</div>
                 <div class="columns">
                     <div class="column contenders">
-                        <div class="column-title">🔥 CONTENDERS / OVERLAYS (Tap for PPs)</div>
+                        <div class="column-title">🔥 CONTENDERS / OVERLAYS (Touch Name for PPs)</div>
                         ${contendersHTML}
                     </div>
                     <div class="column pretenders">
@@ -606,41 +513,54 @@
 
         modalHeader.innerHTML = `
             <h2 style="margin:0; color:#0f172a;">#${horse.progNum} ${horse.name}</h2>
-            <p style="margin:5px 0 15px 0; color:#64748b; font-size:14px;">
+            <p style="margin:6px 0 15px 0; color:#64748b; font-size:14px;">
                 Morning Line: <strong>${horse.mlOdds}</strong> &nbsp;|&nbsp; 
                 Prime Power: <strong style="color:#15803d;">${horse.primePower}</strong> &nbsp;|&nbsp; 
-                Avg Rating: <strong>${horse.rating}</strong>
-                ${horse.trainer ? `<br>Trainer: <strong>${horse.trainer}</strong> | Jockey: <strong>${horse.jockey}</strong>` : ''}
+                Avg Speed Fig: <strong>${horse.rating}</strong><br>
+                Trainer: <strong>${horse.trainer}</strong> &nbsp;|&nbsp; Jockey: <strong>${horse.jockey}</strong>
             </p>
         `;
 
-        let ppRowsHTML = horse.pastPerformances.map(pp => `
-            <tr>
-                <td>Race -${pp.raceIdx}</td>
-                <td>${pp.track}</td>
-                <td><strong>${pp.speedFig}</strong></td>
-                <td>${pp.classRating}</td>
-                <td>${pp.finish}</td>
-            </tr>
-        `).join('');
+        if (horse.pastPerformances.length === 0) {
+            modalBody.innerHTML = '<p style="color:#64748b;">No past performance lines found in file.</p>';
+        } else {
+            let ppRowsHTML = horse.pastPerformances.map(pp => `
+                <tr>
+                    <td>${pp.date}</td>
+                    <td><strong>${pp.track}</strong></td>
+                    <td>${pp.dist} (${pp.surf}/${pp.cond})</td>
+                    <td>${pp.cls}</td>
+                    <td><span class="fig-badge">${pp.speedFig}</span></td>
+                    <td>${pp.e1} / ${pp.e2}</td>
+                    <td>${pp.lp}</td>
+                    <td><strong>${pp.finish}</strong></td>
+                    <td>${pp.odds}</td>
+                    <td style="color:#475569; font-style:italic;">${pp.comment}</td>
+                </tr>
+            `).join('');
 
-        modalBody.innerHTML = `
-            <h4 style="margin-bottom:8px; color:#334155;">Last Past Performance Races</h4>
-            <table class="pp-table">
-                <thead>
-                    <tr>
-                        <th>Past Race</th>
-                        <th>Track</th>
-                        <th>Speed Figure</th>
-                        <th>Class Rating</th>
-                        <th>Finish</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${ppRowsHTML}
-                </tbody>
-            </table>
-        `;
+            modalBody.innerHTML = `
+                <table class="pp-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Track</th>
+                            <th>Dist/Surf</th>
+                            <th>Class</th>
+                            <th>Speed Fig</th>
+                            <th>E1 / E2</th>
+                            <th>Late Pace</th>
+                            <th>Fin</th>
+                            <th>Odds</th>
+                            <th>Trip / Comment</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${ppRowsHTML}
+                    </tbody>
+                </table>
+            `;
+        }
 
         document.getElementById('ppModal').style.display = 'flex';
     }
