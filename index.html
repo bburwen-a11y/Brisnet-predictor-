@@ -43,7 +43,7 @@
   h2::after{content:""; flex:1; height:1px; background:var(--paper-line);}
   .step-num{font-family:var(--mono); background:var(--board-950); color:var(--amber); font-size:11px; padding:3px 7px; border-radius:2px;}
 
-  .upload-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:16px;}
+  .upload-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:16px;}
   .upload-card{border:1.5px dashed var(--paper-line); border-radius:4px; padding:18px; background:var(--paper-dim);}
   .upload-card h3{margin:0 0 6px; font-size:15px; color:var(--ink);}
   .upload-card p{margin:0 0 12px; font-size:12.5px; color:var(--ink-soft); line-height:1.5;}
@@ -53,8 +53,15 @@
   }
   .file-btn:hover{background:var(--board-800);}
   input[type=file]{display:none;}
-  .status{font-family:var(--mono); font-size:12px; margin-top:8px; color:var(--ink-soft); min-height:16px;}
+  .status{font-family:var(--mono); font-size:12px; margin-top:8px; color:var(--ink-soft); min-height:16px; word-break:break-all;}
   .status.ok{color:var(--green); font-weight:700;}
+  .status.err{color:var(--red); font-weight:700;}
+
+  .file-meta-box{
+    margin-top:10px; padding:8px 10px; background:#fff; border:1px solid var(--paper-line);
+    border-radius:3px; font-family:var(--mono); font-size:11.5px; display:none;
+  }
+  .file-meta-box.show{display:block;}
 
   /* TABLES & FIELD INPUTS */
   .table-wrap{overflow-x:auto; border:1px solid var(--paper-line); border-radius:3px;}
@@ -73,7 +80,6 @@
   .scratched-row{opacity:.45;}
   .scratched-row td input{text-decoration:line-through;}
   
-  /* EXPANDED COLUMN WIDTHS */
   .col-race{width:55px; min-width:55px;}
   .col-post{width:50px; min-width:50px;}
   .col-horse{min-width:160px;}
@@ -95,7 +101,8 @@
   .primary-btn:hover{background:#c69528;}
   .ghost-btn{background:none; border:1px solid var(--ink-soft); color:var(--ink-soft); padding:10px 16px; border-radius:3px; font-size:13px; cursor:pointer;}
   .ghost-btn:hover{border-color:var(--ink); color:var(--ink);}
-  .small-btn{background:transparent; border:1px solid var(--board-950); color:var(--board-950); padding:7px 12px; border-radius:3px; font-size:12px; font-weight:600; cursor:pointer;}
+  .small-btn{background:transparent; border:1px solid var(--board-950); color:var(--board-950); padding:5px 10px; border-radius:3px; font-size:11.5px; font-weight:600; cursor:pointer;}
+  .small-btn:hover{background:var(--board-950); color:var(--paper);}
 
   .tabbar{display:flex; gap:0; margin:0 0 18px; border-bottom:2px solid var(--paper-line); overflow-x:auto;}
   .tabbar button{
@@ -171,8 +178,17 @@
           <h3>Equibase RSS / XML Scratches</h3>
           <p>Import official feed XML or paste changes to automatically set scratches and recompute the card.</p>
           <label class="file-btn" for="rssInput">Select XML/RSS</label>
-          <input type="file" id="rssInput" accept=".xml,.rss,.txt">
-          <textarea id="rssPaste" rows="2" placeholder="...or paste XML here" style="margin-top:8px;"></textarea>
+          <input type="file" id="rssInput" accept=".xml,.rss,.txt,.xml.rss">
+          
+          <div class="file-meta-box" id="rssMetaBox">
+            <div><strong>Loaded File:</strong> <span id="rssFileName">-</span></div>
+            <div><strong>Feed Date:</strong> <span id="rssFileDate">-</span></div>
+            <div style="margin-top:6px;">
+              <button class="small-btn" id="reloadRssBtn">↻ Reload / Replace File</button>
+            </div>
+          </div>
+
+          <textarea id="rssPaste" rows="2" placeholder="...or paste XML content directly here" style="margin-top:8px;"></textarea>
           <button class="small-btn" id="applyRssBtn" style="margin-top:8px;">Apply Scratches</button>
           <div class="status" id="rssStatus"></div>
         </div>
@@ -346,16 +362,12 @@ document.getElementById('drfInput').addEventListener('change', e => {
       const trainer = get(27);
       const jockey = get(37);
 
-      // --- EXACT BRISNET SPECIFICATIONS ---
-      // Field 1275: Primary Prime Power Rating (Fallback to 201 if 1275 is empty)
       let rawPrimePower = num(1275);
       if (rawPrimePower === 0) rawPrimePower = num(201);
       
-      // Scaling check: standard Brisnet Prime Power ranges from ~100.0 to ~165.0
       if (rawPrimePower > 1000) rawPrimePower = rawPrimePower / 10;
       const primePower = rawPrimePower > 0 ? rawPrimePower.toFixed(1) : '';
 
-      // Lifetime Record Stats
       const starts = num(97);
       const wins = num(98);
       const places = num(99);
@@ -364,7 +376,6 @@ document.getElementById('drfInput').addEventListener('change', e => {
       const lastSpeed = num(626);
       const bestSpeed = num(1389);
 
-      // Extract up to 10 Past Performance Lines
       const ppRaces = [];
       for(let i = 0; i < 10; i++){
         const date = get(256 + i);
@@ -380,7 +391,6 @@ document.getElementById('drfInput').addEventListener('change', e => {
         });
       }
 
-      // Extract Last 4 Workouts (Brisnet Workout Data: Fields 1390-1413)
       const ppWorks = [];
       for(let w = 0; w < 4; w++){
         const baseIndex = 1390 + (w * 6);
@@ -405,33 +415,140 @@ document.getElementById('drfInput').addEventListener('change', e => {
     });
 
     renderRows();
-    document.getElementById('drfStatus').innerText = `Successfully loaded ${rows.length} horses with full stats & workouts.`;
+    document.getElementById('drfStatus').innerText = `Loaded ${rows.length} horses successfully.`;
     document.getElementById('drfStatus').className = 'status ok';
   };
   reader.readAsText(file);
 });
 
-/* SCRATCHES */
-function applyScratchesFromXML(xmlText){
+/* ROBUST RSS / XML SCRATCH PROCESSOR & DATE EXTRACTION */
+function extractDateFromXML(xmlDoc, rawText){
+  // Strategy 1: Look for pubDate, lastBuildDate, or date nodes in RSS/XML
+  const dateTags = ['pubDate', 'lastBuildDate', 'date', 'dc:date', 'issueDate'];
+  for (const tag of dateTags){
+    const el = xmlDoc.querySelector(tag);
+    if(el && el.textContent.trim()){
+      return el.textContent.trim();
+    }
+  }
+
+  // Strategy 2: Regex search for standard date patterns in raw text (YYYY-MM-DD or MM/DD/YYYY or Mon, DD MMM YYYY)
+  const dateRegex = /\b(?:\d{4}-\d{2}-\d{2}|\d{1,2}\/\d{1,2}\/\d{2,4}|(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{1,2},?\s+\d{4})\b/i;
+  const match = rawText.match(dateRegex);
+  if(match) return match[0];
+
+  return "Date Not Specified in Feed";
+}
+
+function processScratches(rawText, fileName = "Pasted Content"){
+  if(!rawText || !rawText.trim()){
+    document.getElementById('rssStatus').innerText = "Error: Input content is empty.";
+    document.getElementById('rssStatus').className = 'status err';
+    return;
+  }
+
+  const parser = new DOMParser();
+  const xmlDoc = parser.parseFromString(rawText, "text/xml");
+  
+  // Check parsing errors
+  const parseError = xmlDoc.querySelector("parsererror");
+  if(parseError && !rawText.toLowerCase().includes('scratch')){
+    document.getElementById('rssStatus').innerText = "Warning: XML structure invalid, attempting text match...";
+    document.getElementById('rssStatus').className = 'status err';
+  }
+
+  // Display metadata & file name
+  const feedDate = extractDateFromXML(xmlDoc, rawText);
+  document.getElementById('rssFileName').innerText = fileName;
+  document.getElementById('rssFileDate').innerText = feedDate;
+  document.getElementById('rssMetaBox').classList.add('show');
+
+  // Match scratches across tags or plain text fallback
   let scratchCount = 0;
+  const scratchedHorses = new Set();
+
+  // Parse scratch nodes/items directly if available
+  const nodes = xmlDoc.querySelectorAll("scratch, item, entry, runner, horse");
+  if(nodes.length > 0){
+    nodes.forEach(node => {
+      const type = node.querySelector("type, change")?.textContent || "";
+      const isScratchType = !type || type.toLowerCase().includes("scratch");
+      
+      if(isScratchType){
+        const txt = node.textContent.toLowerCase();
+        rows.forEach(r => {
+          if(r.horse && txt.includes(r.horse.toLowerCase())){
+            scratchedHorses.add(r.id);
+          }
+        });
+      }
+    });
+  }
+
+  // Universal text fallback scan for all rows
+  const cleanText = rawText.toLowerCase();
   rows.forEach(r => {
-    if(xmlText.toLowerCase().includes(r.horse.toLowerCase()) && r.horse.length > 2){
-      r.scratched = true;
-      scratchCount++;
+    if(r.horse && r.horse.length > 2){
+      const name = r.horse.toLowerCase();
+      // Match exact horse name or post/race combination inside text
+      if(cleanText.includes(name) || scratchedHorses.has(r.id)){
+        r.scratched = true;
+        scratchCount++;
+      }
     }
   });
+
   renderRows();
-  document.getElementById('rssStatus').innerText = `Applied ${scratchCount} scratches.`;
+  document.getElementById('rssStatus').innerText = `Applied ${scratchCount} scratches automatically.`;
   document.getElementById('rssStatus').className = 'status ok';
+
   if(Object.keys(computedRaces).length > 0) computeRaceCard();
 }
 
+// File Input Handler
+const rssInput = document.getElementById('rssInput');
+rssInput.addEventListener('change', e => {
+  const file = e.target.files[0];
+  if(!file) return;
+  
+  const reader = new FileReader();
+  reader.onload = evt => {
+    processScratches(evt.target.result, file.name);
+  };
+  reader.onerror = () => {
+    document.getElementById('rssStatus').innerText = "Failed to read file.";
+    document.getElementById('rssStatus').className = 'status err';
+  };
+  reader.readAsText(file);
+});
+
+// Textarea Paste Handler
 document.getElementById('applyRssBtn').addEventListener('click', () => {
   const text = document.getElementById('rssPaste').value;
-  if(text) applyScratchesFromXML(text);
+  processScratches(text, "Pasted Content");
+});
+
+// Reload / Clear RSS Handler
+document.getElementById('reloadRssBtn').addEventListener('click', () => {
+  rssInput.value = "";
+  document.getElementById('rssPaste').value = "";
+  document.getElementById('rssMetaBox').classList.remove('show');
+  document.getElementById('rssStatus').innerText = "Feed reset. Please choose a new file.";
+  document.getElementById('rssStatus').className = 'status';
+  rssInput.click();
 });
 
 /* CARD COMPUTATION & DISPLAY */
+function parseOdds(oddsStr){
+  if(!oddsStr) return 5.0;
+  if(oddsStr.includes('/')){
+    const parts = oddsStr.split('/');
+    return (parseFloat(parts[0]) / parseFloat(parts[1])) + 1.0;
+  }
+  const val = parseFloat(oddsStr);
+  return isNaN(val) ? 5.0 : val + 1.0;
+}
+
 function computeRaceCard(){
   computedRaces = {};
   const activeRows = rows.filter(r => !r.scratched);
