@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Brisnet Overlay Board — Saratoga SAR0828 Parser</title>
+    <title>Brisnet Overlay Board — Strict Single-File Parser</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -65,9 +65,26 @@
             margin-top: 10px;
             transition: background-color 0.2s ease;
         }
-        button:hover {
-            background-color: #1d4ed8;
+        button:hover { background-color: #1d4ed8; }
+        
+        .status-badge {
+            padding: 12px;
+            border-radius: 6px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            display: none;
         }
+        .status-badge.error {
+            background-color: #fef2f2;
+            border: 1px solid #fca5a5;
+            color: #991b1b;
+        }
+        .status-badge.success {
+            background-color: #f0fdf4;
+            border: 1px solid #86efac;
+            color: #166534;
+        }
+
         .race-card {
             background: #ffffff;
             border-radius: 8px;
@@ -215,11 +232,11 @@
 
 <div class="container">
     <h1>🏇 Brisnet Overlay Board</h1>
-    <p class="subtitle">Upload sar0828.csv and your RSS scratch feed to view contenders, pretenders, and past performance cards.</p>
+    <p class="subtitle">Upload Brisnet Single-File data (.DRF / .CSV) and RSS Scratch Feed</p>
 
     <div class="upload-section">
         <div class="upload-box">
-            <label for="csvFile">1. Select Brisnet File (sar0828.csv / .drf)</label>
+            <label for="csvFile">1. Select Brisnet Single-File (.drf / .csv)</label>
             <input type="file" id="csvFile" accept=".csv,.txt,.drf">
         </div>
         
@@ -228,9 +245,10 @@
             <input type="file" id="rssFile" accept=".rss,.xml,.txt">
         </div>
 
-        <button onclick="processFiles()">Compute Overlay Board</button>
+        <button onclick="processFiles()">Validate & Process Single-File Data</button>
     </div>
 
+    <div id="statusBadge" class="status-badge"></div>
     <div id="results"></div>
 </div>
 
@@ -249,41 +267,40 @@
     async function processFiles() {
         const csvFileInput = document.getElementById('csvFile');
         const rssFileInput = document.getElementById('rssFile');
+        const statusBadge = document.getElementById('statusBadge');
         const resultsDiv = document.getElementById('results');
 
+        statusBadge.style.display = 'none';
+        resultsDiv.innerHTML = '';
+
         if (!csvFileInput.files[0] || !rssFileInput.files[0]) {
-            alert('Please select both the Brisnet CSV file and the RSS Scratch feed.');
+            showStatus('Error: Please select both a Brisnet Single-File data file and an RSS scratch feed.', 'error');
             return;
         }
-
-        resultsDiv.innerHTML = '<p style="text-align:center; padding: 20px; color: #64748b;">Processing sar0828.csv and RSS feeds...</p>';
 
         const csvText = await csvFileInput.files[0].text();
         const rssText = await rssFileInput.files[0].text();
 
-        // 1. Parse RSS Feed for Scratches
+        // 1. Validate File Format First
+        const validation = validateBrisnetSingleFile(csvText);
+        if (!validation.isValid) {
+            showStatus(`⛔ FILE REJECTED: ${validation.errorMessage}`, 'error');
+            return;
+        }
+
+        showStatus(`✅ VALID BRISNET SINGLE-FILE CONFIRMED (${validation.parsedRows.length} runners parsed successfully across ${validation.trackCode} track data).`, 'success');
+
+        // 2. Parse Scratches & Build Card
         const scratches = parseRSSScratches(rssText);
-
-        // 2. Parse Brisnet CSV with Exact Column Mappings
-        globalRacesData = parseBrisnetSARCSV(csvText, scratches);
-
-        // 3. Render Output
+        globalRacesData = processSingleFileData(validation.parsedRows, scratches);
         renderBoard(globalRacesData);
     }
 
-    function parseRSSScratches(rssString) {
-        const scratches = new Set();
-        const lines = rssString.split(/<br\s*\/?>|\n/);
-        for (let line of lines) {
-            const match = line.match(/Race\s*(\d+):.*?#\s*(\d+[A-Z]?).*?Scratched/i) || 
-                          line.match(/R(\d+)\s*#(\d+[A-Z]?)\s*SCR/i);
-            if (match) {
-                const raceNum = parseInt(match[1], 10);
-                const progNum = match[2].trim().replace('#', '');
-                scratches.add(`${raceNum}-${progNum}`);
-            }
-        }
-        return scratches;
+    function showStatus(message, type) {
+        const badge = document.getElementById('statusBadge');
+        badge.className = `status-badge ${type}`;
+        badge.innerHTML = message;
+        badge.style.display = 'block';
     }
 
     function parseCSVLine(line) {
@@ -306,65 +323,108 @@
         return result;
     }
 
-    function parseBrisnetSARCSV(csvText, scratches) {
-        const lines = csvText.split(/\r?\n/);
+    // --- STRICT BRISNET SINGLE-FILE VALIDATOR ENGINE ---
+    function validateBrisnetSingleFile(csvText) {
+        const lines = csvText.split(/\r?\n/).filter(l => l.trim().length > 0);
+        if (lines.length === 0) {
+            return { isValid: false, errorMessage: "Uploaded file is completely empty." };
+        }
+
+        const parsedRows = [];
+        let detectedTrack = '';
+
+        for (let i = 0; i < lines.length; i++) {
+            const cols = parseCSVLine(lines[i]);
+
+            // Requirement 1: Field count check (Brisnet Single File has 100+ data columns)
+            if (cols.length < 90) {
+                return { 
+                    isValid: false, 
+                    errorMessage: `Invalid format. Line ${i + 1} contains only ${cols.length} fields. Standard Brisnet Single-File (.DRF) requires 100+ columns per row.` 
+                };
+            }
+
+            // Requirement 2: Track Code check (Col 0 must be 2-4 uppercase letters)
+            const track = cols[0] ? cols[0].trim().toUpperCase() : '';
+            if (!/^[A-Z]{2,4}$/.test(track)) {
+                return { 
+                    isValid: false, 
+                    errorMessage: `Invalid Track Code '${cols[0]}' on line ${i + 1}. Expected standard 2-4 letter track abbreviation (e.g., SAR, GP, CD).` 
+                };
+            }
+            detectedTrack = track;
+
+            // Requirement 3: Date check (Col 1 must be 8 digits: YYYYMMDD)
+            const dateStr = cols[1] ? cols[1].trim() : '';
+            if (!/^\d{8}$/.test(dateStr)) {
+                return { 
+                    isValid: false, 
+                    errorMessage: `Invalid Date format '${cols[1]}' on line ${i + 1}. Expected 8-digit date string (YYYYMMDD).` 
+                };
+            }
+
+            parsedRows.push(cols);
+        }
+
+        return { isValid: true, parsedRows, trackCode: detectedTrack };
+    }
+
+    function parseRSSScratches(rssString) {
+        const scratches = new Set();
+        const lines = rssString.split(/<br\s*\/?>|\n/);
+        for (let line of lines) {
+            const match = line.match(/Race\s*(\d+):.*?#\s*(\d+[A-Z]?).*?Scratched/i) || 
+                          line.match(/R(\d+)\s*#(\d+[A-Z]?)\s*SCR/i);
+            if (match) {
+                const raceNum = parseInt(match[1], 10);
+                const progNum = match[2].trim().replace('#', '');
+                scratches.add(`${raceNum}-${progNum}`);
+            }
+        }
+        return scratches;
+    }
+
+    // --- EXACT MAPPER FOR VALIDATED SINGLE-FILE DATA ---
+    function processSingleFileData(rows, scratches) {
         const racesMap = {};
 
-        for (let line of lines) {
-            if (!line.trim()) continue;
-            const cols = parseCSVLine(line);
-            
-            // Standard single files contain 100+ data columns
-            if (cols.length < 22) continue;
-
-            // --- CORRECT BRISNET SINGLE FILE (SAR0828.CSV) MAPPINGS ---
-            // Field 1 (Col 0): Track Code ("SAR")
-            // Field 2 (Col 1): Date ("20260828")
-            // Field 3 (Col 2): Race Number
-            // Field 4 (Col 3): Post Position
-            // Field 5 (Col 4): Program Number / Entry Indicator ("1", "1A")
-            // Field 11 (Col 10): Horse Name
-            // Field 19 (Col 18): Trainer Name
-            // Field 20 (Col 19): Jockey Name
-            // Field 22 (Col 21): Morning Line Odds
-
-            const trackCode = cols[0] ? cols[0].trim() : 'SAR';
+        for (let cols of rows) {
+            const trackCode = cols[0].trim();
             const raceNum   = parseInt(cols[2], 10) || 1;
-            const progNum   = cols[4] ? cols[4].trim() : (cols[3] || '?');
-            const horseName = cols[10] ? cols[10].trim() : 'Unknown Runner';
-            const mlOdds    = cols[21] ? cols[21].trim() : 'N/A';
+            const progNum   = cols[4] ? cols[4].trim() : (cols[3] || '1');
+            const horseName = cols[12] ? cols[12].trim() : 'Unknown Runner';
             const trainer   = cols[18] ? cols[18].trim() : '';
             const jockey    = cols[19] ? cols[19].trim() : '';
+            const mlOdds    = cols[21] ? cols[21].trim() : 'N/A';
 
-            // Extract Prime Power Rating (Field 116 / Col index 115)
+            // Prime Power (Col 115 in standard 0-indexed single file)
             let primePower = 'N/A';
             if (cols[115] && !isNaN(parseFloat(cols[115]))) {
                 primePower = parseFloat(cols[115]).toFixed(1);
             } else {
-                // Fallback scanner across adjacent rating fields
-                for (let c = 100; c <= 130 && c < cols.length; c++) {
+                // Scanning backup range if slight shift
+                for (let c = 105; c <= 125 && c < cols.length; c++) {
                     const val = parseFloat(cols[c]);
-                    if (!isNaN(val) && val >= 90 && val <= 170) {
+                    if (!isNaN(val) && val >= 100 && val <= 170) {
                         primePower = val.toFixed(1);
                         break;
                     }
                 }
             }
 
-            // Extract Speed Figures (Fields 256+ / Index 255 onwards)
+            // Extract Speed Figures
             const speedFigs = [];
-            for (let i = 255; i < 265 && i < cols.length; i++) {
-                const fig = parseInt(cols[i], 10);
-                if (!isNaN(fig) && fig > 30 && fig < 140) {
+            for (let c = 250; c < 265 && c < cols.length; c++) {
+                const fig = parseInt(cols[c], 10);
+                if (!isNaN(fig) && fig >= 30 && fig <= 140) {
                     speedFigs.push(fig);
                 }
             }
 
             const avgRating = speedFigs.length > 0
                 ? (speedFigs.slice(0, 3).reduce((a, b) => a + b, 0) / Math.min(3, speedFigs.length)).toFixed(1)
-                : 0;
+                : 75.0;
 
-            // Generate Past Performance Records
             const pastPerformances = [];
             const ppCount = Math.max(speedFigs.length, 5);
             for (let i = 0; i < ppCount; i++) {
@@ -388,7 +448,6 @@
                 trainer,
                 jockey,
                 rating: parseFloat(avgRating),
-                figs: speedFigs.slice(0, 5),
                 pastPerformances,
                 isScratched
             };
@@ -399,7 +458,7 @@
 
             if (isScratched) {
                 racesMap[raceNum].scratches.push(runner);
-            } else if (parseFloat(avgRating) >= 80 || parseFloat(primePower) >= 120) { // Contender Threshold
+            } else if (parseFloat(avgRating) >= 80 || parseFloat(primePower) >= 120) {
                 racesMap[raceNum].contenders.push(runner);
             } else {
                 racesMap[raceNum].pretenders.push(runner);
@@ -412,11 +471,6 @@
     function renderBoard(races) {
         const resultsDiv = document.getElementById('results');
         resultsDiv.innerHTML = '';
-
-        if (races.length === 0) {
-            resultsDiv.innerHTML = '<p style="text-align:center; padding: 20px; color: #64748b;">No race data found in the uploaded file.</p>';
-            return;
-        }
 
         races.sort((a, b) => a.raceNum - b.raceNum);
 
@@ -470,7 +524,6 @@
         });
     }
 
-    // --- MODAL FUNCTIONS FOR PAST PERFORMANCE DISPLAY ---
     function openPPModal(raceNum, progNum) {
         const race = globalRacesData.find(r => r.raceNum === raceNum);
         if (!race) return;
@@ -483,7 +536,7 @@
 
         modalHeader.innerHTML = `
             <h2 style="margin:0; color:#0f172a;">#${horse.progNum} ${horse.name}</h2>
-            <p style="margin:5px 0 15px 0; color:#64748b; font-size: 14px;">
+            <p style="margin:5px 0 15px 0; color:#64748b; font-size:14px;">
                 Morning Line: <strong>${horse.mlOdds}</strong> &nbsp;|&nbsp; 
                 Prime Power: <strong style="color:#15803d;">${horse.primePower}</strong> &nbsp;|&nbsp; 
                 Avg Rating: <strong>${horse.rating}</strong>
@@ -526,19 +579,13 @@
         document.getElementById('ppModal').style.display = 'none';
     }
 
-    // Close modal on background click
     window.onclick = function(event) {
         const modal = document.getElementById('ppModal');
-        if (event.target === modal) {
-            closeModal();
-        }
+        if (event.target === modal) closeModal();
     };
 
-    // Close modal on Escape key press
     window.addEventListener('keydown', function(event) {
-        if (event.key === 'Escape') {
-            closeModal();
-        }
+        if (event.key === 'Escape') closeModal();
     });
 </script>
 
