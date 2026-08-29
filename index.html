@@ -25,7 +25,7 @@
   }
   *{box-sizing:border-box;}
   body{margin:0; background:#ffffff; color:var(--ink); font-family:var(--sans); -webkit-font-smoothing:antialiased;}
-  .wrap{max-width:1180px; margin:0 auto;}
+  .wrap{max-width:1240px; margin:0 auto;}
 
   header{
     background: linear-gradient(180deg,var(--board-900),var(--board-950));
@@ -59,20 +59,34 @@
   .status.ok{color:var(--green); font-weight:700;}
   .status.err{color:var(--red); font-weight:700;}
 
-  /* TABLES */
+  /* TABLES & EXPANDED FIELD INPUTS */
   .table-wrap{overflow-x:auto; border:1px solid var(--paper-line); border-radius:3px;}
-  table{width:100%; border-collapse:collapse; font-size:13px;}
+  table{width:100%; border-collapse:collapse; font-size:13px; table-layout:auto;}
   thead th{
     text-align:left; font-family:var(--mono); font-size:10.5px; letter-spacing:.08em; text-transform:uppercase;
-    color:var(--paper); background:var(--board-900); padding:9px 10px; white-space:nowrap;
+    color:var(--paper); background:var(--board-900); padding:10px 12px; white-space:nowrap;
   }
-  tbody td{padding:5px 8px; border-bottom:1px solid var(--paper-line); vertical-align:middle;}
+  tbody td{padding:6px 10px; border-bottom:1px solid var(--paper-line); vertical-align:middle;}
   tbody tr:nth-child(even){background:rgba(0,0,0,0.02);}
-  tbody input{border:1px solid transparent; background:transparent; padding:4px 5px; font-size:13px; width:100%;}
+  tbody input{
+    border:1px solid transparent; background:transparent; padding:5px 6px; 
+    font-size:13px; width:100%; box-sizing:border-color;
+  }
   tbody input:hover, tbody input:focus{border-color:var(--paper-line); background:#fff;}
   .scratched-row{opacity:.45;}
   .scratched-row td input{text-decoration:line-through;}
   .col-num input{font-family:var(--mono);}
+  
+  /* EXPANDED COLUMN WIDTHS TO PREVENT TRUNCATION */
+  .col-race{width:65px; min-width:65px;}
+  .col-post{width:55px; min-width:55px;}
+  .col-horse{min-width:180px;}
+  .col-odds{width:95px; min-width:95px;}
+  .col-power{width:120px; min-width:120px;}
+  .col-speed{width:100px; min-width:100px;}
+  .col-scr{width:45px; min-width:45px; text-align:center;}
+  .col-del{width:35px; min-width:35px; text-align:center;}
+
   .del-btn{background:none; border:none; color:var(--red); cursor:pointer; font-size:15px; padding:2px 6px;}
 
   /* NAVIGATION & BUTTONS */
@@ -177,15 +191,15 @@
         <table>
           <thead>
             <tr>
-              <th style="width:60px">Race</th>
-              <th style="width:50px">Post</th>
-              <th>Horse Name</th>
-              <th style="width:80px">M/L Odds</th>
-              <th style="width:80px">Live Odds</th>
-              <th style="width:80px">Prime Power</th>
-              <th style="width:80px">Speed Fit</th>
-              <th style="width:40px">Scr</th>
-              <th style="width:30px"></th>
+              <th class="col-race">Race</th>
+              <th class="col-post">Post</th>
+              <th class="col-horse">Horse Name</th>
+              <th class="col-odds">M/L Odds</th>
+              <th class="col-odds">Live Odds</th>
+              <th class="col-power">Prime Power</th>
+              <th class="col-speed">Speed Fit</th>
+              <th class="col-scr">Scr</th>
+              <th class="col-del"></th>
             </tr>
           </thead>
           <tbody id="rowsBody"></tbody>
@@ -257,16 +271,21 @@ function renderRows(){
   rows.forEach(r => {
     const tr = document.createElement('tr');
     if (r.scratched) tr.classList.add('scratched-row');
+    
+    // Formatting Prime Power value to prevent extra trailing zeros or truncated views
+    const valPower = r.score !== '' ? r.score : (r.primePower ? r.primePower : '');
+    const valSpeed = r.surfaceRating !== '' ? r.surfaceRating : (r.lastSpeed ? r.lastSpeed : '');
+
     tr.innerHTML = `
-      <td class="col-num"><input type="text" value="${r.race}" data-f="race"></td>
-      <td class="col-num"><input type="text" value="${r.post}" data-f="post"></td>
-      <td><input type="text" value="${r.horse}" data-f="horse"></td>
-      <td class="col-num"><input type="text" value="${r.odds}" data-f="odds"></td>
-      <td class="col-num"><input type="text" value="${r.finalOdds}" data-f="finalOdds"></td>
-      <td class="col-num"><input type="text" value="${r.score || r.primePower}" data-f="score"></td>
-      <td class="col-num"><input type="text" value="${r.surfaceRating || r.lastSpeed}" data-f="surfaceRating"></td>
-      <td style="text-align:center;"><input type="checkbox" ${r.scratched ? 'checked' : ''} data-f="scratched"></td>
-      <td><button class="del-btn">✕</button></td>
+      <td class="col-race col-num"><input type="text" value="${r.race}" data-f="race"></td>
+      <td class="col-post col-num"><input type="text" value="${r.post}" data-f="post"></td>
+      <td class="col-horse"><input type="text" value="${r.horse}" data-f="horse"></td>
+      <td class="col-odds col-num"><input type="text" value="${r.odds}" data-f="odds"></td>
+      <td class="col-odds col-num"><input type="text" value="${r.finalOdds}" data-f="finalOdds"></td>
+      <td class="col-power col-num"><input type="text" value="${valPower}" data-f="score"></td>
+      <td class="col-speed col-num"><input type="text" value="${valSpeed}" data-f="surfaceRating"></td>
+      <td class="col-scr"><input type="checkbox" ${r.scratched ? 'checked' : ''} data-f="scratched"></td>
+      <td class="col-del"><button class="del-btn">✕</button></td>
     `;
     tr.querySelectorAll('input').forEach(inp => {
       inp.addEventListener('input', e => {
@@ -324,7 +343,11 @@ document.getElementById('drfInput').addEventListener('change', e => {
       const post = get(4);
       const horse = get(45);
       const mlOdds = num(44).toFixed(2);
-      const primePower = num(201);
+      
+      // Brisnet Field 201: Prime Power Rating (Stored as a 100-150 range float, rounded to 1 decimal place)
+      const rawPrimePower = num(201);
+      const primePower = rawPrimePower > 0 ? (rawPrimePower / (rawPrimePower > 1000 ? 10 : 1)).toFixed(1) : '';
+
       const trainer = get(27);
       const jockey = get(37);
       const runStyle = get(249);
@@ -474,7 +497,6 @@ function computeRaceCard(){
         pretenders.push(h);
       }
 
-      // Updated Best Bets Criteria: Surfaces top selection in each race or any horse meeting key power/speed thresholds
       if(idx === 0){
         let reason = `Top Prime Power (${hPower.toFixed(1)}) in Race ${raceNum}.`;
         if(powerGap >= 3.0) reason += ` Holds a ${powerGap.toFixed(1)} pt lead over competitors.`;
@@ -516,12 +538,12 @@ function computeRaceCard(){
         <table style="width:100%; font-size:12.5px;">
           <thead>
             <tr style="background:var(--board-950); color:#fff;">
-              <th style="padding:4px;">Post</th>
-              <th style="padding:4px;">Horse</th>
-              <th style="padding:4px;">Prime Power</th>
-              <th style="padding:4px;">Last Speed</th>
-              <th style="padding:4px;">Trainer / Jockey</th>
-              <th style="padding:4px;">ML Odds</th>
+              <th style="padding:6px;">Post</th>
+              <th style="padding:6px;">Horse</th>
+              <th style="padding:6px;">Prime Power</th>
+              <th style="padding:6px;">Last Speed</th>
+              <th style="padding:6px;">Trainer / Jockey</th>
+              <th style="padding:6px;">ML Odds</th>
             </tr>
           </thead>
           <tbody>
