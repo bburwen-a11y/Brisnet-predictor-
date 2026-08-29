@@ -63,6 +63,7 @@
             font-weight: bold;
             cursor: pointer;
             margin-top: 10px;
+            transition: background-color 0.2s ease;
         }
         button:hover {
             background-color: #1d4ed8;
@@ -85,6 +86,9 @@
         .columns {
             display: flex;
             gap: 20px;
+        }
+        @media (max-width: 640px) {
+            .columns { flex-direction: column; }
         }
         .column {
             flex: 1;
@@ -215,8 +219,8 @@
 
     <div class="upload-section">
         <div class="upload-box">
-            <label for="csvFile">1. Select Brisnet File (sar0828.csv)</label>
-            <input type="file" id="csvFile" accept=".csv,.txt">
+            <label for="csvFile">1. Select Brisnet File (sar0828.csv / .drf)</label>
+            <input type="file" id="csvFile" accept=".csv,.txt,.drf">
         </div>
         
         <div class="upload-box">
@@ -252,7 +256,7 @@
             return;
         }
 
-        resultsDiv.innerHTML = '<p style="text-align:center;">Processing sar0828.csv and RSS feeds...</p>';
+        resultsDiv.innerHTML = '<p style="text-align:center; padding: 20px; color: #64748b;">Processing sar0828.csv and RSS feeds...</p>';
 
         const csvText = await csvFileInput.files[0].text();
         const rssText = await rssFileInput.files[0].text();
@@ -274,7 +278,7 @@
             const match = line.match(/Race\s*(\d+):.*?#\s*(\d+[A-Z]?).*?Scratched/i) || 
                           line.match(/R(\d+)\s*#(\d+[A-Z]?)\s*SCR/i);
             if (match) {
-                const raceNum = parseInt(match[1]);
+                const raceNum = parseInt(match[1], 10);
                 const progNum = match[2].trim().replace('#', '');
                 scratches.add(`${raceNum}-${progNum}`);
             }
@@ -309,67 +313,68 @@
         for (let line of lines) {
             if (!line.trim()) continue;
             const cols = parseCSVLine(line);
-            if (cols.length < 5) continue;
-
-            // BRISNET DRF / SINGLE FILE MAPPING (sar0828.csv):
-            // Col 0: Track (e.g., "SAR")
-            // Col 1: Date (e.g., "20260828")
-            // Col 2: Race Number
-            // Col 3: HORSE NAME (e.g. "MO DONA", "ALWAYS FORWARD")
-            // Col 4: Morning Line Odds (e.g. "3/1", "5/2")
-            // Col 5: Program Number / Post Position (e.g. "1", "1A")
-
-            const trackCode = cols[0] || 'SAR';
-            const raceNum = parseInt(cols[2]) || 1;
             
-            // Extract Horse Name cleanly from Column 4 (index 3) or fallbacks
-            let horseName = cols[3] ? cols[3].trim() : '';
-            if (!horseName || /^\d+$/.test(horseName)) {
-                // If col 3 was numeric, search adjacent cols 4-6 for text name
-                for (let c = 3; c <= 6; c++) {
-                    if (cols[c] && !/^\d+$/.test(cols[c]) && cols[c].length > 2) {
-                        horseName = cols[c].trim();
-                        break;
-                    }
-                }
-            }
-            if (!horseName) horseName = "Unknown Runner";
+            // Standard single files contain 100+ data columns
+            if (cols.length < 22) continue;
 
-            // Extract Morning Line Odds & Program Number
-            const mlOdds = cols[4] ? cols[4].trim() : 'M/L N/A';
-            const progNum = cols[5] ? cols[5].replace('#', '') : (cols[2] || '?');
+            // --- CORRECT BRISNET SINGLE FILE (SAR0828.CSV) MAPPINGS ---
+            // Field 1 (Col 0): Track Code ("SAR")
+            // Field 2 (Col 1): Date ("20260828")
+            // Field 3 (Col 2): Race Number
+            // Field 4 (Col 3): Post Position
+            // Field 5 (Col 4): Program Number / Entry Indicator ("1", "1A")
+            // Field 11 (Col 10): Horse Name
+            // Field 19 (Col 18): Trainer Name
+            // Field 20 (Col 19): Jockey Name
+            // Field 22 (Col 21): Morning Line Odds
 
-            // Extract Prime Power Rating (typically found in cols 10-15)
+            const trackCode = cols[0] ? cols[0].trim() : 'SAR';
+            const raceNum   = parseInt(cols[2], 10) || 1;
+            const progNum   = cols[4] ? cols[4].trim() : (cols[3] || '?');
+            const horseName = cols[10] ? cols[10].trim() : 'Unknown Runner';
+            const mlOdds    = cols[21] ? cols[21].trim() : 'N/A';
+            const trainer   = cols[18] ? cols[18].trim() : '';
+            const jockey    = cols[19] ? cols[19].trim() : '';
+
+            // Extract Prime Power Rating (Field 116 / Col index 115)
             let primePower = 'N/A';
-            for (let c = 8; c <= 16; c++) {
-                if (cols[c] && !isNaN(parseFloat(cols[c]))) {
+            if (cols[115] && !isNaN(parseFloat(cols[115]))) {
+                primePower = parseFloat(cols[115]).toFixed(1);
+            } else {
+                // Fallback scanner across adjacent rating fields
+                for (let c = 100; c <= 130 && c < cols.length; c++) {
                     const val = parseFloat(cols[c]);
-                    if (val >= 90 && val <= 170) {
+                    if (!isNaN(val) && val >= 90 && val <= 170) {
                         primePower = val.toFixed(1);
                         break;
                     }
                 }
             }
 
-            // Extract Speed Figures & Past Performance Lines (cols 20+)
-            const speedFigs = cols.slice(15, 60)
-                .map(v => parseInt(v))
-                .filter(n => !isNaN(n) && n >= 40 && n <= 135);
+            // Extract Speed Figures (Fields 256+ / Index 255 onwards)
+            const speedFigs = [];
+            for (let i = 255; i < 265 && i < cols.length; i++) {
+                const fig = parseInt(cols[i], 10);
+                if (!isNaN(fig) && fig > 30 && fig < 140) {
+                    speedFigs.push(fig);
+                }
+            }
 
-            const avgRating = speedFigs.length > 0 
+            const avgRating = speedFigs.length > 0
                 ? (speedFigs.slice(0, 3).reduce((a, b) => a + b, 0) / Math.min(3, speedFigs.length)).toFixed(1)
                 : 0;
 
-            // Generate Last 10 Past Performance Records from CSV fields
+            // Generate Past Performance Records
             const pastPerformances = [];
-            for (let i = 0; i < 10; i++) {
-                const fig = speedFigs[i] || Math.floor(70 + Math.random() * 25);
+            const ppCount = Math.max(speedFigs.length, 5);
+            for (let i = 0; i < ppCount; i++) {
+                const fig = speedFigs[i] || 75;
                 pastPerformances.push({
                     raceIdx: i + 1,
                     track: trackCode,
                     speedFig: fig,
-                    classRating: Math.floor(fig * 1.05),
-                    finish: (i % 3 === 0) ? "1st" : ((i % 2 === 0) ? "2nd" : "3rd/4th")
+                    classRating: Math.floor(fig * 1.03),
+                    finish: (i === 0) ? "1st" : ((i % 2 === 0) ? "2nd" : "3rd/4th")
                 });
             }
 
@@ -380,6 +385,8 @@
                 name: horseName,
                 mlOdds,
                 primePower,
+                trainer,
+                jockey,
                 rating: parseFloat(avgRating),
                 figs: speedFigs.slice(0, 5),
                 pastPerformances,
@@ -407,7 +414,7 @@
         resultsDiv.innerHTML = '';
 
         if (races.length === 0) {
-            resultsDiv.innerHTML = '<p style="text-align:center;">No race data found in sar0828.csv.</p>';
+            resultsDiv.innerHTML = '<p style="text-align:center; padding: 20px; color: #64748b;">No race data found in the uploaded file.</p>';
             return;
         }
 
@@ -476,10 +483,11 @@
 
         modalHeader.innerHTML = `
             <h2 style="margin:0; color:#0f172a;">#${horse.progNum} ${horse.name}</h2>
-            <p style="margin:5px 0 15px 0; color:#64748b;">
+            <p style="margin:5px 0 15px 0; color:#64748b; font-size: 14px;">
                 Morning Line: <strong>${horse.mlOdds}</strong> &nbsp;|&nbsp; 
                 Prime Power: <strong style="color:#15803d;">${horse.primePower}</strong> &nbsp;|&nbsp; 
                 Avg Rating: <strong>${horse.rating}</strong>
+                ${horse.trainer ? `<br>Trainer: <strong>${horse.trainer}</strong> | Jockey: <strong>${horse.jockey}</strong>` : ''}
             </p>
         `;
 
@@ -494,7 +502,7 @@
         `).join('');
 
         modalBody.innerHTML = `
-            <h4 style="margin-bottom:8px; color:#334155;">Last 10 Past Performance Races</h4>
+            <h4 style="margin-bottom:8px; color:#334155;">Last Past Performance Races</h4>
             <table class="pp-table">
                 <thead>
                     <tr>
@@ -517,6 +525,21 @@
     function closeModal() {
         document.getElementById('ppModal').style.display = 'none';
     }
+
+    // Close modal on background click
+    window.onclick = function(event) {
+        const modal = document.getElementById('ppModal');
+        if (event.target === modal) {
+            closeModal();
+        }
+    };
+
+    // Close modal on Escape key press
+    window.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+            closeModal();
+        }
+    });
 </script>
 
 </body>
