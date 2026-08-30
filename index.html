@@ -261,11 +261,9 @@
       <div id="raceCardsList"></div>
     </section>
 
-    <!-- HEAD TO HEAD SECTION -->
     <section id="h2hSection" style="display:none;">
       <h2>Head-to-Head Analysis &amp; Comparison</h2>
 
-      <!-- PAST PERFORMANCE DIRECT MATCHUPS -->
       <div class="h2h-past-box">
         <h3 style="margin:0 0 10px; font-size:15px; border-bottom:1px solid var(--paper-line); padding-bottom:6px;">
           Detected Past Performance Direct Matchups
@@ -275,7 +273,6 @@
         </div>
       </div>
 
-      <!-- SIDE BY SIDE COMPARISON -->
       <h3 style="font-size:14px; margin:20px 0 10px;">Side-by-Side Runner Comparison</h3>
       <div class="h2h-select-grid">
         <div class="h2h-select-box">
@@ -456,8 +453,8 @@ document.getElementById('drfInput').addEventListener('change', e => {
           track: get(276 + i),
           dist: num(316 + i),
           surf: get(326 + i),
-          fin: get(476 + i),   /* Corrected: Field 476-485 for official finish position */
-          speed: num(626 + i), /* Corrected: Field 626-635 for Brisnet speed figure */
+          fin: get(476 + i),
+          speed: num(626 + i),
           comment: get(396 + i)
         });
       }
