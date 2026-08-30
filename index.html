@@ -129,6 +129,18 @@
   .cp-item:last-child{border-bottom:none;}
   .cp-horse{font-weight:700; cursor:pointer; text-decoration:underline dotted;}
 
+  /* Head-to-Head Styles */
+  .h2h-select-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+  .h2h-select-box select { width: 100%; padding: 8px; font-family: var(--mono); font-size: 13px; border: 1px solid var(--paper-line); border-radius: 3px; background: #fff; }
+  .h2h-comparison-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .h2h-card { background: #fff; border: 1px solid var(--paper-line); border-radius: 4px; padding: 16px; }
+  .h2h-card h3 { margin: 0 0 10px; color: var(--board-950); border-bottom: 2px solid var(--paper-line); padding-bottom: 6px; }
+  .h2h-stat { font-family: var(--mono); font-size: 12px; margin-bottom: 6px; }
+
+  .h2h-past-box { background: #fff; border: 1px solid var(--paper-line); border-radius: 4px; padding: 16px; margin-bottom: 20px; }
+  .h2h-past-matchup { border-bottom: 1px dashed var(--paper-line); padding: 10px 0; font-size: 12.5px; }
+  .h2h-past-matchup:last-child { border-bottom: none; }
+
   .badge-changed{
     background:var(--red); color:#fff; font-family:var(--mono); font-size:10px;
     padding:2px 5px; border-radius:3px; font-weight:700; margin-left:4px; text-transform:uppercase;
@@ -228,6 +240,7 @@
       <button data-tab="best" class="on" id="tabBest">Best Bets</button>
       <button data-tab="analysis">Contenders vs Pretenders</button>
       <button data-tab="card">Full Race Cards</button>
+      <button data-tab="h2h">Head-to-Head Comparison</button>
     </div>
 
     <section id="bestSection" style="display:none;">
@@ -246,6 +259,35 @@
     <section id="cardSection" style="display:none;">
       <h2>Race Cards &amp; Detailed Past Performances</h2>
       <div id="raceCardsList"></div>
+    </section>
+
+    <!-- HEAD TO HEAD SECTION -->
+    <section id="h2hSection" style="display:none;">
+      <h2>Head-to-Head Analysis &amp; Comparison</h2>
+
+      <!-- PAST PERFORMANCE DIRECT MATCHUPS -->
+      <div class="h2h-past-box">
+        <h3 style="margin:0 0 10px; font-size:15px; border-bottom:1px solid var(--paper-line); padding-bottom:6px;">
+          Detected Past Performance Direct Matchups
+        </h3>
+        <div id="pastMatchupsList">
+          <p style="font-size:12.5px; color:var(--ink-soft); margin:0;">Scanning past performances for horses that previously faced each other...</p>
+        </div>
+      </div>
+
+      <!-- SIDE BY SIDE COMPARISON -->
+      <h3 style="font-size:14px; margin:20px 0 10px;">Side-by-Side Runner Comparison</h3>
+      <div class="h2h-select-grid">
+        <div class="h2h-select-box">
+          <label style="font-size:12px; font-family:var(--mono); font-weight:700;">HORSE A:</label>
+          <select id="h2hSelectA"></select>
+        </div>
+        <div class="h2h-select-box">
+          <label style="font-size:12px; font-family:var(--mono); font-weight:700;">HORSE B:</label>
+          <select id="h2hSelectB"></select>
+        </div>
+      </div>
+      <div class="h2h-comparison-grid" id="h2hComparisonDisplay"></div>
     </section>
 
   </main>
@@ -350,23 +392,15 @@ function parseCSVLine(line){
   return out.map(v => v.trim());
 }
 
-/**
- * PINNED PRIME POWER EXTRACTION FUNCTION
- * Reads strictly from Field 251 (0-indexed 250) and scales values correctly.
- */
 function extractPrimePower(f) {
   const get = n => (f[n - 1] !== undefined ? f[n - 1].trim() : '');
-  
   let rawVal = parseFloat(get(251));
-
   if (isNaN(rawVal) || rawVal <= 0) return '';
-
   if (rawVal > 500) {
     return (rawVal / 10).toFixed(1);
   } else if (rawVal >= 50.0) {
     return rawVal.toFixed(1);
   }
-  
   return '';
 }
 
@@ -391,24 +425,20 @@ document.getElementById('drfInput').addEventListener('change', e => {
       const horse = get(45);
       const mlOdds = get(44) || '2/1';
 
-      // Prime Power explicitly pulled from Field 251 (0-indexed 250)
       const primePower = extractPrimePower(f);
 
-      // Trainer & Stats (Field 28 for Name, Fields 29-32 for Starts, Wins, Places, Shows)
       const trainer = get(28);
       const trainerStarts = num(29);
       const trainerWins = num(30);
       const trainerPlaces = num(31);
       const trainerShows = num(32);
 
-      // Jockey & Stats (Field 33 for Name, Fields 35-38 for Starts, Wins, Places, Shows)
       const jockey = get(33);
       const jockeyStarts = num(35);
       const jockeyWins = num(36);
       const jockeyPlaces = num(37);
       const jockeyShows = num(38);
 
-      // Horse Career Stats
       const starts = num(97);
       const wins = num(98);
       const places = num(99);
@@ -426,8 +456,8 @@ document.getElementById('drfInput').addEventListener('change', e => {
           track: get(276 + i),
           dist: num(316 + i),
           surf: get(326 + i),
-          fin: get(616 + i),
-          speed: num(626 + i),
+          fin: get(476 + i),   /* Corrected: Field 476-485 for official finish position */
+          speed: num(626 + i), /* Corrected: Field 626-635 for Brisnet speed figure */
           comment: get(396 + i)
         });
       }
@@ -563,6 +593,133 @@ document.getElementById('reloadRssBtn').addEventListener('click', () => {
   rssInput.click();
 });
 
+function findPastMatchups() {
+  const activeRows = rows.filter(r => !r.scratched && r.horse);
+  const raceMap = {};
+
+  activeRows.forEach(h => {
+    if(!h.ppRaces) return;
+    h.ppRaces.forEach(pp => {
+      if(!pp.date || !pp.track) return;
+      const key = `${pp.date}_${pp.track}`;
+      if(!raceMap[key]) raceMap[key] = { date: pp.date, track: pp.track, runners: [] };
+      raceMap[key].runners.push({
+        horse: h.horse,
+        race: h.race,
+        post: h.post,
+        fin: pp.fin,
+        speed: pp.speed,
+        dist: pp.dist,
+        surf: pp.surf
+      });
+    });
+  });
+
+  const matchups = Object.values(raceMap).filter(m => m.runners.length > 1);
+  const container = document.getElementById('pastMatchupsList');
+
+  if(matchups.length === 0) {
+    container.innerHTML = `<div style="font-size:12.5px; color:var(--ink-soft);">No prior direct head-to-head encounters found in the past performance lines for this card.</div>`;
+    return;
+  }
+
+  container.innerHTML = matchups.map(m => `
+    <div class="h2h-past-matchup">
+      <div style="font-family:var(--mono); font-weight:700; color:var(--board-950); margin-bottom:4px;">
+        📅 ${m.date} — Track: ${m.track} (${m.runners[0].dist}y, ${m.runners[0].surf})
+      </div>
+      <table style="width:100%; font-family:var(--mono); font-size:11.5px; margin-top:4px;">
+        <thead>
+          <tr style="background:var(--paper-dim); text-align:left;">
+            <th style="padding:4px 6px;">Horse Name</th>
+            <th style="padding:4px 6px;">Card Race</th>
+            <th style="padding:4px 6px;">Finish</th>
+            <th style="padding:4px 6px;">Speed Fig</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${m.runners.map(r => `
+            <tr>
+              <td style="padding:4px 6px;"><b>${r.horse}</b></td>
+              <td style="padding:4px 6px;">Race ${r.race} (#${r.post})</td>
+              <td style="padding:4px 6px;">${r.fin}</td>
+              <td style="padding:4px 6px;"><b>${r.speed}</b></td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  `).join('');
+}
+
+function updateH2HDropdowns(){
+  const selA = document.getElementById('h2hSelectA');
+  const selB = document.getElementById('h2hSelectB');
+  selA.innerHTML = '';
+  selB.innerHTML = '';
+
+  const activeRows = rows.filter(r => !r.scratched && r.horse);
+  activeRows.forEach((r, idx) => {
+    const optText = `R${r.race} #${r.post} ${r.horse}`;
+    selA.appendChild(new Option(optText, r.id));
+    selB.appendChild(new Option(optText, r.id));
+  });
+
+  if (activeRows.length > 1) {
+    selB.selectedIndex = 1;
+  }
+
+  findPastMatchups();
+  renderH2H();
+}
+
+function renderH2HCard(h) {
+  if(!h) return '<div>Select a horse</div>';
+  return `
+    <div class="h2h-card">
+      <h3>R${h.race} #${h.post} ${h.horse}</h3>
+      <div class="h2h-stat">Prime Power: <b>${h.score || h.primePower || 'N/A'}</b></div>
+      <div class="h2h-stat">M/L Odds: <b>${h.odds}</b></div>
+      <div class="h2h-stat">Trainer: <b>${h.trainer || 'N/A'}</b> (${h.trainerStarts || 0}: ${h.trainerWins || 0}-${h.trainerPlaces || 0}-${h.trainerShows || 0})</div>
+      <div class="h2h-stat">Jockey: <b>${h.jockey || 'N/A'}</b> (${h.jockeyStarts || 0}: ${h.jockeyWins || 0}-${h.jockeyPlaces || 0}-${h.jockeyShows || 0})</div>
+      <div class="h2h-stat">Career Starts: <b>${h.starts} (${h.wins}-${h.places}-${h.shows})</b></div>
+      
+      <div style="font-size:11px; font-weight:700; text-transform:uppercase; margin-top:12px; margin-bottom:4px;">Recent PP Lines</div>
+      ${h.ppRaces && h.ppRaces.length > 0 ? `
+        <table class="pp-table">
+          <thead>
+            <tr><th>Date</th><th>Track</th><th>Dist</th><th>Fin</th><th>Speed</th></tr>
+          </thead>
+          <tbody>
+            ${h.ppRaces.slice(0, 5).map(p => `
+              <tr>
+                <td>${p.date}</td>
+                <td>${p.track}</td>
+                <td>${p.dist}y</td>
+                <td>${p.fin}</td>
+                <td><b>${p.speed}</b></td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      ` : '<div style="font-size:11px; color:var(--ink-soft);">No PP data available</div>'}
+    </div>
+  `;
+}
+
+function renderH2H(){
+  const idA = document.getElementById('h2hSelectA').value;
+  const idB = document.getElementById('h2hSelectB').value;
+  const horseA = rows.find(r => r.id == idA);
+  const horseB = rows.find(r => r.id == idB);
+
+  const container = document.getElementById('h2hComparisonDisplay');
+  container.innerHTML = renderH2HCard(horseA) + renderH2HCard(horseB);
+}
+
+document.getElementById('h2hSelectA').addEventListener('change', renderH2H);
+document.getElementById('h2hSelectB').addEventListener('change', renderH2H);
+
 function computeRaceCard(){
   computedRaces = {};
   const activeRows = rows.filter(r => !r.scratched);
@@ -687,10 +844,13 @@ function computeRaceCard(){
   document.getElementById('contenderCards').innerHTML = contenderHTML.join('');
   document.getElementById('raceCardsList').innerHTML = cardHTML.join('');
 
+  updateH2HDropdowns();
+
   document.getElementById('tabbar').style.display = 'flex';
   document.getElementById('bestSection').style.display = 'block';
   document.getElementById('analysisSection').style.display = 'none';
   document.getElementById('cardSection').style.display = 'none';
+  document.getElementById('h2hSection').style.display = 'none';
 }
 
 document.getElementById('computeBtn').addEventListener('click', computeRaceCard);
@@ -703,6 +863,7 @@ document.querySelectorAll('.tabbar button').forEach(btn => {
     document.getElementById('bestSection').style.display = tab === 'best' ? 'block' : 'none';
     document.getElementById('analysisSection').style.display = tab === 'analysis' ? 'block' : 'none';
     document.getElementById('cardSection').style.display = tab === 'card' ? 'block' : 'none';
+    document.getElementById('h2hSection').style.display = tab === 'h2h' ? 'block' : 'none';
   });
 });
 
