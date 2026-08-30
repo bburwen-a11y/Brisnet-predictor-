@@ -195,7 +195,7 @@
       <div class="upload-grid">
         <div class="upload-card">
           <h3>Brisnet .DRF Single File</h3>
-          <p>Parses explicit Field 251 for Prime Power, Trainer/Jockey stats, speed ratings (846+i), finish position (616+i), and workouts (102+).</p>
+          <p>Parses explicit Field 251 for Prime Power, Trainer/Jockey stats, speed ratings (846+i), finish position (616+i), and workouts (Fields 102–113, 114–125, 126–137, 162–173).</p>
           <label class="file-btn" for="drfInput">Select .DRF / .CSV</label>
           <input type="file" id="drfInput" accept=".drf,.csv,.txt">
           <div class="status" id="drfStatus"></div>
@@ -340,6 +340,14 @@ function formatDistance(distVal) {
   }
 }
 
+function formatDate(dateStr) {
+  if (!dateStr || dateStr.length !== 8) return dateStr || 'N/A';
+  const y = dateStr.substring(0, 4);
+  const m = dateStr.substring(4, 6);
+  const d = dateStr.substring(6, 8);
+  return `${m}/${d}/${y}`;
+}
+
 function newRow(partial){
   return Object.assign({
     id: rowId++, race:'1', post:'1', horse:'', 
@@ -447,7 +455,7 @@ document.getElementById('drfInput').addEventListener('change', e => {
     
     lines.forEach(line => {
       const f = parseCSVLine(line);
-      if(f.length < 5) return; // Allow short/variable DRF records so no horse is dropped
+      if(f.length < 5) return;
       
       const get = n => (f[n-1] !== undefined ? f[n-1].trim().replace(/^["']|["']$/g, '') : '');
       const num = n => { const v = parseFloat(get(n)); return isNaN(v) ? 0 : v; };
@@ -495,18 +503,25 @@ document.getElementById('drfInput').addEventListener('change', e => {
         });
       }
 
+      // Explicit 1-indexed DRF Workout fields:
+      // 102-113: Work dates YYYYMMDD
+      // 114-125: Work times
+      // 126-137: Track code
+      // 162-173: Description (B/H breezing/handily)
       const ppWorks = [];
-      for(let w = 0; w < 4; w++){
-        const baseIndex = 102 + (w * 12);
-        const wDate = get(baseIndex);
-        if(!wDate) continue;
+      for(let w = 0; w < 12; w++){
+        const wDate = get(102 + w);
+        if(!wDate || wDate === '0') continue;
+        
+        const wTime = get(114 + w);
+        const wTrack = get(126 + w);
+        const wDesc = get(162 + w);
+
         ppWorks.push({
-          date: wDate,
-          track: get(baseIndex + 1),
-          dist: get(baseIndex + 2),
-          time: get(baseIndex + 3),
-          cond: get(baseIndex + 4),
-          rank: get(baseIndex + 5)
+          date: formatDate(wDate),
+          time: wTime,
+          track: wTrack,
+          description: wDesc
         });
       }
 
@@ -779,7 +794,6 @@ document.getElementById('h2hSelectB').addEventListener('change', renderH2H);
 function computeRaceCard(){
   computedRaces = {};
 
-  // Preserve ALL rows so every entry appears on full race cards
   rows.forEach(r => {
     if(!r.horse) return;
     const raceKey = r.race || '1';
@@ -797,13 +811,11 @@ function computeRaceCard(){
     const fullField = computedRaces[raceNum];
     const activeField = fullField.filter(h => !h.scratched);
 
-    // Sort active field by Prime Power / Score descending
     activeField.sort((a,b) => (parseFloat(b.score || b.primePower) || 0) - (parseFloat(a.score || a.primePower) || 0));
 
     const topPick = activeField.length > 0 ? activeField[0] : null;
     const topPowerVal = topPick ? (parseFloat(topPick.score || topPick.primePower) || 0) : 0;
 
-    // Single Best Pick per race
     if (topPick) {
       bestBetsHTML.push(`
         <div class="bo-race-block">
@@ -882,7 +894,6 @@ function computeRaceCard(){
       </div>
     `);
 
-    // Complete Unshorted Race Card Table with all runners (scratched shown strikethrough)
     cardHTML.push(`
       <div style="border:1px solid var(--paper-line); padding:16px; margin-bottom:18px; background:#fff; border-radius:4px;">
         <h3 style="margin:0 0 10px; font-size:16px; border-bottom:2px solid var(--board-950); padding-bottom:6px;">
@@ -1003,14 +1014,13 @@ function openPP(horseName){
       </table>
     ` : '<div style="font-size:12.5px; color:var(--ink-soft); margin-bottom:14px;">No past performance lines available.</div>'}
 
-    <div style="font-size:12px; font-weight:700; text-transform:uppercase; margin-bottom:6px;">Last 4 Workouts</div>
+    <div style="font-size:12px; font-weight:700; text-transform:uppercase; margin-bottom:6px;">Recent Workouts</div>
     ${horse.ppWorks && horse.ppWorks.length > 0 ? `
       <div class="work-grid">
         ${horse.ppWorks.map(w => `
           <div class="work-item">
-            <div><b>${w.date}</b> — ${w.track}</div>
-            <div>${formatDistance(w.dist)} | ${w.time} (${w.cond})</div>
-            <div style="color:var(--ink-soft);">${w.rank ? 'Rank: ' + w.rank : ''}</div>
+            <div><b>${w.date}</b> — ${w.track || 'Track N/A'}</div>
+            <div>Time: <b>${w.time || 'N/A'}</b> ${w.description ? '(' + w.description + ')' : ''}</div>
           </div>
         `).join('')}
       </div>
