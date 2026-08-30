@@ -81,8 +81,8 @@
   .col-race{width:45px; min-width:45px;}
   .col-post{width:45px; min-width:45px;}
   .col-horse{min-width:140px;}
-  .col-trainer{min-width:200px;}
-  .col-jockey{min-width:200px;}
+  .col-trainer{min-width:210px;}
+  .col-jockey{min-width:210px;}
   .col-odds{width:70px; min-width:70px;}
   .col-power{width:95px; min-width:95px;}
   .col-speed{width:80px; min-width:80px;}
@@ -160,7 +160,7 @@
   <header>
     <p class="eyebrow">Professional Handicapping &amp; Value Engine</p>
     <h1>Overlay Board</h1>
-    <p class="tagline">Auto-detecting DRF format layout for full Trainer &amp; Jockey stats extraction.</p>
+    <p class="tagline">Auto-detecting DRF format layout with smart text-name &amp; stats matching.</p>
   </header>
 
   <main>
@@ -286,9 +286,9 @@ function formatStats(name, starts, wins, places, shows) {
   const p = parseInt(places) || 0;
   const sh = parseInt(shows) || 0;
   if (s === 0 && w === 0 && p === 0 && sh === 0) {
-    return name;
+    return name || 'Unknown';
   }
-  return `${name} (${s}: ${w}-${p}-${sh})`;
+  return `${name || 'Unknown'} (${s}: ${w}-${p}-${sh})`;
 }
 
 function renderRows(){
@@ -300,11 +300,8 @@ function renderRows(){
     const valPower = r.score !== '' ? r.score : (r.primePower ? r.primePower : '');
     const valSpeed = r.surfaceRating !== '' ? r.surfaceRating : (r.lastSpeed ? r.lastSpeed : '');
     
-    const tName = r.trainer ? r.trainer : 'Unknown Trainer';
-    const jName = r.jockey ? r.jockey : 'Unknown Jockey';
-    
-    const tStats = formatStats(tName, r.trainerStarts, r.trainerWins, r.trainerPlaces, r.trainerShows);
-    const jStats = formatStats(jName, r.jockeyStarts, r.jockeyWins, r.jockeyPlaces, r.jockeyShows);
+    const tStats = formatStats(r.trainer, r.trainerStarts, r.trainerWins, r.trainerPlaces, r.trainerShows);
+    const jStats = formatStats(r.jockey, r.jockeyStarts, r.jockeyWins, r.jockeyPlaces, r.jockeyShows);
 
     tr.innerHTML = `
       <td class="col-race"><input type="text" value="${r.race}" data-f="race"></td>
@@ -364,34 +361,46 @@ function parseCSVLine(line){
   return out.map(v => v.trim());
 }
 
-// Robust stats extractor: Handles integer fields, space-separated string stats, and dash-separated formats
-function parseStatsBlock(getFn, primaryIdx, secondaryIndices = []) {
-  const primaryVal = getFn(primaryIdx);
-  
-  // Try reading explicit separate fields first
-  if (secondaryIndices.length === 3) {
-    const s = parseFloat(getFn(primaryIdx));
-    const w = parseFloat(getFn(secondaryIndices[0]));
-    const p = parseFloat(getFn(secondaryIndices[1]));
-    const sh = parseFloat(getFn(secondaryIndices[2]));
-    if (!isNaN(s) && s > 0) {
-      return { starts: s, wins: isNaN(w) ? 0 : w, places: isNaN(p) ? 0 : p, shows: isNaN(sh) ? 0 : sh };
-    }
-  }
+// Helper: Verifies whether a string is a real person name (contains alphabetic letters)
+function isTextName(str) {
+  if (!str) return false;
+  const cleaned = str.replace(/^["']|["']$/g, '').trim();
+  if (!cleaned || /^\d+$/.test(cleaned)) return false; // Reject pure numbers/ID codes
+  return /[a-zA-Z]{2,}/.test(cleaned);
+}
 
-  // Parse embedded string patterns (e.g. "25 5 4 3" or "25-5-4-3")
-  if (primaryVal) {
-    const nums = primaryVal.match(/\d+/g);
+// Smart Extraction for Trainer or Jockey Name across typical DRF candidate indices
+function findName(f, candidateIndices) {
+  for (const idx of candidateIndices) {
+    const val = f[idx - 1] ? f[idx - 1].trim().replace(/^["']|["']$/g, '') : '';
+    if (isTextName(val)) return val;
+  }
+  return '';
+}
+
+// Smart Extraction for Starts-Wins-Places-Shows stats
+function findStats(f, candidateStatIndices) {
+  for (const baseIdx of candidateStatIndices) {
+    // Check if 4 consecutive fields form non-zero stats
+    const s = parseInt(f[baseIdx - 1]);
+    const w = parseInt(f[baseIdx]);
+    const p = parseInt(f[baseIdx + 1]);
+    const sh = parseInt(f[baseIdx + 2]);
+
+    if (!isNaN(s) && s > 0 && !isNaN(w) && !isNaN(p) && !isNaN(sh)) {
+      return { starts: s, wins: w, places: p, shows: sh };
+    }
+
+    // Check single field embedded string (e.g. "25 5 4 3" or "25-5-4-3")
+    const strVal = f[baseIdx - 1] ? f[baseIdx - 1].trim().replace(/^["']|["']$/g, '') : '';
+    const nums = strVal.match(/\d+/g);
     if (nums && nums.length >= 4) {
-      return {
-        starts: parseInt(nums[0]),
-        wins: parseInt(nums[1]),
-        places: parseInt(nums[2]),
-        shows: parseInt(nums[3])
-      };
+      const st = parseInt(nums[0]);
+      if (st > 0) {
+        return { starts: st, wins: parseInt(nums[1]), places: parseInt(nums[2]), shows: parseInt(nums[3]) };
+      }
     }
   }
-
   return { starts: 0, wins: 0, places: 0, shows: 0 };
 }
 
@@ -417,36 +426,32 @@ document.getElementById('drfInput').addEventListener('change', e => {
 
     lines.forEach(line => {
       const f = parseCSVLine(line);
-      if(f.length < 20) return;
+      if(f.length < 15) return;
       
       const get = n => (f[n-1] !== undefined ? f[n-1].trim().replace(/^["']|["']$/g, '') : '');
       const num = n => { const v = parseFloat(get(n)); return isNaN(v) ? 0 : v; };
 
       const race = get(3) || '1';
       const post = get(4) || '1';
-      
-      // Auto-detect format layout based on total column count
       const isExtendedDRF = f.length > 800;
       
-      const horse = isExtendedDRF ? get(45) : (get(5) || get(6));
+      const horse = isExtendedDRF ? get(45) : (isTextName(get(5)) ? get(5) : get(6));
       const mlOdds = (isExtendedDRF ? get(44) : get(14)) || '2/1';
       const primePower = extractPrimePower(f);
 
-      // Map Trainer indices dynamically
-      const trainerIdx = isExtendedDRF ? 27 : 9;
-      const trainer = get(trainerIdx) || 'Unknown Trainer';
-      const trainerStats = isExtendedDRF 
-        ? parseStatsBlock(get, 28, [29, 30, 31]) 
-        : parseStatsBlock(get, 10, [11, 12, 13]);
+      // Extract Trainer Name and Stats using multi-fallback candidate fields
+      const trainerCandidates = isExtendedDRF ? [27, 24, 18, 25] : [9, 8, 7, 10];
+      const trainerStatCandidates = isExtendedDRF ? [28, 29, 32, 25] : [10, 11, 14];
+      const trainer = findName(f, trainerCandidates) || 'Unknown Trainer';
+      const trainerStats = findStats(f, trainerStatCandidates);
 
-      // Map Jockey indices dynamically
-      const jockeyIdx = isExtendedDRF ? 37 : 15;
-      const jockey = get(jockeyIdx) || 'Unknown Jockey';
-      const jockeyStats = isExtendedDRF 
-        ? parseStatsBlock(get, 38, [39, 40, 41]) 
-        : parseStatsBlock(get, 16, [17, 18, 19]);
+      // Extract Jockey Name and Stats using multi-fallback candidate fields
+      const jockeyCandidates = isExtendedDRF ? [37, 32, 33, 34, 35, 36] : [15, 14, 16, 17];
+      const jockeyStatCandidates = isExtendedDRF ? [38, 39, 42, 33] : [16, 17, 18];
+      const jockey = findName(f, jockeyCandidates) || 'Unknown Jockey';
+      const jockeyStats = findStats(f, jockeyStatCandidates);
 
-      // Horse Stats
+      // Horse Career Stats
       const starts = num(isExtendedDRF ? 97 : 20);
       const wins = num(isExtendedDRF ? 98 : 21);
       const places = num(isExtendedDRF ? 99 : 22);
