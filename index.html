@@ -1,1022 +1,916 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Overlay Board — Complete Race Card & Prediction Engine</title>
-<style>
-  :root{
-    --board-950:#0F2A20;
-    --board-900:#15332A;
-    --board-800:#1B3A2C;
-    --paper:#F1E9D6;
-    --paper-dim:#E4D9BE;
-    --paper-line:#CFC2A0;
-    --amber:#D9A73B;
-    --amber-dim:#8A6A26;
-    --red:#8B2A2A;
-    --green:#2E6E45;
-    --ink:#1E1B14;
-    --ink-soft:#4A4433;
-    --mono: ui-monospace, "SF Mono", "Roboto Mono", "Courier New", monospace;
-    --sans: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
-  }
-  *{box-sizing:border-box;}
-  body{margin:0; background:#ffffff; color:var(--ink); font-family:var(--sans); -webkit-font-smoothing:antialiased;}
-  .wrap{max-width:1380px; margin:0 auto;}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Saratoga Handicapping Card (SAR0828)</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --contender-bg: rgba(16, 185, 129, 0.1);
+            --contender-border: #10b981;
+            --pretender-bg: rgba(239, 68, 68, 0.05);
+            --pretender-border: #334155;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent: #38bdf8;
+            --gold: #f59e0b;
+        }
 
-  header{
-    background: linear-gradient(180deg,var(--board-900),var(--board-950));
-    padding:32px 24px 26px; border-bottom:3px solid var(--amber-dim);
-  }
-  .eyebrow{font-family:var(--mono); color:var(--amber); font-size:12px; letter-spacing:.22em; text-transform:uppercase; margin:0 0 8px;}
-  h1{margin:0; color:var(--paper); font-weight:800; font-size:clamp(26px,4.5vw,40px); line-height:1.05;}
-  .tagline{color:#B9C9BE; font-size:14.5px; max-width:68ch; margin:10px 0 0; line-height:1.5;}
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 24px;
+            line-height: 1.5;
+        }
 
-  main{background:var(--paper); padding:24px 20px 60px;}
-  section{margin:0 0 32px;}
-  h2{
-    font-size:13px; letter-spacing:.16em; text-transform:uppercase; color:var(--ink-soft); margin:0 0 14px;
-    font-weight:700; display:flex; align-items:center; gap:10px;
-  }
-  h2::after{content:""; flex:1; height:1px; background:var(--paper-line);}
-  .step-num{font-family:var(--mono); background:var(--board-950); color:var(--amber); font-size:11px; padding:3px 7px; border-radius:2px;}
+        .header {
+            text-align: center;
+            margin-bottom: 32px;
+            padding-bottom: 16px;
+            border-bottom: 2px solid #334155;
+        }
 
-  .upload-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:16px;}
-  .upload-card{border:1.5px dashed var(--paper-line); border-radius:4px; padding:18px; background:var(--paper-dim);}
-  .upload-card h3{margin:0 0 6px; font-size:15px; color:var(--ink);}
-  .upload-card p{margin:0 0 12px; font-size:12.5px; color:var(--ink-soft); line-height:1.5;}
-  .file-btn{
-    display:inline-flex; align-items:center; gap:8px; background:var(--board-950); color:var(--paper);
-    border:none; padding:9px 14px; border-radius:3px; font-size:12.5px; font-weight:600; cursor:pointer;
-  }
-  .file-btn:hover{background:var(--board-800);}
-  input[type=file]{display:none;}
-  .status{font-family:var(--mono); font-size:12px; margin-top:8px; color:var(--ink-soft); min-height:16px; word-break:break-all;}
-  .status.ok{color:var(--green); font-weight:700;}
-  .status.err{color:var(--red); font-weight:700;}
+        .header h1 {
+            margin: 0;
+            font-size: 2rem;
+            color: #ffffff;
+            letter-spacing: 0.5px;
+        }
 
-  .file-meta-box{
-    margin-top:10px; padding:8px 10px; background:#fff; border:1px solid var(--paper-line);
-    border-radius:3px; font-family:var(--mono); font-size:11.5px; display:none;
-  }
-  .file-meta-box.show{display:block;}
+        .header p {
+            margin: 8px 0 0 0;
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
 
-  .table-wrap{overflow-x:auto; border:1px solid var(--paper-line); border-radius:3px;}
-  table{width:100%; border-collapse:collapse; font-size:12.5px; table-layout:auto;}
-  thead th{
-    text-align:left; font-family:var(--mono); font-size:10px; letter-spacing:.06em; text-transform:uppercase;
-    color:var(--paper); background:var(--board-900); padding:9px 10px; white-space:nowrap;
-  }
-  tbody td{padding:5px 6px; border-bottom:1px solid var(--paper-line); vertical-align:middle;}
-  tbody tr:nth-child(even){background:rgba(0,0,0,0.02);}
-  tbody input{
-    border:1px solid transparent; background:transparent; padding:4px 5px; 
-    font-size:12.5px; width:100%; box-sizing:border-box;
-  }
-  tbody input:hover, tbody input:focus{border-color:var(--paper-line); background:#fff;}
-  .scratched-row{opacity:.45;}
-  .scratched-row td input{text-decoration:line-through;}
-  
-  .col-race{width:45px; min-width:45px;}
-  .col-post{width:45px; min-width:45px;}
-  .col-horse{min-width:140px;}
-  .col-trainer{min-width:160px;}
-  .col-jockey{min-width:170px;}
-  .col-odds{width:70px; min-width:70px;}
-  .col-power{width:95px; min-width:95px;}
-  .col-speed{width:80px; min-width:80px;}
-  .col-scr{width:40px; min-width:40px; text-align:center;}
-  .col-del{width:30px; min-width:30px; text-align:center;}
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+            gap: 24px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
 
-  .del-btn{background:none; border:none; color:var(--red); cursor:pointer; font-size:15px; padding:2px 4px;}
+        .race-card {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+            border: 1px solid #334155;
+        }
 
-  .table-actions{display:flex; gap:10px; margin-top:12px; flex-wrap:wrap;}
-  .primary-btn{
-    background:var(--amber); color:var(--ink); border:none; padding:11px 22px;
-    border-radius:3px; font-weight:700; font-size:13.5px; cursor:pointer;
-  }
-  .primary-btn:hover{background:#c69528;}
-  .ghost-btn{background:none; border:1px solid var(--ink-soft); color:var(--ink-soft); padding:10px 16px; border-radius:3px; font-size:13px; cursor:pointer;}
-  .ghost-btn:hover{border-color:var(--ink); color:var(--ink);}
-  .small-btn{background:transparent; border:1px solid var(--board-950); color:var(--board-950); padding:5px 10px; border-radius:3px; font-size:11.5px; font-weight:600; cursor:pointer;}
-  .small-btn:hover{background:var(--board-950); color:var(--paper);}
+        .race-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #334155;
+        }
 
-  .tabbar{display:flex; gap:0; margin:0 0 18px; border-bottom:2px solid var(--paper-line); overflow-x:auto;}
-  .tabbar button{
-    appearance:none; background:none; border:none; cursor:pointer; font-family:var(--mono); font-size:12px;
-    letter-spacing:.05em; text-transform:uppercase; padding:10px 14px; color:var(--ink-soft);
-    border-bottom:3px solid transparent; margin-bottom:-2px; white-space:nowrap;
-  }
-  .tabbar button.on{color:var(--board-950); border-bottom-color:var(--board-950); font-weight:700;}
+        .race-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--accent);
+        }
 
-  .bestof{border:2px solid var(--board-950); border-radius:5px; padding:18px 20px; margin:0 0 20px; background:var(--paper);}
-  .bestof h3{margin:0 0 4px; font-size:18px;}
-  .bo-row{display:flex; align-items:center; gap:12px; padding:10px 0; border-top:1px solid var(--paper-line);}
-  .bo-rank{width:32px; height:32px; line-height:32px; text-align:center; background:var(--board-950); color:var(--amber); border-radius:50%; font-family:var(--mono); font-size:12px; font-weight:800;}
-  .bo-horse{font-size:15px; font-weight:800; cursor:pointer; text-decoration:underline dotted;}
-  .bo-meta{font-size:12px; color:var(--ink-soft); font-family:var(--mono);}
+        .field-count {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            background: #0f172a;
+            padding: 4px 10px;
+            border-radius: 20px;
+        }
 
-  .cp-grid{display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:10px;}
-  @media(max-width:768px){ .cp-grid{grid-template-columns:1fr;} }
-  .cp-box{border:1px solid var(--paper-line); border-radius:4px; padding:14px; background:var(--paper-dim);}
-  .cp-box.contender{border-left:5px solid var(--green);}
-  .cp-box.pretender{border-left:5px solid var(--red); opacity:0.9;}
-  .cp-head{font-family:var(--mono); font-size:12px; font-weight:800; text-transform:uppercase; margin-bottom:8px;}
-  .cp-box.contender .cp-head{color:var(--green);}
-  .cp-box.pretender .cp-head{color:var(--red);}
-  .cp-item{padding:6px 0; border-bottom:1px dotted var(--paper-line); font-size:12.5px; line-height:1.4;}
-  .cp-item:last-child{border-bottom:none;}
-  .cp-horse{font-weight:700; cursor:pointer; text-decoration:underline dotted;}
+        .section-title {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 700;
+            margin: 16px 0 8px 0;
+        }
 
-  /* Head-to-Head Styles */
-  .h2h-select-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
-  .h2h-select-box select { width: 100%; padding: 8px; font-family: var(--mono); font-size: 13px; border: 1px solid var(--paper-line); border-radius: 3px; background: #fff; }
-  .h2h-comparison-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-  .h2h-card { background: #fff; border: 1px solid var(--paper-line); border-radius: 4px; padding: 16px; }
-  .h2h-card h3 { margin: 0 0 10px; color: var(--board-950); border-bottom: 2px solid var(--paper-line); padding-bottom: 6px; }
-  .h2h-stat { font-family: var(--mono); font-size: 12px; margin-bottom: 6px; }
+        .section-title.contenders { color: #10b981; }
+        .section-title.pretenders { color: #f43f5e; }
 
-  .h2h-past-box { background: #fff; border: 1px solid var(--paper-line); border-radius: 4px; padding: 16px; margin-bottom: 20px; }
-  .h2h-past-matchup { border-bottom: 1px dashed var(--paper-line); padding: 10px 0; font-size: 12.5px; }
-  .h2h-past-matchup:last-child { border-bottom: none; }
-  .h2h-winner-badge { background:var(--green); color:#fff; font-family:var(--mono); font-size:10px; padding:2px 6px; border-radius:3px; font-weight:700; }
+        .horse-row {
+            display: grid;
+            grid-template-columns: 36px 1fr 60px 65px;
+            align-items: center;
+            padding: 8px 10px;
+            border-radius: 6px;
+            margin-bottom: 6px;
+            font-size: 0.9rem;
+        }
 
-  .badge-changed{
-    background:var(--red); color:#fff; font-family:var(--mono); font-size:10px;
-    padding:2px 5px; border-radius:3px; font-weight:700; margin-left:4px; text-transform:uppercase;
-  }
+        .contender-row {
+            background-color: var(--contender-bg);
+            border-left: 3px solid var(--contender-border);
+        }
 
-  .badge-top-pick{
-    background:var(--board-950); color:var(--amber); font-family:var(--mono); font-size:10px;
-    padding:2px 5px; border-radius:3px; font-weight:700; margin-left:4px; text-transform:uppercase;
-  }
+        .pretender-row {
+            background-color: var(--pretender-bg);
+            border-left: 3px solid var(--pretender-border);
+            color: var(--text-muted);
+        }
 
-  #ppOverlay{display:none; position:fixed; inset:0; background:rgba(15,42,32,.65); z-index:100; overflow-y:auto; padding:16px;}
-  #ppOverlay.show{display:block;}
-  .pp-card{max-width:920px; margin:20px auto; background:var(--paper); border-radius:4px; border:1px solid var(--paper-line); padding:20px; position:relative;}
-  .pp-close{position:absolute; top:12px; right:14px; background:none; border:none; font-size:22px; color:var(--ink-soft); cursor:pointer;}
-  .pp-back{
-    display:inline-flex; align-items:center; gap:6px; margin-bottom:14px; padding:8px 14px;
-    background:var(--board-950); color:var(--paper); border:none; border-radius:4px; font-family:var(--mono);
-    font-size:12px; font-weight:700; cursor:pointer;
-  }
-  .pp-back:hover{background:var(--board-800);}
-  .pp-table{width:100%; border-collapse:collapse; font-family:var(--mono); font-size:11px; margin:10px 0 20px;}
-  .pp-table th{background:var(--board-900); color:var(--paper); padding:6px; font-size:10px; text-transform:uppercase; text-align:left;}
-  .pp-table td{padding:5px 6px; border-bottom:1px solid var(--paper-line); vertical-align:top;}
+        .post-num {
+            font-weight: 700;
+            color: #ffffff;
+            background: #0f172a;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+        }
 
-  .work-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:10px; margin-top:8px;}
-  .work-item{background:#fff; border:1px solid var(--paper-line); padding:8px; border-radius:3px; font-family:var(--mono); font-size:11px;}
+        .horse-name {
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            padding-right: 8px;
+        }
 
-  textarea{font-family:var(--mono); font-size:12px; padding:8px; width:100%; border:1px solid var(--paper-line); border-radius:3px; background:#fff;}
-</style>
+        .contender-row .horse-name {
+            color: #ffffff;
+        }
+
+        .badge {
+            font-size: 0.75rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .pp-badge {
+            background: rgba(56, 189, 248, 0.15);
+            color: var(--accent);
+        }
+
+        .ml-badge {
+            background: rgba(245, 158, 11, 0.15);
+            color: var(--gold);
+            text-align: right;
+        }
+
+        .note {
+            grid-column: 1 / -1;
+            font-size: 0.75rem;
+            margin-top: 4px;
+            padding-left: 36px;
+            color: var(--text-muted);
+        }
+
+        .top-pick-badge {
+            grid-column: 1 / -1;
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: #10b981;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 2px;
+            padding-left: 36px;
+        }
+    </style>
 </head>
 <body>
 
-<div class="wrap">
-  <header>
-    <p class="eyebrow">Professional Handicapping &amp; Value Engine</p>
-    <h1>Overlay Board</h1>
-    <p class="tagline">Full Race Card Coverage: Single Best Pick per Race + Complete Contenders &amp; Pretenders Breakdowns across all runners.</p>
-  </header>
+    <div class="header">
+        <h1>Saratoga Race Course</h1>
+        <p>Prime Power & Morning Line Analysis — 10 Race Card (SAR0828)</p>
+    </div>
 
-  <main>
-    <section>
-      <h2><span class="step-num">1</span> Load Race Data &amp; Scratches / Rider Changes</h2>
-      <div class="upload-grid">
-        <div class="upload-card">
-          <h3>Brisnet .DRF Single File</h3>
-          <p>Parses explicit Field 251 for Prime Power, Trainer/Jockey stats, speed ratings (846+i), finish position (616+i), and workouts (102+).</p>
-          <label class="file-btn" for="drfInput">Select .DRF / .CSV</label>
-          <input type="file" id="drfInput" accept=".drf,.csv,.txt">
-          <div class="status" id="drfStatus"></div>
-        </div>
+    <div class="grid">
 
-        <div class="upload-card">
-          <h3>Equibase RSS / XML Feed</h3>
-          <p>Import official feed XML to process scratches and detect late Jockey Changes with updated rider stats.</p>
-          <label class="file-btn" for="rssInput">Select XML/RSS</label>
-          <input type="file" id="rssInput" accept=".xml,.rss,.txt,.xml.rss">
-          
-          <div class="file-meta-box" id="rssMetaBox">
-            <div><strong>Loaded File:</strong> <span id="rssFileName">-</span></div>
-            <div><strong>Feed Date:</strong> <span id="rssFileDate">-</span></div>
-            <div style="margin-top:6px;">
-              <button class="small-btn" id="reloadRssBtn">↻ Reload / Replace File</button>
+        <!-- RACE 1 -->
+        <div class="race-card">
+            <div class="race-header">
+                <div class="race-title">Race 1</div>
+                <div class="field-count">7 Runners</div>
             </div>
-          </div>
+            
+            <div class="section-title contenders">Contenders</div>
+            <div class="horse-row contender-row">
+                <div class="post-num">5</div>
+                <div class="horse-name">ROCKABYE</div>
+                <div class="badge pp-badge">135.4</div>
+                <div class="badge ml-badge">8/5</div>
+                <div class="top-pick-badge">★ Top Prime Power Pick</div>
+            </div>
+            <div class="horse-row contender-row">
+                <div class="post-num">3</div>
+                <div class="horse-name">QUARTZ MOUNTAIN</div>
+                <div class="badge pp-badge">128.1</div>
+                <div class="badge ml-badge">5/2</div>
+                <div class="note">PP Gap -7.4 pts</div>
+            </div>
+            <div class="horse-row contender-row">
+                <div class="post-num">4</div>
+                <div class="horse-name">BREAKER</div>
+                <div class="badge pp-badge">118.9</div>
+                <div class="badge ml-badge">9/2</div>
+                <div class="note">PP Gap -16.5 pts</div>
+            </div>
 
-          <textarea id="rssPaste" rows="2" placeholder="...or paste XML content directly here" style="margin-top:8px;"></textarea>
-          <button class="small-btn" id="applyRssBtn" style="margin-top:8px;">Apply Feed Updates</button>
-          <div class="status" id="rssStatus"></div>
+            <div class="section-title pretenders">Pretenders</div>
+            <div class="horse-row pretender-row">
+                <div class="post-num">1</div>
+                <div class="horse-name">HORMESIS</div>
+                <div class="badge pp-badge">109.5</div>
+                <div class="badge ml-badge">8/1</div>
+            </div>
+            <div class="horse-row pretender-row">
+                <div class="post-num">7</div>
+                <div class="horse-name">CLASSY RUNNER</div>
+                <div class="badge pp-badge">0.0</div>
+                <div class="badge ml-badge">9/2</div>
+            </div>
+            <div class="horse-row pretender-row">
+                <div class="post-num">6</div>
+                <div class="horse-name">PAY MONTHLY</div>
+                <div class="badge pp-badge">0.0</div>
+                <div class="badge ml-badge">5/1</div>
+            </div>
+            <div class="horse-row pretender-row">
+                <div class="post-num">2</div>
+                <div class="horse-name">BOLT ISLAND</div>
+                <div class="badge pp-badge">0.0</div>
+                <div class="badge ml-badge">6/1</div>
+            </div>
         </div>
-      </div>
-    </section>
 
-    <section>
-      <h2><span class="step-num">2</span> Field Entries</h2>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th class="col-race">Race</th>
-              <th class="col-post">Post</th>
-              <th class="col-horse">Horse Name</th>
-              <th class="col-trainer">Trainer (Starts / W-P-S)</th>
-              <th class="col-jockey">Jockey (Starts / W-P-S)</th>
-              <th class="col-odds">M/L Odds</th>
-              <th class="col-power">Prime Power</th>
-              <th class="col-speed">Speed Fig</th>
-              <th class="col-scr">Scr</th>
-              <th class="col-del"></th>
-            </tr>
-          </thead>
-          <tbody id="rowsBody"></tbody>
-        </table>
-      </div>
-      <div class="table-actions">
-        <button class="ghost-btn" id="addRowBtn">+ Add Runner</button>
-        <button class="ghost-btn" id="clearBtn">Clear All</button>
-        <button class="primary-btn" id="computeBtn">Compute Race Card →</button>
-      </div>
-    </section>
+        <!-- RACE 2 -->
+        <div class="race-card">
+            <div class="race-header">
+                <div class="race-title">Race 2</div>
+                <div class="field-count">7 Runners</div>
+            </div>
+            
+            <div class="section-title contenders">Contenders</div>
+            <div class="horse-row contender-row">
+                <div class="post-num">7</div>
+                <div class="horse-name">BELLACOSE</div>
+                <div class="badge pp-badge">125.2</div>
+                <div class="badge ml-badge">9/5</div>
+                <div class="top-pick-badge">★ Top Prime Power Pick</div>
+            </div>
+            <div class="horse-row contender-row">
+                <div class="post-num">2</div>
+                <div class="horse-name">AH CA IRA</div>
+                <div class="badge pp-badge">118.4</div>
+                <div class="badge ml-badge">3/1</div>
+                <div class="note">PP Gap -6.8 pts</div>
+            </div>
+            <div class="horse-row contender-row">
+                <div class="post-num">4</div>
+                <div class="horse-name">SHORT SHIFT</div>
+                <div class="badge pp-badge">117.0</div>
+                <div class="badge ml-badge">7/2</div>
+                <div class="note">PP Gap -8.2 pts</div>
+            </div>
 
-    <div class="tabbar" id="tabbar" style="display:none;">
-      <button data-tab="card" class="on" id="tabCard">Full Race Cards</button>
-      <button data-tab="best" id="tabBest">Best Bets (Top Choice per Race)</button>
-      <button data-tab="analysis">Contenders vs Pretenders</button>
-      <button data-tab="h2h">Head-to-Head Comparison</button>
+            <div class="section-title pretenders">Pretenders</div>
+            <div class="horse-row pretender-row">
+                <div class="post-num">1</div>
+                <div class="horse-name">CURLIN'S MAGIC</div>
+                <div class="badge pp-badge">116.5</div>
+                <div class="badge ml-badge">8/1</div>
+            </div>
+            <div class="horse-row pretender-row">
+                <div class="post-num">5</div>
+                <div class="horse-name">OPEN SOUL AUTISM</div>
+                <div class="badge pp-badge">116.0</div>
+                <div class="badge ml-badge">10/1</div>
+            </div>
+            <div class="horse-row pretender-row">
+                <div class="post-num">3</div>
+                <div class="horse-name">MISS LAO</div>
+                <div class="badge pp-badge">113.7</div>
+                <div class="badge ml-badge">8/1</div>
+            </div>
+            <div class="horse-row pretender-row">
+                <div class="post-num">6</div>
+                <div class="horse-name">JACKIE THE JOKER</div>
+                <div class="badge pp-badge">110.8</div>
+                <div class="badge ml-badge">6/1</div>
+            </div>
+        </div>
+
+        <!-- RACE 3 -->
+        <div class="race-card">
+            <div class="race-header">
+                <div class="race-title">Race 3</div>
+                <div class="field-count">7 Runners</div>
+            </div>
+            
+            <div class="section-title contenders">Contenders</div>
+            <div class="horse-row contender-row">
+                <div class="post-num">5</div>
+                <div class="horse-name">SPOILER</div>
+                <div class="badge pp-badge">132.8</div>
+                <div class="badge ml-badge">1/1</div>
+                <div class="top-pick-badge">★ Top Prime Power Pick</div>
+            </div>
+            <div class="horse-row contender-row">
+                <div class="post-num">1</div>
+                <div class="horse-name">INTERLOCK EMPIRE</div>
+                <div class="badge pp-badge">127.3</div>
+                <div class="badge ml-badge">4/1</div>
+                <div class="note">PP Gap -5.5 pts</div>
+            </div>
+            <div class="horse-row contender-row">
+                <div class="post-num">6</div>
+                <div class="horse-name">FEVER NIGHT</div>
+                <div class="badge pp-badge">120.7</div>
+                <div class="badge ml-badge">5/1</div>
+                <div class="note">PP Gap -12.1 pts</div>
+            </div>
+
+            <div class="section-title pretenders">Pretenders</div>
+            <div class="horse-row pretender-row">
+                <div class="post-num">3</div>
+                <div class="horse-name">AMEDEUS MUSIC</div>
+                <div class="badge pp-badge">120.2</div>
+                <div class="badge ml-badge">15/1</div>
+            </div>
+            <div class="horse-row pretender-row">
+                <div class="post-num">2</div>
+                <div class="horse-name">SHIPSATIONAL</div>
+                <div class="badge pp-badge">119.7</div>
+                <div class="badge ml-badge">8/1</div>
+            </div>
+            <div class="horse-row pretender-row">
+                <div class="post-num">7</div>
+                <div class="horse-name">POLAR BEAR PLUNGE</div>
+                <div class="badge pp-badge">119.3</div>
+                <div class="badge ml-badge">6/1</div>
+            </div>
+            <div class="horse-row pretender-row">
+                <div class="post-num">4</div>
+                <div class="horse-name">EXPENSIVE CUT</div>
+                <div class="badge pp-badge">118.0</div>
+                <div class="badge ml-badge">10/1</div>
+            </div>
+        </div>
+
+        <!-- RACE 4 -->
+        <div class="race-card">
+            <div class="race-header">
+                <div class="race-title">Race 4</div>
+                <div class="field-count">8 Runners</div>
+            </div>
+            
+            <div class="section-title contenders">Contenders</div>
+            <div class="horse-row contender-row">
+                <div class="post-num">1</div>
+                <div class="horse-name">NORWICH</div>
+                <div class="badge pp-badge">127.8</div>
+                <div class="badge ml-badge">3/1</div>
+                <div class="top-pick-badge">★ Top Prime Power Pick</div>
+            </div>
+            <div class="horse-row contender-row">
+                <div class="post-num">6</div>
+                <div class="horse-name">SHOOT THE NICKEL</div>
+                <div class="badge pp-badge">127.7</div>
+                <div class="badge ml-badge">5/2</div>
+                <div class="note">PP Gap -0.2 pts</div>
+            </div>
+            <div class="horse-row contender-row">
+                <div class="post-num">5</div>
+                <div class="horse-name">TIZMARKUS</div>
+                <div class="badge pp-badge">127.0</div>
+                <div class="badge ml-badge">4/1</div>
+                <div class="note">PP Gap -0.8 pts</div>
+            </div>
+
+            <div class="section-title pretenders">Pretenders</div>
+            <div class="horse-row pretender-row">
+                <div class="post-num">8</div>
+                <div class="horse-name">NORMANDY COAST</div>
+                <div class="badge pp-badge">127.0</div>
+                <div class="badge ml-badge">4/1</div>
+            </div>
+            <div class="horse-row pretender-row">
+                <div class="post-num">3</div>
+                <div class="horse-name">KUNSHAN BRIDGE</div>
+                <div class="badge pp-badge">123.7</div>
+                <div class="badge ml-badge">6/1</div>
+            </div>
+            <div class="horse-row pretender-row">
+                <div class="post-num">2</div>
+                <div class="horse-name">PRINCIP</div>
+                <div class="badge pp-badge">119.0</div>
+                <div class="badge ml-badge">8/1</div>
+            </div>
+            <div class="horse-row pretender-row">
+                <div class="post-num">7</div>
+                <div class="horse-name">TIMAEUS</div>
+                <div class="badge pp-badge">114.5</div>
+                <div class="badge ml-badge">15/1</div>
+            </div>
+            <div class="horse-row pretender-row">
+                <div class="post-num">4</div>
+                <div class="horse-name">GRAYWING</div>
+                <div class="badge pp-badge">111.6</div>
+                <div class="badge ml-badge">30/1</div>
+            </div>
+        </div>
+
+        <!-- RACE 5 -->
+        <div class="race-card">
+            <div class="race-header">
+                <div class="race-title">Race 5</div>
+                <div class="field-count">12 Runners</div>
+            </div>
+            
+            <div class="section-title contenders">Contenders</div>
+            <div class="horse-row contender-row">
+                <div class="post-num">10</div>
+                <div class="horse-name">MANDY STEPH</div>
+                <div class="badge pp-badge">130.1</div>
+                <div class="badge ml-badge">7/2</div>
+                <div class="top-pick-badge">★ Top Prime Power Pick</div>
+            </div>
+            <div class="horse-row contender-row">
+                <div class="post-num">2</div>
+                <div class="horse-name">BLUEGRASS PRINCESS</div>
+                <div class="badge pp-badge">127.1</div>
+                <div class="badge ml-badge">4/1</div>
+                <div class="note">PP Gap -2.9 pts</div>
+            </div>
+            <div class="horse-row contender-row">
+                <div class="post-num">1</div>
+                <div class="horse-name">ROYAL COUNTY DOWN</div>
+                <div class="badge pp-badge">124.8</div>
+                <div class="badge ml-badge">5/1</div>
+                <div class="note">PP Gap -5.3 pts</div>
+            </div>
+
+            <div class="section-title pretenders">Pretenders</div>
+            <div class="horse-row pretender-row">
+                <div class="post-num">9</div>
+                <div class="horse-name">CELEBRATE</div>
+                <div class="badge pp-badge">123.9</div>
+                <div class="badge ml-badge">6/1</div>
+            </div>
+            <div class="horse-row pretender-row">
+                <div class="post-num">3</div>
+                <div class="horse-name">BITTERSWEET MEMORY</div>
+                <div class="badge pp-badge">120.9</div>
+                <div class="badge ml-badge">8/1</div>
+            </div>
+            <div class="horse-row pretender-row">
+                <div class="post-num">8</div>
+                <div class="horse-name">HARMONY MILL</div>
+                <div class="badge pp-badge">118.8</div>
+                <div class="badge ml-badge">12/1</div>
+            </div>
+            <div class="horse-row pretender-row">
+                <div class="post-num">7</div>
+                <div class="horse-name">HARPOON</div>
+                <div class="badge pp-badge">116.3</div>
+                <div class="badge ml-badge">20/1</div>
+            </div>
+            <div class="horse-row pretender-row">
+                <div class="post-num">5</div>
+                <div class="horse-name">AMELIA IN AIR</div>
+                <div class="badge pp-badge">114.7</div>
+                <div class="badge ml-badge">12/1</div>
+            </div>
+            <div class="horse-row pretender-row">
+                <div class="post-num">4</div>
+                <div class="horse-name">HUNTER CREEK</div>
+                <div class="badge pp-badge">112.5</div>
+                <div class="badge ml-badge">15/1</div>
+            </div>
+            <div class="horse-row pretender-row">
+                <div class="post-num">12</div>
+                <div class="horse-name">REVENGE OF THE SIS</div>
+                <div class="badge pp-badge">0.0</div>
+                <div class="badge ml-badge">3/1</div>
+            </div>
+            <div class="horse-row pretender-row">
+                <div class="post-num">6</div>
+                <div class="horse-name">SELLONTHENEWS</div>
+                <div class="badge pp-badge">0.0</div>
+                <div class="badge ml-badge">9/2</div>
+            </div>
+            <div class="horse-row pretender-row">
+                <div class="post-num">11</div>
+                <div class="horse-name">FUNNY WORDS</div>
+                <div class="badge pp-badge">0.0</div>
+                <div class="badge ml-badge">12/1</div>
+            </div>
+        </div>
+
+        <!-- RACE 6 -->
+        <div class="race-card">
+            <div class="race-header">
+                <div class="race-title">Race 6</div>
+                <div class="field-count">11 Runners</div>
+            </div>
+            
+            <div class="section-title contenders">Contenders</div>
+            <div class="horse-row contender-row">
+                <div class="post-num">9</div>
+                <div class="horse-name">MCMOON</div>
+                <div class="badge pp-badge">126.0</div>
+                <div class="badge ml-badge">4/1</div>
+                <div class="top-pick-badge">★ Top Prime Power Pick</div>
+            </div>
+            <div class="horse-row contender-row">
+                <div class="post-num">11</div>
+                <div class="horse-name">HAMMERIN HENRY</div>
+                <div class="badge pp-badge">124.6</div>
+                <div class="badge ml-badge">5/1</div>
+                <div class="note">PP Gap -1.4 pts</div>
+            </div>
+            <div class="horse-row contender-row">
+                <div class="post-num">8</div>
+                <div class="horse-name">FIVE GRAND</div>
+                <div class="badge pp-badge">119.6</div>
+                <div class="badge ml-badge">6/1</div>
+                <div class="note">PP Gap -6.4 pts</div>
+            </div>
+
+            <div class="section-title pretenders">Pretenders</div>
+            <div class="horse-row pretender-row">
+                <div class="post-num">10</div>
+                <div class="horse-name">MAXIMILIAN</div>
+                <div class="badge pp-badge">118.7</div>
+                <div class="badge ml-badge">6/1</div>
+            </div>
+            <div class="horse-row pretender-row">
+                <div class="post-num">7</div>
+                <div class="horse-name">FREEDOM CHARGE</div>
+                <div class="badge pp-badge">118.6</div>
+                <div class="badge ml-badge">7/2</div>
+            </div>
+            <div class="horse-row pretender-row">
+                <div class="post-num">3</div>
+                <div class="horse-name">ED CHARLES</div>
+                <div class="badge pp-badge">107.0</div>
+                <div class="badge ml-badge">15/1</div>
+            </div>
+            <div class="horse-row pretender-row">
+                <div class="post-num">4</div>
+                <div class="horse-name">JUST YOU BABY</div>
+                <div class="badge pp-badge">0.0</div>
+                <div class="badge ml-badge">10/1</div>
+            </div>
+            <div class="horse-row pretender-row">
+                <div class="post-num">2</div>
+                <div class="horse-name">THEMISTOCLES</div>
+                <div class="badge pp-badge">0.0</div>
+                <div class="badge ml-badge">12/1</div>
+            </div>
+            <div class="horse-row pretender-row">
+                <div class="post-num">5</div>
+                <div class="horse-name">COMICAL MISCHIEF</div>
+                <div class="badge pp-badge">0.0</div>
+                <div class="badge ml-badge">15/1</div>
+            </div>
+            <div class="horse-row pretender-row">
+                <div class="post-num">6</div>
+                <div class="horse-name">MR RIGATONI</div>
+                <div class="badge pp-badge">0.0</div>
+                <div class="badge ml-badge">15/1</div>
+            </div>
+            <div class="horse-row pretender-row">
+                <div class="post-num">1</div>
+                <div class="horse-name">DOMINICGOFRISKEM</div>
+                <div class="badge pp-badge">0.0</div>
+                <div class="badge ml-badge">20/1</div>
+            </div>
+        </div>
+
+        <!-- RACE 7 -->
+        <div class="race-card">
+            <div class="race-header">
+                <div class="race-title">Race 7</div>
+                <div class="field-count">13 Runners</div>
+            </div>
+            
+            <div class="section-title contenders">Contenders</div>
+            <div class="horse-row contender-row">
+                <div class="post-num">4</div>
+                <div class="horse-name">MI BAGO</div>
+                <div class="badge pp-badge">161.1</div>
+                <div class="badge ml-badge">2/1</div>
+                <div class="top-pick-badge">★ Top Prime Power Pick</div>
+            </div>
+            <div class="horse-row contender-row">
+                <div class="post-num">2</div>
+                <div class="horse-name">SPIRIT OF ST LOUIS</div>
+                <div class="badge pp-badge">158.3</div>
+                <div class="badge ml-badge">3/1</div>
+                <div class="note">PP Gap -2.8 pts</div>
+            </div>
+            <div class="horse-row contender-row">
+                <div class="post-num">7</div>
+                <div class="horse-name">SOUNDS LIKE A PLAN</div>
+                <div class="badge pp-badge">156.0</div>
+                <div class="badge ml-badge">6/1</div>
+                <div class="note">PP Gap -5.1 pts</div>
+            </div>
+
+            <div class="section-title pretenders">Pretenders</div>
+            <div class="horse-row pretender-row">
+                <div class="post-num">8</div>
+                <div class="horse-name">GEORGE BRIGGS</div>
+                <div class="badge pp-badge">146.6</div>
+                <div class="badge ml-badge">7/2</div>
+            </div>
+            <div class="horse-row pretender-row">
+                <div class="post-num">12</div>
+                <div class="horse-name">WYNSTOCK</div>
+                <div class="badge pp-badge">144.3</div>
+                <div class="badge ml-badge">5/2</div>
+            </div>
+            <div class="horse-row pretender-row">
+                <div class="post-num">5</div>
+                <div class="horse-name">TONKA WARRIOR</div>
+                <div class="badge pp-badge">144.1</div>
+                <div class="badge ml-badge">8/1</div>
+            </div>
+            <div class="horse-row pretender-row">
+                <div class="post-num">11</div>
+                <div class="horse-name">DOC SULLIVAN</div>
+                <div class="badge pp-badge">142.6</div>
+                <div class="badge ml-badge">9/5</div>
+            </div>
+            <div class="horse-row pretender-row">
+                <div class="post-num">10</div>
+                <div class="horse-name">BANK FRENZY</div>
+                <div class="badge pp-badge">142.1</div>
+                <div class="badge ml-badge">5/1</div>
+            </div>
+            <div class="horse-row pretender-row">
+                <div class="post-num">6</div>
+                <div class="horse-name">ITSALLCOMINTOGETHA</div>
+                <div class="badge pp-badge">141.6</div>
+                <div class="badge ml-badge">12/1</div>
+            </div>
+            <div class="horse-row pretender-row">
+                <div class="post-num">13</div>
+                <div class="horse-name">DR. KRAFT</div>
+                <div class="badge pp-badge">137.5</div>
+                <div class="badge ml-badge">8/1</div>
+            </div>
+            <div class="horse-row pretender-row">
+                <div class="post-num">1</div>
+                <div class="horse-name">TWO'S A CROWD</div>
+                <div class="badge pp-badge">133.9</div>
+                <div class="badge ml-badge">15/1</div>
+            </div>
+            <div class="horse-row pretender-row">
+                <div class="post-num">3</div>
+                <div class="horse-name">LEON BLUE</div>
+                <div class="badge pp-badge">130.0</div>
+                <div class="badge ml-badge">20/1</div>
+            </div>
+            <div class="horse-row pretender-row">
+                <div class="post-num">9</div>
+                <div class="horse-name">RUSSIAN REALM</div>
+                <div class="badge pp-badge">127.3</div>
+                <div class="badge ml-badge">30/1</div>
+            </div>
+        </div>
+
+        <!-- RACE 8 -->
+        <div class="race-card">
+            <div class="race-header">
+                <div class="race-title">Race 8</div>
+                <div class="field-count">9 Runners</div>
+            </div>
+            
+            <div class="section-title contenders">Contenders</div>
+            <div class="horse-row contender-row">
+                <div class="post-num">7</div>
+                <div class="horse-name">AWESOMESAUCE</div>
+                <div class="badge pp-badge">155.4</div>
+                <div class="badge ml-badge">8/1</div>
+                <div class="top-pick-badge">★ Top Prime Power Pick</div>
+            </div>
+            <div class="horse-row contender-row">
+                <div class="post-num">6</div>
+                <div class="horse-name">STORM MIAMI</div>
+                <div class="badge pp-badge">148.3</div>
+                <div class="badge ml-badge">4/1</div>
+                <div class="note">PP Gap -7.1 pts</div>
+            </div>
+
+            <div class="section-title pretenders">Pretenders</div>
+            <div class="horse-row pretender-row">
+                <div class="post-num">5</div>
+                <div class="horse-name">VENENCIA</div>
+                <div class="badge pp-badge">149.9</div>
+                <div class="badge ml-badge">12/1</div>
+            </div>
+            <div class="horse-row pretender-row">
+                <div class="post-num">4</div>
+                <div class="horse-name">MASSARAT</div>
+                <div class="badge pp-badge">147.9</div>
+                <div class="badge ml-badge">9/2</div>
+            </div>
+            <div class="horse-row pretender-row">
+                <div class="post-num">1</div>
+                <div class="horse-name">EVERSHED</div>
+                <div class="badge pp-badge">142.3</div>
+                <div class="badge ml-badge">5/1</div>
+            </div>
+            <div class="horse-row pretender-row">
+                <div class="post-num">8</div>
+                <div class="horse-name">SILVOLOGY</div>
+                <div class="badge pp-badge">142.2</div>
+                <div class="badge ml-badge">7/2</div>
+            </div>
+            <div class="horse-row pretender-row">
+                <div class="post-num">9</div>
+                <div class="horse-name">UNMERITED FAVOR</div>
+                <div class="badge pp-badge">141.9</div>
+                <div class="badge ml-badge">8/1</div>
+            </div>
+            <div class="horse-row pretender-row">
+                <div class="post-num">3</div>
+                <div class="horse-name">WHITETHORN</div>
+                <div class="badge pp-badge">140.9</div>
+                <div class="badge ml-badge">10/1</div>
+            </div>
+            <div class="horse-row pretender-row">
+                <div class="post-num">2</div>
+                <div class="horse-name">SNIPSNIPPITYSNIP</div>
+                <div class="badge pp-badge">137.8</div>
+                <div class="badge ml-badge">8/1</div>
+            </div>
+        </div>
+
+        <!-- RACE 9 -->
+        <div class="race-card">
+            <div class="race-header">
+                <div class="race-title">Race 9</div>
+                <div class="field-count">9 Runners</div>
+            </div>
+            
+            <div class="section-title contenders">Contenders</div>
+            <div class="horse-row contender-row">
+                <div class="post-num">4</div>
+                <div class="horse-name">BAM'S BLISS KISS</div>
+                <div class="badge pp-badge">131.1</div>
+                <div class="badge ml-badge">3/1</div>
+                <div class="top-pick-badge">★ Top Prime Power Pick</div>
+            </div>
+            <div class="horse-row contender-row">
+                <div class="post-num">6</div>
+                <div class="horse-name">CITY BLOCKS</div>
+                <div class="badge pp-badge">128.9</div>
+                <div class="badge ml-badge">5/1</div>
+                <div class="note">PP Gap -2.3 pts</div>
+            </div>
+            <div class="horse-row contender-row">
+                <div class="post-num">9</div>
+                <div class="horse-name">SWEET NOTE</div>
+                <div class="badge pp-badge">127.9</div>
+                <div class="badge ml-badge">7/2</div>
+                <div class="note">PP Gap -3.2 pts</div>
+            </div>
+
+            <div class="section-title pretenders">Pretenders</div>
+            <div class="horse-row pretender-row">
+                <div class="post-num">2</div>
+                <div class="horse-name">PROUD FOOT</div>
+                <div class="badge pp-badge">126.4</div>
+                <div class="badge ml-badge">8/1</div>
+            </div>
+            <div class="horse-row pretender-row">
+                <div class="post-num">3</div>
+                <div class="horse-name">CONFIRMED STAR</div>
+                <div class="badge pp-badge">123.1</div>
+                <div class="badge ml-badge">12/1</div>
+            </div>
+            <div class="horse-row pretender-row">
+                <div class="post-num">1</div>
+                <div class="horse-name">MAJESTIC RETURN</div>
+                <div class="badge pp-badge">122.8</div>
+                <div class="badge ml-badge">8/1</div>
+            </div>
+            <div class="horse-row pretender-row">
+                <div class="post-num">8</div>
+                <div class="horse-name">SASSY PRINCESS</div>
+                <div class="badge pp-badge">121.5</div>
+                <div class="badge ml-badge">4/1</div>
+            </div>
+            <div class="horse-row pretender-row">
+                <div class="post-num">7</div>
+                <div class="horse-name">HEAVENLY LIGHT</div>
+                <div class="badge pp-badge">118.1</div>
+                <div class="badge ml-badge">12/1</div>
+            </div>
+            <div class="horse-row pretender-row">
+                <div class="post-num">5</div>
+                <div class="horse-name">FUGITIVE STAR</div>
+                <div class="badge pp-badge">117.3</div>
+                <div class="badge ml-badge">15/1</div>
+            </div>
+        </div>
+
+        <!-- RACE 10 -->
+        <div class="race-card">
+            <div class="race-header">
+                <div class="race-title">Race 10</div>
+                <div class="field-count">12 Runners</div>
+            </div>
+            
+            <div class="section-title contenders">Contenders</div>
+            <div class="horse-row contender-row">
+                <div class="post-num">1</div>
+                <div class="horse-name">ILLMATIC</div>
+                <div class="badge pp-badge">139.3</div>
+                <div class="badge ml-badge">7/5</div>
+                <div class="top-pick-badge">★ Top Prime Power Pick</div>
+            </div>
+            <div class="horse-row contender-row">
+                <div class="post-num">8</div>
+                <div class="horse-name">JOKER ON FIRE</div>
+                <div class="badge pp-badge">132.8</div>
+                <div class="badge ml-badge">3/1</div>
+                <div class="note">PP Gap -6.5 pts</div>
+            </div>
+            <div class="horse-row contender-row">
+                <div class="post-num">12</div>
+                <div class="horse-name">MUSIC IN MOTION</div>
+                <div class="badge pp-badge">130.9</div>
+                <div class="badge ml-badge">7/2</div>
+                <div class="note">PP Gap -8.4 pts</div>
+            </div>
+
+            <div class="section-title pretenders">Pretenders</div>
+            <div class="horse-row pretender-row">
+                <div class="post-num">6</div>
+                <div class="horse-name">EAST COAST GIRL</div>
+                <div class="badge pp-badge">130.1</div>
+                <div class="badge ml-badge">10/1</div>
+            </div>
+            <div class="horse-row pretender-row">
+                <div class="post-num">5</div>
+                <div class="horse-name">RHYTON</div>
+                <div class="badge pp-badge">128.8</div>
+                <div class="badge ml-badge">6/1</div>
+            </div>
+            <div class="horse-row pretender-row">
+                <div class="post-num">3</div>
+                <div class="horse-name">FIREBALLIN</div>
+                <div class="badge pp-badge">124.2</div>
+                <div class="badge ml-badge">12/1</div>
+            </div>
+            <div class="horse-row pretender-row">
+                <div class="post-num">9</div>
+                <div class="horse-name">VAN VOLLENHOVEN</div>
+                <div class="badge pp-badge">121.7</div>
+                <div class="badge ml-badge">10/1</div>
+            </div>
+            <div class="horse-row pretender-row">
+                <div class="post-num">7</div>
+                <div class="horse-name">STORMY BIRTHDAY</div>
+                <div class="badge pp-badge">121.7</div>
+                <div class="badge ml-badge">12/1</div>
+            </div>
+            <div class="horse-row pretender-row">
+                <div class="post-num">4</div>
+                <div class="horse-name">KING PUCK</div>
+                <div class="badge pp-badge">118.8</div>
+                <div class="badge ml-badge">15/1</div>
+            </div>
+            <div class="horse-row pretender-row">
+                <div class="post-num">2</div>
+                <div class="horse-name">THREE THIRTEEN</div>
+                <div class="badge pp-badge">115.5</div>
+                <div class="badge ml-badge">15/1</div>
+            </div>
+            <div class="horse-row pretender-row">
+                <div class="post-num">11</div>
+                <div class="horse-name">B PROVOCATEUR</div>
+                <div class="badge pp-badge">115.1</div>
+                <div class="badge ml-badge">4/1</div>
+            </div>
+            <div class="horse-row pretender-row">
+                <div class="post-num">10</div>
+                <div class="horse-name">VEKINDA</div>
+                <div class="badge pp-badge">114.5</div>
+                <div class="badge ml-badge">6/1</div>
+            </div>
+        </div>
+
     </div>
 
-    <section id="cardSection" style="display:none;">
-      <h2>Full Race Cards &amp; Complete Fields</h2>
-      <div id="raceCardsList"></div>
-    </section>
-
-    <section id="bestSection" style="display:none;">
-      <div class="bestof">
-        <h3>Single "Best Bet" Pick Per Race</h3>
-        <p style="font-size:12.5px; color:var(--ink-soft); margin-bottom:12px;">The single top choice to win for each race on the card based on Prime Power, speed ratings, and trainer/jockey metrics.</p>
-        <div id="bestBetsList"></div>
-      </div>
-    </section>
-
-    <section id="analysisSection" style="display:none;">
-      <h2>Contenders vs. Pretenders</h2>
-      <p style="font-size:12.5px; color:var(--ink-soft); margin-bottom:14px;">Every horse is classified as either a primary contender or a pretender (questionable ability or long odds).</p>
-      <div id="contenderCards"></div>
-    </section>
-
-    <section id="h2hSection" style="display:none;">
-      <h2>Head-to-Head Analysis &amp; Comparison</h2>
-
-      <div class="h2h-past-box">
-        <h3 style="margin:0 0 10px; font-size:15px; border-bottom:1px solid var(--paper-line); padding-bottom:6px;">
-          Direct Head-to-Head Past Matchups (Ordered by Current Race Number)
-        </h3>
-        <div id="pastMatchupsList">
-          <p style="font-size:12.5px; color:var(--ink-soft); margin:0;">Scanning past performances for horses that previously faced each other on the same track, date, and race...</p>
-        </div>
-      </div>
-
-      <h3 style="font-size:14px; margin:20px 0 10px;">Side-by-Side Runner Comparison</h3>
-      <div class="h2h-select-grid">
-        <div class="h2h-select-box">
-          <label style="font-size:12px; font-family:var(--mono); font-weight:700;">HORSE A:</label>
-          <select id="h2hSelectA"></select>
-        </div>
-        <div class="h2h-select-box">
-          <label style="font-size:12px; font-family:var(--mono); font-weight:700;">HORSE B:</label>
-          <select id="h2hSelectB"></select>
-        </div>
-      </div>
-      <div class="h2h-comparison-grid" id="h2hComparisonDisplay"></div>
-    </section>
-
-  </main>
-</div>
-
-<div id="ppOverlay" role="dialog" aria-modal="true">
-  <div class="pp-card">
-    <button class="pp-back" id="ppReturnBtn">← Return to Race Card</button>
-    <button class="pp-close" id="ppCloseBtn">✕</button>
-    <div id="ppContent"></div>
-  </div>
-</div>
-
-<script>
-let rows = [];
-let rowId = 0;
-let computedRaces = {};
-
-const rowsBody = document.getElementById('rowsBody');
-
-function formatDistance(distVal) {
-  let yards = parseFloat(distVal);
-  if (isNaN(yards) || yards <= 0) return distVal || 'N/A';
-  if (yards > 2500) yards = yards / 3.0;
-
-  const furlongs = yards / 220.0;
-  if (furlongs < 8.0) {
-    const fRounded = Math.round(furlongs * 2) / 2; 
-    return (fRounded % 1 === 0 ? fRounded.toFixed(0) : fRounded.toFixed(1)) + 'f';
-  } else {
-    const miles = yards / 1760.0;
-    if (Math.abs(miles - 1.0) < 0.03) return '1m';
-    if (Math.abs(miles - 1.0625) < 0.03) return '1 1/16m';
-    if (Math.abs(miles - 1.125) < 0.03) return '1 1/8m';
-    if (Math.abs(miles - 1.25) < 0.03) return '1 1/4m';
-    if (Math.abs(miles - 1.5) < 0.03) return '1 1/2m';
-    return miles.toFixed(2) + 'm';
-  }
-}
-
-function newRow(partial){
-  return Object.assign({
-    id: rowId++, race:'1', post:'1', horse:'', 
-    trainer:'', trainerStarts:0, trainerWins:0, trainerPlaces:0, trainerShows:0,
-    jockey:'', jockeyStarts:0, jockeyWins:0, jockeyPlaces:0, jockeyShows:0,
-    jockeyChanged: false, origJockey: '',
-    starts: 0, wins: 0, places: 0, shows: 0,
-    odds:'2/1', finalOdds:'', score:'', surfaceRating:'', scratched:false,
-    primePower: 0, eps: 0, lastSpeed: 0, bestSpeed: 0,
-    quirin: 0, runStyle: '',
-    ppRaces: [], ppWorks: []
-  }, partial);
-}
-
-function renderRows(){
-  rowsBody.innerHTML = '';
-  rows.forEach(r => {
-    const tr = document.createElement('tr');
-    if (r.scratched) tr.classList.add('scratched-row');
-    
-    const valPower = r.score !== '' ? r.score : (r.primePower ? r.primePower : '');
-    const valSpeed = r.surfaceRating !== '' ? r.surfaceRating : (r.lastSpeed ? r.lastSpeed : '');
-    
-    const tStats = r.trainer ? `${r.trainer} (${r.trainerStarts || 0}: ${r.trainerWins || 0}-${r.trainerPlaces || 0}-${r.trainerShows || 0})` : '';
-    const jStats = r.jockey ? `${r.jockey} (${r.jockeyStarts || 0}: ${r.jockeyWins || 0}-${r.jockeyPlaces || 0}-${r.jockeyShows || 0})` : '';
-
-    tr.innerHTML = `
-      <td class="col-race"><input type="text" value="${r.race}" data-f="race"></td>
-      <td class="col-post"><input type="text" value="${r.post}" data-f="post"></td>
-      <td class="col-horse"><input type="text" value="${r.horse}" data-f="horse"></td>
-      <td class="col-trainer"><input type="text" value="${tStats}" data-f="trainerDisplay" placeholder="Trainer Stats"></td>
-      <td class="col-jockey">
-        <input type="text" value="${jStats}" data-f="jockeyDisplay" placeholder="Jockey Stats">
-        ${r.jockeyChanged ? '<span class="badge-changed">CHANGED</span>' : ''}
-      </td>
-      <td class="col-odds"><input type="text" value="${r.odds}" data-f="odds"></td>
-      <td class="col-power"><input type="text" value="${valPower}" data-f="score" style="font-weight:700;"></td>
-      <td class="col-speed"><input type="text" value="${valSpeed}" data-f="surfaceRating"></td>
-      <td class="col-scr"><input type="checkbox" ${r.scratched ? 'checked' : ''} data-f="scratched"></td>
-      <td class="col-del"><button class="del-btn">✕</button></td>
-    `;
-
-    tr.querySelectorAll('input').forEach(inp => {
-      inp.addEventListener('input', e => {
-        const field = e.target.dataset.f;
-        if(field){
-          if(field === 'scratched'){
-            r.scratched = e.target.checked;
-            tr.classList.toggle('scratched-row', r.scratched);
-          } else {
-            r[field] = e.target.value;
-          }
-        }
-      });
-    });
-
-    tr.querySelector('.del-btn').addEventListener('click', () => {
-      rows = rows.filter(x => x.id !== r.id);
-      renderRows();
-    });
-    rowsBody.appendChild(tr);
-  });
-}
-
-document.getElementById('addRowBtn').addEventListener('click', () => { rows.push(newRow({})); renderRows(); });
-document.getElementById('clearBtn').addEventListener('click', () => { rows = []; renderRows(); });
-
-function parseCSVLine(line){
-  const out = []; let cur = ''; let inQ = false;
-  for (let i = 0; i < line.length; i++){
-    const c = line[i];
-    if (inQ){
-      if (c === '"'){ if (line[i+1] === '"'){ cur += '"'; i++; } else { inQ = false; } }
-      else cur += c;
-    } else {
-      if (c === '"') inQ = true;
-      else if (c === ','){ out.push(cur); cur = ''; }
-      else cur += c;
-    }
-  }
-  out.push(cur);
-  return out.map(v => v.trim());
-}
-
-function extractPrimePower(f) {
-  const get = n => (f[n - 1] !== undefined ? f[n - 1].trim() : '');
-  let rawVal = parseFloat(get(251));
-  if (isNaN(rawVal) || rawVal <= 0) return '';
-  if (rawVal > 500) {
-    return (rawVal / 10).toFixed(1);
-  } else if (rawVal >= 50.0) {
-    return rawVal.toFixed(1);
-  }
-  return '';
-}
-
-document.getElementById('drfInput').addEventListener('change', e => {
-  const file = e.target.files[0];
-  if(!file) return;
-  const reader = new FileReader();
-  reader.onload = function(evt){
-    const text = evt.target.result;
-    const lines = text.split(/\r\n|\n|\r/).filter(l => l.trim().length > 0);
-    rows = [];
-    
-    lines.forEach(line => {
-      const f = parseCSVLine(line);
-      if(f.length < 50) return;
-      
-      const get = n => (f[n-1] !== undefined ? f[n-1].trim().replace(/^["']|["']$/g, '') : '');
-      const num = n => { const v = parseFloat(get(n)); return isNaN(v) ? 0 : v; };
-
-      const race = get(3) || '1';
-      const post = get(4);
-      const horse = get(45);
-      const mlOdds = get(44) || '2/1';
-
-      const primePower = extractPrimePower(f);
-
-      const trainer = get(28);
-      const trainerStarts = num(29);
-      const trainerWins = num(30);
-      const trainerPlaces = num(31);
-      const trainerShows = num(32);
-
-      const jockey = get(33);
-      const jockeyStarts = num(35);
-      const jockeyWins = num(36);
-      const jockeyPlaces = num(37);
-      const jockeyShows = num(38);
-
-      const starts = num(97);
-      const wins = num(98);
-      const places = num(99);
-      const shows = num(100);
-
-      const lastSpeed = num(846);
-      const bestSpeed = num(101);
-
-      const ppRaces = [];
-      for(let i = 0; i < 10; i++){
-        const date = get(256 + i);
-        if(!date) continue;
-        ppRaces.push({
-          date: date,
-          track: get(276 + i),
-          raceNum: get(296 + i) || '',
-          dist: get(316 + i),
-          surf: get(326 + i),
-          fin: get(616 + i),
-          speed: num(846 + i),
-          comment: get(396 + i)
-        });
-      }
-
-      const ppWorks = [];
-      for(let w = 0; w < 4; w++){
-        const baseIndex = 102 + (w * 12);
-        const wDate = get(baseIndex);
-        if(!wDate) continue;
-        ppWorks.push({
-          date: wDate,
-          track: get(baseIndex + 1),
-          dist: get(baseIndex + 2),
-          time: get(baseIndex + 3),
-          cond: get(baseIndex + 4),
-          rank: get(baseIndex + 5)
-        });
-      }
-
-      rows.push(newRow({
-        race, post, horse, odds: mlOdds,
-        trainer, trainerStarts, trainerWins, trainerPlaces, trainerShows,
-        jockey, origJockey: jockey, jockeyStarts, jockeyWins, jockeyPlaces, jockeyShows,
-        starts, wins, places, shows,
-        score: primePower, surfaceRating: lastSpeed, primePower,
-        lastSpeed, bestSpeed, ppRaces, ppWorks
-      }));
-    });
-
-    renderRows();
-    document.getElementById('drfStatus').innerText = `Loaded ${rows.length} horses successfully.`;
-    document.getElementById('drfStatus').className = 'status ok';
-  };
-  reader.readAsText(file);
-});
-
-function extractDateFromXML(xmlDoc, rawText){
-  const dateTags = ['pubDate', 'lastBuildDate', 'date', 'dc:date', 'issueDate'];
-  for (const tag of dateTags){
-    const el = xmlDoc.querySelector(tag);
-    if(el && el.textContent.trim()) return el.textContent.trim();
-  }
-  const dateRegex = /\b(?:\d{4}-\d{2}-\d{2}|\d{1,2}\/\d{1,2}\/\d{2,4}|(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{1,2},?\s+\d{4})\b/i;
-  const match = rawText.match(dateRegex);
-  return match ? match[0] : "Date Not Specified in Feed";
-}
-
-function processScratchesAndChanges(rawText, fileName = "Pasted Content"){
-  if(!rawText || !rawText.trim()){
-    document.getElementById('rssStatus').innerText = "Error: Input content is empty.";
-    document.getElementById('rssStatus').className = 'status err';
-    return;
-  }
-
-  const parser = new DOMParser();
-  const xmlDoc = parser.parseFromString(rawText, "text/xml");
-  
-  const feedDate = extractDateFromXML(xmlDoc, rawText);
-  document.getElementById('rssFileName').innerText = fileName;
-  document.getElementById('rssFileDate').innerText = feedDate;
-  document.getElementById('rssMetaBox').classList.add('show');
-
-  let scratchCount = 0;
-  let jockChangeCount = 0;
-
-  const items = xmlDoc.querySelectorAll("item, change, entry, scratch, jockey_change");
-
-  items.forEach(item => {
-    const text = item.textContent.toLowerCase();
-    
-    rows.forEach(r => {
-      if(!r.horse || r.horse.length < 3) return;
-      const hName = r.horse.toLowerCase();
-
-      if(text.includes(hName)){
-        if(text.includes("scratch")){
-          r.scratched = true;
-          scratchCount++;
-        }
-        
-        if(text.includes("jockey") || text.includes("rider")){
-          const newJockMatch = item.textContent.match(/(?:rider|jockey)\s+(?:change\s+to\s+)?([A-Z\s\.,]+)/i);
-          if(newJockMatch && newJockMatch[1]){
-            const newJockName = newJockMatch[1].trim();
-            if(newJockName && r.jockey !== newJockName){
-              r.jockey = newJockName;
-              r.jockeyChanged = true;
-              
-              const startsM = item.textContent.match(/starts?:?\s*(\d+)/i);
-              const winsM = item.textContent.match(/wins?:?\s*(\d+)/i);
-              const placesM = item.textContent.match(/places?:?\s*(\d+)/i);
-              const showsM = item.textContent.match(/shows?:?\s*(\d+)/i);
-
-              if(startsM) r.jockeyStarts = parseInt(startsM[1]);
-              if(winsM) r.jockeyWins = parseInt(winsM[1]);
-              if(placesM) r.jockeyPlaces = parseInt(placesM[1]);
-              if(showsM) r.jockeyShows = parseInt(showsM[1]);
-
-              jockChangeCount++;
-            }
-          }
-        }
-      }
-    });
-  });
-
-  renderRows();
-  document.getElementById('rssStatus').innerText = `Applied ${scratchCount} scratches & ${jockChangeCount} jockey changes.`;
-  document.getElementById('rssStatus').className = 'status ok';
-
-  if(Object.keys(computedRaces).length > 0) computeRaceCard();
-}
-
-const rssInput = document.getElementById('rssInput');
-rssInput.addEventListener('change', e => {
-  const file = e.target.files[0];
-  if(!file) return;
-  const reader = new FileReader();
-  reader.onload = evt => processScratchesAndChanges(evt.target.result, file.name);
-  reader.readAsText(file);
-});
-
-document.getElementById('applyRssBtn').addEventListener('click', () => {
-  processScratchesAndChanges(document.getElementById('rssPaste').value, "Pasted Content");
-});
-
-document.getElementById('reloadRssBtn').addEventListener('click', () => {
-  rssInput.value = "";
-  document.getElementById('rssPaste').value = "";
-  document.getElementById('rssMetaBox').classList.remove('show');
-  document.getElementById('rssStatus').innerText = "Feed reset. Please choose a new file.";
-  document.getElementById('rssStatus').className = 'status';
-  rssInput.click();
-});
-
-function findPastMatchups() {
-  const activeRows = rows.filter(r => !r.scratched && r.horse);
-  const raceMap = {};
-
-  activeRows.forEach(h => {
-    if(!h.ppRaces) return;
-    h.ppRaces.forEach(pp => {
-      if(!pp.date || !pp.track || !pp.raceNum) return;
-      
-      const key = `${pp.date}_${pp.track}_R${pp.raceNum}`;
-      if(!raceMap[key]) raceMap[key] = { date: pp.date, track: pp.track, raceNum: pp.raceNum, runners: [] };
-      
-      let numericFin = parseInt(pp.fin);
-      if (isNaN(numericFin)) numericFin = 99;
-
-      raceMap[key].runners.push({
-        horse: h.horse,
-        currentRace: parseInt(h.race) || 1,
-        post: h.post,
-        fin: pp.fin,
-        finNum: numericFin,
-        speed: pp.speed,
-        dist: pp.dist,
-        surf: pp.surf
-      });
-    });
-  });
-
-  const matchups = Object.values(raceMap).filter(m => m.runners.length > 1);
-
-  matchups.sort((a, b) => {
-    const minRaceA = Math.min(...a.runners.map(r => r.currentRace));
-    const minRaceB = Math.min(...b.runners.map(r => r.currentRace));
-    return minRaceA - minRaceB;
-  });
-
-  const container = document.getElementById('pastMatchupsList');
-
-  if(matchups.length === 0) {
-    container.innerHTML = `<div style="font-size:12.5px; color:var(--ink-soft);">No exact same-track, same-date, same-race head-to-head encounters found in past performance lines.</div>`;
-    return;
-  }
-
-  container.innerHTML = matchups.map(m => {
-    m.runners.sort((a, b) => a.finNum - b.finNum);
-    const winner = m.runners[0];
-    const losers = m.runners.slice(1);
-
-    return `
-      <div class="h2h-past-matchup">
-        <div style="font-family:var(--mono); font-weight:700; color:var(--board-950); margin-bottom:4px; display:flex; justify-content:space-between; align-items:center;">
-          <span>📅 ${m.date} — Track: ${m.track} (Race ${m.raceNum}) — Dist: ${formatDistance(m.runners[0].dist)} (${m.runners[0].surf})</span>
-          <span class="h2h-winner-badge">Outcome: ${winner.horse} Beat ${losers.map(l=>l.horse).join(', ')}</span>
-        </div>
-        <table style="width:100%; font-family:var(--mono); font-size:11.5px; margin-top:6px; border:1px solid var(--paper-line);">
-          <thead>
-            <tr style="background:var(--paper-dim); text-align:left;">
-              <th style="padding:4px 6px;">Current Race</th>
-              <th style="padding:4px 6px;">Horse Name</th>
-              <th style="padding:4px 6px;">Finish Pos</th>
-              <th style="padding:4px 6px;">Speed Fig</th>
-              <th style="padding:4px 6px;">Head-to-Head Result</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${m.runners.map((r, idx) => `
-              <tr style="${idx === 0 ? 'font-weight:bold; background:rgba(46,110,69,0.08);' : ''}">
-                <td style="padding:4px 6px;">Race ${r.currentRace} (#${r.post})</td>
-                <td style="padding:4px 6px;">${r.horse}</td>
-                <td style="padding:4px 6px;">${r.fin}</td>
-                <td style="padding:4px 6px;">${r.speed}</td>
-                <td style="padding:4px 6px;">${idx === 0 ? '🏆 Defeated field below' : 'Finished behind ' + winner.horse}</td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-      </div>
-    `;
-  }).join('');
-}
-
-function updateH2HDropdowns(){
-  const selA = document.getElementById('h2hSelectA');
-  const selB = document.getElementById('h2hSelectB');
-  selA.innerHTML = '';
-  selB.innerHTML = '';
-
-  const activeRows = rows.filter(r => !r.scratched && r.horse);
-  activeRows.forEach((r) => {
-    const optText = `R${r.race} #${r.post} ${r.horse}`;
-    selA.appendChild(new Option(optText, r.id));
-    selB.appendChild(new Option(optText, r.id));
-  });
-
-  if (activeRows.length > 1) {
-    selB.selectedIndex = 1;
-  }
-
-  findPastMatchups();
-  renderH2H();
-}
-
-function renderH2HCard(h) {
-  if(!h) return '<div>Select a horse</div>';
-  return `
-    <div class="h2h-card">
-      <h3>R${h.race} #${h.post} ${h.horse}</h3>
-      <div class="h2h-stat">Prime Power: <b>${h.score || h.primePower || 'N/A'}</b></div>
-      <div class="h2h-stat">M/L Odds: <b>${h.odds}</b></div>
-      <div class="h2h-stat">Trainer: <b>${h.trainer || 'N/A'}</b> (${h.trainerStarts || 0}: ${h.trainerWins || 0}-${h.trainerPlaces || 0}-${h.trainerShows || 0})</div>
-      <div class="h2h-stat">Jockey: <b>${h.jockey || 'N/A'}</b> (${h.jockeyStarts || 0}: ${h.jockeyWins || 0}-${h.jockeyPlaces || 0}-${h.jockeyShows || 0})</div>
-      <div class="h2h-stat">Career Starts: <b>${h.starts} (${h.wins}-${h.places}-${h.shows})</b></div>
-      
-      <div style="font-size:11px; font-weight:700; text-transform:uppercase; margin-top:12px; margin-bottom:4px;">Recent PP Lines</div>
-      ${h.ppRaces && h.ppRaces.length > 0 ? `
-        <table class="pp-table">
-          <thead>
-            <tr><th>Date</th><th>Track</th><th>Dist</th><th>Fin</th><th>Speed</th></tr>
-          </thead>
-          <tbody>
-            ${h.ppRaces.slice(0, 5).map(p => `
-              <tr>
-                <td>${p.date}</td>
-                <td>${p.track}</td>
-                <td>${formatDistance(p.dist)}</td>
-                <td>${p.fin}</td>
-                <td><b>${p.speed}</b></td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-      ` : '<div style="font-size:11px; color:var(--ink-soft);">No PP data available</div>'}
-    </div>
-  `;
-}
-
-function renderH2H(){
-  const idA = document.getElementById('h2hSelectA').value;
-  const idB = document.getElementById('h2hSelectB').value;
-  const horseA = rows.find(r => r.id == idA);
-  const horseB = rows.find(r => r.id == idB);
-
-  const container = document.getElementById('h2hComparisonDisplay');
-  container.innerHTML = renderH2HCard(horseA) + renderH2HCard(horseB);
-}
-
-document.getElementById('h2hSelectA').addEventListener('change', renderH2H);
-document.getElementById('h2hSelectB').addEventListener('change', renderH2H);
-
-function computeRaceCard(){
-  computedRaces = {};
-  const activeRows = rows.filter(r => !r.scratched);
-
-  activeRows.forEach(r => {
-    const raceKey = r.race || '1';
-    if(!computedRaces[raceKey]) computedRaces[raceKey] = [];
-    computedRaces[raceKey].push(r);
-  });
-
-  const bestBetsList = [];
-  const contenderHTML = [];
-  const cardHTML = [];
-
-  const raceKeys = Object.keys(computedRaces).sort((a,b) => parseInt(a) - parseInt(b));
-
-  raceKeys.forEach(raceNum => {
-    const field = computedRaces[raceNum];
-    
-    // Sort entire field by Prime Power / Score descending
-    field.sort((a,b) => (parseFloat(b.score || b.primePower) || 0) - (parseFloat(a.score || a.primePower) || 0));
-
-    // Best Bet is STRICTLY the ONE top horse to win this race
-    const topPick = field[0];
-    const topPowerVal = parseFloat(topPick.score || topPick.primePower) || 0;
-
-    bestBetsList.push({
-      race: raceNum,
-      horse: topPick,
-      reason: `Top Pick to Win — Leading Prime Power (${topPowerVal.toFixed(1)})`
-    });
-
-    const contenders = [];
-    const pretenders = [];
-
-    field.forEach((h) => {
-      const hPower = parseFloat(h.score || h.primePower) || 0;
-      const powerGap = topPowerVal - hPower;
-      
-      // Parse morning line odds to check for extreme longshots (e.g. 20/1 or worse)
-      let oddsVal = 0;
-      if (h.odds) {
-        const parts = h.odds.split('/');
-        if (parts.length === 2 && parseFloat(parts[1]) > 0) {
-          oddsVal = parseFloat(parts[0]) / parseFloat(parts[1]);
-        }
-      }
-
-      // Classification: Contender if within 8 points of top pick or low odds; Pretender if large power gap or 20/1+ odds
-      if (powerGap <= 8.0 && oddsVal < 20.0) {
-        contenders.push({ horse: h, gap: powerGap, isTop: h.id === topPick.id });
-      } else {
-        let pretenderReason = [];
-        if (powerGap > 8.0) pretenderReason.push(`Power Gap -${powerGap.toFixed(1)} pts`);
-        if (oddsVal >= 20.0) pretenderReason.push(`Long Odds (${h.odds})`);
-        if (h.lastSpeed && h.lastSpeed < 70) pretenderReason.push(`Low Speed Fig (${h.lastSpeed})`);
-        if (pretenderReason.length === 0) pretenderReason.push('Questionable ability for current class');
-
-        pretenders.push({ horse: h, reason: pretenderReason.join(', ') });
-      }
-    });
-
-    contenderHTML.push(`
-      <div style="margin-bottom:22px; border:1px solid var(--paper-line); border-radius:4px; padding:16px; background:#fff;">
-        <h3 style="margin:0 0 10px; font-size:16px;">Race ${raceNum} — Full Field Breakdown (${field.length} Horses)</h3>
-        <div class="cp-grid">
-          <div class="cp-box contender">
-            <div class="cp-head">Contenders (${contenders.length})</div>
-            ${contenders.map(c => `
-              <div class="cp-item">
-                <span class="cp-horse" onclick="openPP('${c.horse.horse}')">#${c.horse.post} ${c.horse.horse}</span> 
-                ${c.isTop ? '<span class="badge-top-pick">TOP PICK</span>' : ''}
-                ${c.horse.jockeyChanged ? '<span class="badge-changed">NEW RIDER</span>' : ''}<br>
-                Prime Power: <b>${c.horse.score || c.horse.primePower}</b> | M/L: <b>${c.horse.odds}</b><br>
-                Trainer: <b>${c.horse.trainer || 'N/A'}</b> (${c.horse.trainerStarts || 0}: ${c.horse.trainerWins || 0}-${c.horse.trainerPlaces || 0}-${c.horse.trainerShows || 0})<br>
-                Jockey: <b>${c.horse.jockey || 'N/A'}</b> (${c.horse.jockeyStarts || 0}: ${c.horse.jockeyWins || 0}-${c.horse.jockeyPlaces || 0}-${c.horse.jockeyShows || 0})
-              </div>
-            `).join('')}
-          </div>
-          <div class="cp-box pretender">
-            <div class="cp-head">Pretenders (${pretenders.length})</div>
-            ${pretenders.map(p => `
-              <div class="cp-item">
-                <span class="cp-horse" onclick="openPP('${p.horse.horse}')">#${p.horse.post} ${p.horse.horse}</span> | M/L: <b>${p.horse.odds}</b><br>
-                Prime Power: <b>${p.horse.score || p.horse.primePower}</b> | Last Speed: <b>${p.horse.lastSpeed || 'N/A'}</b><br>
-                <span style="color:var(--red); font-size:11.5px; font-weight:600;">⚠️ ${p.reason}</span>
-              </div>
-            `).join('')}
-          </div>
-        </div>
-      </div>
-    `);
-
-    cardHTML.push(`
-      <div style="border:1px solid var(--paper-line); padding:16px; margin-bottom:18px; background:#fff; border-radius:4px;">
-        <h3 style="margin:0 0 10px; font-size:16px; border-bottom:2px solid var(--board-950); padding-bottom:6px;">
-          Race ${raceNum} — Complete Field (${field.length} Horses)
-        </h3>
-        <table style="width:100%; font-size:12px;">
-          <thead>
-            <tr style="background:var(--board-950); color:#fff;">
-              <th style="padding:6px;">Post</th>
-              <th style="padding:6px;">Horse Name</th>
-              <th style="padding:6px;">Trainer (Starts/W-P-S)</th>
-              <th style="padding:6px;">Jockey (Starts/W-P-S)</th>
-              <th style="padding:6px;">Prime Power</th>
-              <th style="padding:6px;">Last Speed</th>
-              <th style="padding:6px;">ML Odds</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${field.map(h => {
-              const isTop = h.id === topPick.id;
-              return `
-              <tr style="${isTop ? 'background:rgba(217,167,59,0.15); font-weight:bold;' : ''}">
-                <td style="padding:6px; font-family:var(--mono);">${h.post}</td>
-                <td style="padding:6px;">
-                  <span class="bo-horse" onclick="openPP('${h.horse}')">${h.horse}</span>
-                  ${isTop ? '<span class="badge-top-pick">BEST BET</span>' : ''}
-                  ${h.jockeyChanged ? '<span class="badge-changed">NEW RIDER</span>' : ''}
-                </td>
-                <td style="padding:6px;">${h.trainer ? `${h.trainer} (${h.trainerStarts}: ${h.trainerWins}-${h.trainerPlaces}-${h.trainerShows})` : 'N/A'}</td>
-                <td style="padding:6px;">${h.jockey ? `${h.jockey} (${h.jockeyStarts}: ${h.jockeyWins}-${h.jockeyPlaces}-${h.jockeyShows})` : 'N/A'}</td>
-                <td style="padding:6px; font-weight:700;">${h.score || h.primePower}</td>
-                <td style="padding:6px;">${h.surfaceRating || h.lastSpeed}</td>
-                <td style="padding:6px; font-family:var(--mono);">${h.odds}</td>
-              </tr>
-            `}).join('')}
-          </tbody>
-        </table>
-      </div>
-    `);
-  });
-
-  document.getElementById('bestBetsList').innerHTML = bestBetsList.map((b) => `
-    <div class="bo-row">
-      <div class="bo-rank">R${b.race}</div>
-      <div>
-        <div>
-          <span class="bo-horse" onclick="openPP('${b.horse.horse}')">Race ${b.race} Pick: #${b.horse.post} ${b.horse.horse}</span>
-          <span class="badge-top-pick">BEST BET TO WIN</span>
-          ${b.horse.jockeyChanged ? '<span class="badge-changed">NEW RIDER UPDATE</span>' : ''}
-        </div>
-        <div class="bo-meta">
-          Prime Power: <b>${b.horse.score || b.horse.primePower}</b> | M/L Odds: <b>${b.horse.odds}</b> | 
-          Trainer: <b>${b.horse.trainer}</b> (${b.horse.trainerStarts}: ${b.horse.trainerWins}-${b.horse.trainerPlaces}-${b.horse.trainerShows})
-        </div>
-        <div style="font-size:12px; color:var(--ink-soft); margin-top:2px;">${b.reason}</div>
-      </div>
-    </div>
-  `).join('');
-
-  document.getElementById('contenderCards').innerHTML = contenderHTML.join('');
-  document.getElementById('raceCardsList').innerHTML = cardHTML.join('');
-
-  updateH2HDropdowns();
-
-  document.getElementById('tabbar').style.display = 'flex';
-  document.getElementById('cardSection').style.display = 'block';
-  document.getElementById('bestSection').style.display = 'none';
-  document.getElementById('analysisSection').style.display = 'none';
-  document.getElementById('h2hSection').style.display = 'none';
-}
-
-document.getElementById('computeBtn').addEventListener('click', computeRaceCard);
-
-document.querySelectorAll('.tabbar button').forEach(btn => {
-  btn.addEventListener('click', e => {
-    document.querySelectorAll('.tabbar button').forEach(b => b.classList.remove('on'));
-    e.target.classList.add('on');
-    const tab = e.target.dataset.tab;
-    document.getElementById('cardSection').style.display = tab === 'card' ? 'block' : 'none';
-    document.getElementById('bestSection').style.display = tab === 'best' ? 'block' : 'none';
-    document.getElementById('analysisSection').style.display = tab === 'analysis' ? 'block' : 'none';
-    document.getElementById('h2hSection').style.display = tab === 'h2h' ? 'block' : 'none';
-  });
-});
-
-function openPP(horseName){
-  const horse = rows.find(r => r.horse.toLowerCase() === horseName.toLowerCase());
-  if(!horse) return;
-
-  const content = document.getElementById('ppContent');
-  content.innerHTML = `
-    <h2 style="margin:0 0 4px; font-size:20px;">
-      #${horse.post} ${horse.horse}
-      ${horse.jockeyChanged ? '<span class="badge-changed">JOCKEY CHANGED</span>' : ''}
-    </h2>
-    <div style="font-family:var(--mono); font-size:12px; color:var(--ink-soft); margin-bottom:12px; line-height:1.6;">
-      Prime Power: <b>${horse.score || horse.primePower}</b> | Best Speed: <b>${horse.bestSpeed || 'N/A'}</b><br>
-      Trainer: <b>${horse.trainer || 'N/A'}</b> | Record: <b>${horse.trainerStarts || 0} Starts (${horse.trainerWins || 0}-${horse.trainerPlaces || 0}-${horse.trainerShows || 0})</b><br>
-      Jockey: <b>${horse.jockey || 'N/A'}</b> | Record: <b>${horse.jockeyStarts || 0} Starts (${horse.jockeyWins || 0}-${horse.jockeyPlaces || 0}-${horse.jockeyShows || 0})</b><br>
-      Horse Career: <b>${horse.starts} Starts — ${horse.wins} W / ${horse.places} P / ${horse.shows} S</b>
-    </div>
-    
-    <div style="font-size:12px; font-weight:700; text-transform:uppercase; margin-bottom:6px;">Past Performances</div>
-    ${horse.ppRaces && horse.ppRaces.length > 0 ? `
-      <table class="pp-table">
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>Track</th>
-            <th>Race</th>
-            <th>Dist</th>
-            <th>Surf</th>
-            <th>Finish</th>
-            <th>BRIS Speed</th>
-            <th>Comment</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${horse.ppRaces.map(p => `
-            <tr>
-              <td>${p.date}</td>
-              <td>${p.track}</td>
-              <td>${p.raceNum ? 'R' + p.raceNum : '-'}</td>
-              <td>${formatDistance(p.dist)}</td>
-              <td>${p.surf}</td>
-              <td>${p.fin}</td>
-              <td><b>${p.speed}</b></td>
-              <td>${p.comment}</td>
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>
-    ` : '<div style="font-size:12.5px; color:var(--ink-soft); margin-bottom:14px;">No past performance lines available.</div>'}
-
-    <div style="font-size:12px; font-weight:700; text-transform:uppercase; margin-bottom:6px;">Last 4 Workouts</div>
-    ${horse.ppWorks && horse.ppWorks.length > 0 ? `
-      <div class="work-grid">
-        ${horse.ppWorks.map(w => `
-          <div class="work-item">
-            <div><b>${w.date}</b> — ${w.track}</div>
-            <div>${formatDistance(w.dist)} | ${w.time} (${w.cond})</div>
-            <div style="color:var(--ink-soft);">${w.rank ? 'Rank: ' + w.rank : ''}</div>
-          </div>
-        `).join('')}
-      </div>
-    ` : '<div style="font-size:12.5px; color:var(--ink-soft);">No workout lines parsed.</div>'}
-  `;
-
-  document.getElementById('ppOverlay').classList.add('show');
-}
-
-function closePP(){
-  document.getElementById('ppOverlay').classList.remove('show');
-}
-
-document.getElementById('ppCloseBtn').addEventListener('click', closePP);
-document.getElementById('ppReturnBtn').addEventListener('click', closePP);
-</script>
 </body>
 </html>
