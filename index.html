@@ -3,134 +3,230 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Horse Race Predictor — Fixed H2H Engine</title>
+<title>Horse Race Predictor & Comprehensive Handicapping Engine</title>
 <style>
-  :root{
-    --board-950:#0F2A20;
-    --board-900:#15332A;
-    --board-800:#1B3A2C;
-    --paper:#F1E9D6;
-    --paper-dim:#E4D9BE;
-    --paper-line:#CFC2A0;
-    --amber:#D9A73B;
-    --amber-dim:#8A6A26;
-    --red:#8B2A2A;
-    --green:#2E6E45;
-    --ink:#1E1B14;
-    --ink-soft:#4A4433;
+  :root {
+    --board-950: #0F2A20;
+    --board-900: #15332A;
+    --board-800: #1B3A2C;
+    --paper: #F1E9D6;
+    --paper-dim: #E4D9BE;
+    --paper-line: #CFC2A0;
+    --amber: #D9A73B;
+    --amber-dim: #8A6A26;
+    --red: #8B2A2A;
+    --green: #2E6E45;
+    --ink: #1E1B14;
+    --ink-soft: #4A4433;
     --mono: ui-monospace, "SF Mono", "Roboto Mono", "Courier New", monospace;
     --sans: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
   }
-  *{box-sizing:border-box;}
-  body{margin:0; background:#ffffff; color:var(--ink); font-family:var(--sans); -webkit-font-smoothing:antialiased;}
-  .wrap{max-width:1380px; margin:0 auto;}
 
-  header{
-    background: linear-gradient(180deg,var(--board-900),var(--board-950));
-    padding:32px 24px 26px; border-bottom:3px solid var(--amber-dim);
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #ffffff; color: var(--ink); font-family: var(--sans); -webkit-font-smoothing: antialiased; }
+  .wrap { max-width: 1440px; margin: 0 auto; }
+
+  header {
+    background: linear-gradient(180deg, var(--board-900), var(--board-950));
+    padding: 32px 24px 26px; border-bottom: 3px solid var(--amber-dim);
   }
-  .eyebrow{font-family:var(--mono); color:var(--amber); font-size:12px; letter-spacing:.22em; text-transform:uppercase; margin:0 0 8px;}
-  h1{margin:0; color:var(--paper); font-weight:800; font-size:clamp(26px,4.5vw,40px); line-height:1.05;}
-  .tagline{color:#B9C9BE; font-size:14.5px; max-width:68ch; margin:10px 0 0; line-height:1.5;}
+  .eyebrow { font-family: var(--mono); color: var(--amber); font-size: 12px; letter-spacing: .22em; text-transform: uppercase; margin: 0 0 8px; }
+  h1 { margin: 0; color: var(--paper); font-weight: 800; font-size: clamp(26px, 4.5vw, 40px); line-height: 1.05; }
+  .tagline { color: #B9C9BE; font-size: 14.5px; max-width: 72ch; margin: 10px 0 0; line-height: 1.5; }
 
-  main{background:var(--paper); padding:24px 20px 60px;}
-  section{margin:0 0 32px;}
-  h2{
-    font-size:13px; letter-spacing:.16em; text-transform:uppercase; color:var(--ink-soft); margin:0 0 14px;
-    font-weight:700; display:flex; align-items:center; gap:10px;
+  main { background: var(--paper); padding: 24px 20px 60px; min-height: 80vh; }
+  section { margin: 0 0 32px; }
+  h2 {
+    font-size: 13px; letter-spacing: .16em; text-transform: uppercase; color: var(--ink-soft); margin: 0 0 14px;
+    font-weight: 700; display: flex; align-items: center; gap: 10px;
   }
-  h2::after{content:""; flex:1; height:1px; background:var(--paper-line);}
-  .step-num{font-family:var(--mono); background:var(--board-950); color:var(--amber); font-size:11px; padding:3px 7px; border-radius:2px;}
+  h2::after { content: ""; flex: 1; height: 1px; background: var(--paper-line); }
+  .step-num { font-family: var(--mono); background: var(--board-950); color: var(--amber); font-size: 11px; padding: 3px 7px; border-radius: 2px; }
 
-  .upload-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:16px;}
-  .upload-card{border:1.5px dashed var(--paper-line); border-radius:4px; padding:18px; background:var(--paper-dim);}
-  .upload-card h3{margin:0 0 6px; font-size:15px; color:var(--ink);}
-  .upload-card p{margin:0 0 12px; font-size:12.5px; color:var(--ink-soft); line-height:1.5;}
-  .file-btn{
-    display:inline-flex; align-items:center; gap:8px; background:var(--board-950); color:var(--paper);
-    border:none; padding:9px 14px; border-radius:3px; font-size:12.5px; font-weight:600; cursor:pointer;
+  .upload-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+  .upload-card { border: 1.5px dashed var(--paper-line); border-radius: 4px; padding: 18px; background: var(--paper-dim); }
+  .upload-card h3 { margin: 0 0 6px; font-size: 15px; color: var(--ink); }
+  .upload-card p { margin: 0 0 12px; font-size: 12.5px; color: var(--ink-soft); line-height: 1.5; }
+  .file-btn {
+    display: inline-flex; align-items: center; gap: 8px; background: var(--board-950); color: var(--paper);
+    border: none; padding: 9px 14px; border-radius: 3px; font-size: 12.5px; font-weight: 600; cursor: pointer;
   }
-  .file-btn:hover{background:var(--board-800);}
-  input[type=file]{display:none;}
-  .status{font-family:var(--mono); font-size:12px; margin-top:8px; color:var(--ink-soft); min-height:16px; word-break:break-all;}
-  .status.ok{color:var(--green); font-weight:700;}
-  .status.err{color:var(--red); font-weight:700;}
+  .file-btn:hover { background: var(--board-800); }
+  input[type=file] { display: none; }
+  .status { font-family: var(--mono); font-size: 12px; margin-top: 8px; color: var(--ink-soft); min-height: 16px; word-break: break-all; }
+  .status.ok { color: var(--green); font-weight: 700; }
+  .status.err { color: var(--red); font-weight: 700; }
 
-  .table-wrap{overflow-x:auto; border:1px solid var(--paper-line); border-radius:3px;}
-  table{width:100%; border-collapse:collapse; font-size:12.5px; table-layout:auto;}
-  thead th{
-    text-align:left; font-family:var(--mono); font-size:10px; letter-spacing:.06em; text-transform:uppercase;
-    color:var(--paper); background:var(--board-900); padding:9px 10px; white-space:nowrap;
+  .config-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; background: var(--paper-dim); padding: 16px; border-radius: 4px; border: 1px solid var(--paper-line); }
+  .config-item { display: flex; flex-direction: column; gap: 4px; }
+  .config-item label { font-family: var(--mono); font-size: 11px; text-transform: uppercase; color: var(--ink-soft); font-weight: 600; }
+  .config-item input, .config-item select { padding: 6px 8px; border: 1px solid var(--paper-line); border-radius: 3px; font-family: var(--mono); font-size: 12px; }
+
+  .table-wrap { overflow-x: auto; border: 1px solid var(--paper-line); border-radius: 3px; background: #fff; }
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; table-layout: auto; }
+  thead th {
+    text-align: left; font-family: var(--mono); font-size: 10px; letter-spacing: .06em; text-transform: uppercase;
+    color: var(--paper); background: var(--board-900); padding: 9px 10px; white-space: nowrap;
   }
-  tbody td{padding:5px 6px; border-bottom:1px solid var(--paper-line); vertical-align:middle;}
-  tbody tr:nth-child(even){background:rgba(0,0,0,0.02);}
-  tbody input{
-    border:1px solid transparent; background:transparent; padding:4px 5px; 
-    font-size:12.5px; width:100%; box-sizing:border-box;
+  tbody td { padding: 6px 8px; border-bottom: 1px solid var(--paper-line); vertical-align: middle; }
+  tbody tr:nth-child(even) { background: rgba(0,0,0,0.015); }
+  tbody input {
+    border: 1px solid transparent; background: transparent; padding: 4px 5px; 
+    font-size: 12.5px; width: 100%; box-sizing: border-box;
   }
-  tbody input:hover, tbody input:focus{border-color:var(--paper-line); background:#fff;}
-  .scratched-row{opacity:.45;}
-  .scratched-row td input{text-decoration:line-through;}
+  tbody input:hover, tbody input:focus { border-color: var(--paper-line); background: #fff; }
+  .scratched-row { opacity: .45; background: rgba(139,42,42,0.05) !important; }
+  .scratched-row td input { text-decoration: line-through; }
 
-  .col-race{width:45px;} .col-post{width:45px;} .col-horse{min-width:140px;}
-  .col-trainer{min-width:160px;} .col-jockey{min-width:170px;} .col-odds{width:70px;}
-  .col-power{width:95px;} .col-speed{width:80px;} .col-scr{width:40px; text-align:center;} .col-del{width:30px; text-align:center;}
+  .col-race { width: 45px; } 
+  .col-post { width: 45px; } 
+  .col-horse { min-width: 150px; }
+  .col-trainer { min-width: 140px; } 
+  .col-jockey { min-width: 140px; } 
+  .col-odds { width: 65px; }
+  .col-power { width: 80px; } 
+  .col-speed { width: 80px; } 
+  .col-scr { width: 40px; text-align: center; } 
+  .col-del { width: 30px; text-align: center; }
 
-  .del-btn{background:none; border:none; color:var(--red); cursor:pointer; font-size:15px; padding:2px 4px;}
+  .del-btn { background: none; border: none; color: var(--red); cursor: pointer; font-size: 15px; padding: 2px 4px; }
 
-  .table-actions{display:flex; gap:10px; margin-top:12px; flex-wrap:wrap;}
-  .primary-btn{
-    background:var(--amber); color:var(--ink); border:none; padding:11px 22px;
-    border-radius:3px; font-weight:700; font-size:13.5px; cursor:pointer;
+  .table-actions { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
+  .primary-btn {
+    background: var(--amber); color: var(--ink); border: none; padding: 11px 22px;
+    border-radius: 3px; font-weight: 700; font-size: 13.5px; cursor: pointer;
   }
-  .primary-btn:hover{background:#c69528;}
-  .ghost-btn{background:none; border:1px solid var(--ink-soft); color:var(--ink-soft); padding:10px 16px; border-radius:3px; font-size:13px; cursor:pointer;}
+  .primary-btn:hover { background: #c69528; }
+  .ghost-btn { background: none; border: 1px solid var(--ink-soft); color: var(--ink-soft); padding: 10px 16px; border-radius: 3px; font-size: 13px; cursor: pointer; }
 
-  .tabbar{display:flex; gap:0; margin:0 0 18px; border-bottom:2px solid var(--paper-line); overflow-x:auto;}
-  .tabbar button{
-    appearance:none; background:none; border:none; cursor:pointer; font-family:var(--mono); font-size:12px;
-    letter-spacing:.05em; text-transform:uppercase; padding:10px 14px; color:var(--ink-soft);
-    border-bottom:3px solid transparent; margin-bottom:-2px; white-space:nowrap;
+  .tabbar { display: flex; gap: 0; margin: 20px 0 18px; border-bottom: 2px solid var(--paper-line); overflow-x: auto; }
+  .tabbar button {
+    appearance: none; background: none; border: none; cursor: pointer; font-family: var(--mono); font-size: 12px;
+    letter-spacing: .05em; text-transform: uppercase; padding: 10px 16px; color: var(--ink-soft);
+    border-bottom: 3px solid transparent; margin-bottom: -2px; white-space: nowrap; font-weight: 600;
   }
-  .tabbar button.on{color:var(--board-950); border-bottom-color:var(--board-950); font-weight:700;}
+  .tabbar button.on { color: var(--board-950); border-bottom-color: var(--board-950); font-weight: 800; }
 
-  .h2h-box { background: #fff; border: 1px solid var(--paper-line); border-radius: 4px; padding: 16px; margin-bottom: 20px; }
-  .h2h-card { background: #fff; border: 1px solid var(--paper-line); border-radius: 4px; padding: 16px; }
-  .h2h-badge { background:var(--board-950); color:var(--amber); font-family:var(--mono); font-size:10px; padding:2px 6px; border-radius:3px; font-weight:700; }
-  .h2h-warn { background:var(--red); color:#fff; font-family:var(--mono); font-size:10px; padding:2px 6px; border-radius:3px; font-weight:700; }
-  .h2h-adj { background:var(--green); color:#fff; font-family:var(--mono); font-size:10px; padding:2px 6px; border-radius:3px; font-weight:700; }
+  .h2h-box { background: #fff; border: 1px solid var(--paper-line); border-radius: 4px; padding: 18px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+  .h2h-badge { background: var(--board-950); color: var(--amber); font-family: var(--mono); font-size: 10px; padding: 2px 6px; border-radius: 3px; font-weight: 700; }
+  .h2h-warn { background: var(--red); color: #fff; font-family: var(--mono); font-size: 10px; padding: 2px 6px; border-radius: 3px; font-weight: 700; }
+  .h2h-adj { background: var(--green); color: #fff; font-family: var(--mono); font-size: 10px; padding: 2px 6px; border-radius: 3px; font-weight: 700; }
 
-  #ppOverlay{display:none; position:fixed; inset:0; background:rgba(15,42,32,.65); z-index:100; overflow-y:auto; padding:16px;}
-  #ppOverlay.show{display:block;}
-  .pp-card{max-width:920px; margin:20px auto; background:var(--paper); border-radius:4px; border:1px solid var(--paper-line); padding:20px; position:relative;}
-  .pp-close{position:absolute; top:12px; right:14px; background:none; border:none; font-size:22px; color:var(--ink-soft); cursor:pointer;}
+  .pp-link { color: var(--board-950); text-decoration: underline; cursor: pointer; font-weight: 700; }
+  .pp-link:hover { color: var(--amber-dim); }
+
+  #ppOverlay { display: none; position: fixed; inset: 0; background: rgba(15,42,32,.75); z-index: 100; overflow-y: auto; padding: 20px; }
+  #ppOverlay.show { display: block; }
+  .pp-card { max-width: 1100px; margin: 20px auto; background: var(--paper); border-radius: 4px; border: 1px solid var(--paper-line); padding: 24px; position: relative; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
+  .pp-close { position: absolute; top: 14px; right: 16px; background: none; border: none; font-size: 24px; color: var(--ink-soft); cursor: pointer; }
+  
+  .pp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+  .pp-section-title { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: .1em; color: var(--ink-soft); border-bottom: 1px solid var(--paper-line); padding-bottom: 4px; margin-bottom: 8px; }
+  .work-list { font-family: var(--mono); font-size: 11.5px; line-height: 1.6; }
+
+  .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 20px; }
+  .summary-card { background: var(--paper-dim); border: 1px solid var(--paper-line); padding: 12px; border-radius: 3px; text-align: center; }
+  .summary-card .val { font-family: var(--mono); font-size: 22px; font-weight: 800; color: var(--board-950); }
+  .summary-card .lbl { font-size: 11px; text-transform: uppercase; color: var(--ink-soft); font-family: var(--mono); margin-top: 2px; }
+
+  .badge-tier1 { background: #2E6E45; color: #fff; padding: 2px 5px; border-radius: 2px; font-size: 10px; font-family: var(--mono); font-weight: 700; }
+  .badge-tier2 { background: #D9A73B; color: #000; padding: 2px 5px; border-radius: 2px; font-size: 10px; font-family: var(--mono); font-weight: 700; }
+  .badge-tier3 { background: #8B2A2A; color: #fff; padding: 2px 5px; border-radius: 2px; font-size: 10px; font-family: var(--mono); font-weight: 700; }
+
+  .filter-panel { display: flex; gap: 10px; margin-bottom: 15px; align-items: center; }
+  .filter-panel select, .filter-panel input { padding: 6px 10px; font-family: var(--mono); font-size: 12px; border: 1px solid var(--paper-line); border-radius: 3px; }
 </style>
 </head>
 <body>
 
 <div class="wrap">
   <header>
-    <p class="eyebrow">Professional Handicapping &amp; Value Engine</p>
-    <h1>Horse Race Predictor — Fixed H2H Engine</h1>
-    <p class="tagline">Includes Exact Identity, Top-3 Name Matching (Suffix-Cleaned), Common Company, and Active Rating Adjustments.</p>
+    <p class="eyebrow">Professional Handicapping &amp; Predictive Analytics Engine</p>
+    <h1>Horse Race Predictor &amp; Analytics Platform</h1>
+    <p class="tagline">Full Production Suite: DRF Parsing, Pace &amp; Speed Normalization, Workout Algorithms, Class Adjustments, Detailed PP Logs, Track Condition Surface Conversion, and the 3-Mechanism Head-to-Head Engine.</p>
   </header>
 
   <main>
     <section>
-      <h2><span class="step-num">1</span> Load DRF Data File</h2>
+      <h2><span class="step-num">1</span> Load DRF / CSV Data File</h2>
       <div class="upload-grid">
         <div class="upload-card">
-          <h3>Brisnet .DRF Single File</h3>
-          <p>Extracts fields 102–173 for workouts, fields 256–745 for PP identity/margins, and fields 406–435 for top-3 name matching.</p>
+          <h3>Brisnet .DRF / Single File Ingestion</h3>
+          <p>Full field extraction: Workouts (102–173), Past Performance Logs &amp; Margins (256–745), Speed/Pace Data (786-855), and Top-3 Identity Records (406–435).</p>
           <label class="file-btn" for="drfInput">Select .DRF / .CSV</label>
           <input type="file" id="drfInput" accept=".drf,.csv,.txt">
           <div class="status" id="drfStatus"></div>
+        </div>
+        <div class="upload-card">
+          <h3>Batch Import / Multi-File Append</h3>
+          <p>Append additional DRF files or race cards into the active workspace without clearing previously loaded runners or manual overrides.</p>
+          <label class="file-btn" for="appendInput">Append Data File</label>
+          <input type="file" id="appendInput" accept=".drf,.csv,.txt">
+          <div class="status" id="appendStatus"></div>
         </div>
       </div>
     </section>
 
     <section>
-      <h2><span class="step-num">2</span> Field Entries</h2>
+      <h2><span class="step-num">2</span> Engine Handicapping Parameters &amp; Algo Weights</h2>
+      <div class="config-grid">
+        <div class="config-item">
+          <label for="weightPace">Pace Weight</label>
+          <input type="number" id="weightPace" value="0.25" step="0.05" min="0" max="1">
+        </div>
+        <div class="config-item">
+          <label for="weightSpeed">Speed Fig Weight</label>
+          <input type="number" id="weightSpeed" value="0.35" step="0.05" min="0" max="1">
+        </div>
+        <div class="config-item">
+          <label for="weightClass">Class Rating Weight</label>
+          <input type="number" id="weightClass" value="0.20" step="0.05" min="0" max="1">
+        </div>
+        <div class="config-item">
+          <label for="weightForm">Form / Workouts Weight</label>
+          <input type="number" id="weightForm" value="0.20" step="0.05" min="0" max="1">
+        </div>
+        <div class="config-item">
+          <label for="h2hAdjFactor">H2H Bonus / Penalty</label>
+          <select id="h2hAdjFactor">
+            <option value="0.03">3% Rating Shift</option>
+            <option value="0.05" selected>5% Rating Shift</option>
+            <option value="0.075">7.5% Rating Shift</option>
+            <option value="0.10">10% Rating Shift</option>
+          </select>
+        </div>
+        <div class="config-item">
+          <label for="trackCondition">Today's Surface Track Condition</label>
+          <select id="trackCondition">
+            <option value="FT" selected>Fast (FT)</option>
+            <option value="SY">Sloppy (SY)</option>
+            <option value="GD">Good (GD)</option>
+            <option value="MY">Muddy (MY)</option>
+            <option value="FM">Firm (FM - Turf)</option>
+            <option value="YL">Yielding (YL - Turf)</option>
+            <option value="SF">Soft (SF - Turf)</option>
+          </select>
+        </div>
+        <div class="config-item">
+          <label for="recencyDays">Recency Decay Horizon (Days)</label>
+          <input type="number" id="recencyDays" value="180" min="30" max="730">
+        </div>
+        <div class="config-item">
+          <label for="minSeparation">H2H Common Company Threshold (L)</label>
+          <input type="number" id="minSeparation" value="1.0" step="0.25" min="0.5" max="5.0">
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2><span class="step-num">3</span> Field Entries &amp; Live Overrides</h2>
+      <div class="filter-panel">
+        <label style="font-family:var(--mono); font-size:12px; font-weight:700;">Filter Race:</label>
+        <select id="filterRaceSelect">
+          <option value="ALL">All Races</option>
+        </select>
+        <input type="text" id="filterHorseSearch" placeholder="Search Horse / Trainer / Jockey...">
+      </div>
       <div class="table-wrap">
         <table>
           <thead>
@@ -153,50 +249,93 @@
       <div class="table-actions">
         <button class="ghost-btn" id="addRowBtn">+ Add Runner</button>
         <button class="ghost-btn" id="clearBtn">Clear All</button>
-        <button class="primary-btn" id="computeBtn">Compute Race Card →</button>
+        <button class="primary-btn" id="computeBtn">Compute Race Card &amp; Run H2H Engine →</button>
       </div>
     </section>
 
     <div class="tabbar" id="tabbar" style="display:none;">
       <button data-tab="card" class="on" id="tabCard">Full Race Cards</button>
-      <button data-tab="h2h">H2H Engine (3 Mechanisms)</button>
+      <button data-tab="h2h">H2H Analysis Engine</button>
+      <button data-tab="pace">Pace &amp; Speed Analysis</button>
+      <button data-tab="workouts">Workout Rankings</button>
+      <button data-tab="class">Class &amp; Earnings Analysis</button>
+      <button data-tab="export">Export &amp; Betting Summaries</button>
     </div>
 
     <section id="cardSection" style="display:none;">
-      <h2>Full Race Cards</h2>
+      <h2>Full Race Cards &amp; Predictive Rankings</h2>
+      <div id="summaryCardsContainer" class="summary-grid"></div>
       <div id="raceCardsList"></div>
     </section>
 
     <section id="h2hSection" style="display:none;">
-      <h2>Head-to-Head &amp; Common Company Analysis</h2>
+      <h2>Head-to-Head &amp; Common Company Analysis Engine</h2>
       
       <!-- Mechanism 1 -->
       <div class="h2h-box">
         <h3 style="margin:0 0 10px; font-size:15px; border-bottom:1px solid var(--paper-line); padding-bottom:6px;">
-          1. Exact Race Identity Matches (Max 6 Meetings Displayed)
+          1. Direct Race Identity Matches (Exact Date, Track Code &amp; Race Number)
         </h3>
+        <p style="font-size:12px; color:var(--ink-soft); margin-top:0;">
+          Identifies horses that competed in the exact same historic race using DRF fields 256–265 (Date), 276–285 (Track), and 296–305 (Race #). Distance variances against today's race are flagged automatically.
+        </p>
         <div id="m1List"></div>
       </div>
 
       <!-- Mechanism 2 -->
       <div class="h2h-box">
         <h3 style="margin:0 0 10px; font-size:15px; border-bottom:1px solid var(--paper-line); padding-bottom:6px;">
-          2. Top-3 Name Matches (Country-Suffix Cleaned: GB, IRE, etc.)
+          2. Top-3 Name Matches (Country Suffix Stripped)
         </h3>
+        <p style="font-size:12px; color:var(--ink-soft); margin-top:0;">
+          Scans top-3 finisher fields (406–435). Automatically removes country suffixes like (GB), (IRE), (FR), or (ARG) to guarantee string match integrity across records.
+        </p>
         <div id="m2List"></div>
       </div>
 
       <!-- Mechanism 3 -->
       <div class="h2h-box">
         <h3 style="margin:0 0 10px; font-size:15px; border-bottom:1px solid var(--paper-line); padding-bottom:6px;">
-          3. Common Company Matches (&ge; 1.0L Separation Required)
+          3. Common Company Matches (&ge; Threshold Length Separation)
         </h3>
+        <p style="font-size:12px; color:var(--ink-soft); margin-top:0;">
+          Compares beaten lengths against mutual past opponents across separate races. Applies the mandatory length separation threshold.
+        </p>
         <div id="m3List"></div>
+      </div>
+    </section>
+
+    <section id="paceSection" style="display:none;">
+      <h2>Pace Breakdown &amp; Speed Figure Profiles</h2>
+      <div id="paceAnalysisList"></div>
+    </section>
+
+    <section id="workoutsSection" style="display:none;">
+      <h2>Workout Analysis &amp; Fitness Evaluations</h2>
+      <div id="workoutsAnalysisList"></div>
+    </section>
+
+    <section id="classSection" style="display:none;">
+      <h2>Class Ratings &amp; Historic Purse Analysis</h2>
+      <div id="classAnalysisList"></div>
+    </section>
+
+    <section id="exportSection" style="display:none;">
+      <h2>Export Analysis &amp; Printable Betting Sheet</h2>
+      <div class="h2h-box">
+        <h3>Generated Wagering Key Summary</h3>
+        <p style="font-size:12px; color:var(--ink-soft);">Top recommended selections per race based on adjusted composite scores and H2H ties.</p>
+        <div id="exportSummaryContent"></div>
+        <div style="margin-top:15px;">
+          <button class="primary-btn" onclick="window.print()">Print Betting Cheat Sheet</button>
+          <button class="ghost-btn" id="exportCsvBtn">Export Results to CSV</button>
+        </div>
       </div>
     </section>
   </main>
 </div>
 
+<!-- Detailed Past Performance Modal Overlay -->
 <div id="ppOverlay" role="dialog" aria-modal="true">
   <div class="pp-card">
     <button class="pp-close" id="ppCloseBtn" onclick="closePP()">✕</button>
@@ -210,7 +349,7 @@ let rowId = 0;
 
 /**
  * Normalizes horse names by stripping country suffixes like (GB), (IRE), (FR), etc.,
- * and removing non-alphanumeric characters for accurate matching across systems.
+ * and removing non-alphanumeric characters for clean cross-system string matching.
  */
 function cleanHorseName(name) {
   if (!name) return "";
@@ -221,7 +360,7 @@ function cleanHorseName(name) {
 function parseDistanceYards(distVal) {
   let yards = parseFloat(distVal);
   if (isNaN(yards) || yards <= 0) return 0;
-  if (yards > 2500) yards = yards / 3.0;
+  if (yards > 2500) yards = yards / 3.0; // Conversion for DRF feet/yards
   return yards;
 }
 
@@ -253,16 +392,17 @@ function parseSignedLenBehind(finStr, marginStr) {
   return Math.abs(rawMargin);
 }
 
-function parseCSVLine(line){
+function parseCSVLine(line) {
   const out = []; let cur = ''; let inQ = false;
-  for (let i = 0; i < line.length; i++){
+  for (let i = 0; i < line.length; i++) {
     const c = line[i];
-    if (inQ){
-      if (c === '"'){ if (line[i+1] === '"'){ cur += '"'; i++; } else { inQ = false; } }
-      else cur += c;
+    if (inQ) {
+      if (c === '"') {
+        if (line[i+1] === '"') { cur += '"'; i++; } else { inQ = false; }
+      } else { cur += c; }
     } else {
       if (c === '"') inQ = true;
-      else if (c === ','){ out.push(cur); cur = ''; }
+      else if (c === ',') { out.push(cur); cur = ''; }
       else cur += c;
     }
   }
@@ -270,19 +410,61 @@ function parseCSVLine(line){
   return out.map(v => v.trim());
 }
 
-function newRow(partial){
+function oddsToDecimal(oddsStr) {
+  if (!oddsStr) return 3.0;
+  const parts = oddsStr.split('/');
+  if (parts.length === 2) {
+    const num = parseFloat(parts[0]);
+    const den = parseFloat(parts[1]);
+    if (!isNaN(num) && !isNaN(den) && den > 0) return (num / den) + 1.0;
+  }
+  const val = parseFloat(oddsStr);
+  return isNaN(val) ? 3.0 : val + 1.0;
+}
+
+function newRow(partial) {
   return Object.assign({
-    id: rowId++, race:'1', post:'1', horse:'', cleanName:'',
-    trainer:'', jockey:'', odds:'2/1', score:'', surfaceRating:'',
-    scratched:false, primePower:0, todayDistYards:1320,
-    adjNotes: [], ppRaces: [], ppWorks: []
+    id: rowId++, race: '1', post: '1', horse: '', cleanName: '',
+    trainer: '', jockey: '', odds: '2/1', score: '', surfaceRating: '',
+    scratched: false, primePower: 100.0, todayDistYards: 1320,
+    adjNotes: [], ppRaces: [], ppWorks: [], earnings: 0, classRating: 100
   }, partial);
 }
 
-function renderRows(){
+function updateRaceFilterDropdown() {
+  const select = document.getElementById('filterRaceSelect');
+  const currentVal = select.value;
+  const races = Array.from(new Set(rows.map(r => r.race))).sort((a,b) => parseInt(a)-parseInt(b));
+  
+  select.innerHTML = '<option value="ALL">All Races</option>';
+  races.forEach(r => {
+    const opt = document.createElement('option');
+    opt.value = r;
+    opt.textContent = `Race ${r}`;
+    select.appendChild(opt);
+  });
+  if (races.includes(currentVal)) select.value = currentVal;
+}
+
+function renderRows() {
   const body = document.getElementById('rowsBody');
   body.innerHTML = '';
-  rows.forEach(r => {
+  
+  const filterRace = document.getElementById('filterRaceSelect').value;
+  const searchTxt = document.getElementById('filterHorseSearch').value.toLowerCase().trim();
+
+  const filtered = rows.filter(r => {
+    if (filterRace !== 'ALL' && r.race !== filterRace) return false;
+    if (searchTxt !== '') {
+      const matchH = (r.horse || '').toLowerCase().includes(searchTxt);
+      const matchT = (r.trainer || '').toLowerCase().includes(searchTxt);
+      const matchJ = (r.jockey || '').toLowerCase().includes(searchTxt);
+      if (!matchH && !matchT && !matchJ) return false;
+    }
+    return true;
+  });
+
+  filtered.forEach(r => {
     const tr = document.createElement('tr');
     if (r.scratched) tr.classList.add('scratched-row');
     tr.innerHTML = `
@@ -304,85 +486,159 @@ function renderRows(){
         else {
           r[field] = e.target.value;
           if (field === 'horse') r.cleanName = cleanHorseName(e.target.value);
+          if (field === 'race') updateRaceFilterDropdown();
         }
       });
     });
     tr.querySelector('.del-btn').addEventListener('click', () => {
       rows = rows.filter(x => x.id !== r.id);
+      updateRaceFilterDropdown();
       renderRows();
     });
     body.appendChild(tr);
   });
 }
 
-document.getElementById('addRowBtn').addEventListener('click', () => { rows.push(newRow({})); renderRows(); });
-document.getElementById('clearBtn').addEventListener('click', () => { rows = []; renderRows(); });
+document.getElementById('filterRaceSelect').addEventListener('change', renderRows);
+document.getElementById('filterHorseSearch').addEventListener('input', renderRows);
+
+document.getElementById('addRowBtn').addEventListener('click', () => { 
+  rows.push(newRow({})); 
+  updateRaceFilterDropdown();
+  renderRows(); 
+});
+
+document.getElementById('clearBtn').addEventListener('click', () => { 
+  rows = []; 
+  updateRaceFilterDropdown();
+  renderRows(); 
+  document.getElementById('drfStatus').innerText = '';
+  document.getElementById('appendStatus').innerText = '';
+});
+
+function parseDrfContent(text, isAppend = false) {
+  const lines = text.split(/\r\n|\n|\r/).filter(l => l.trim().length > 0);
+  if (!isAppend) rows = [];
+  
+  let loadedCount = 0;
+  lines.forEach(line => {
+    const f = parseCSVLine(line);
+    if (f.length < 5) return;
+    
+    const get = n => (f[n-1] !== undefined ? f[n-1].trim().replace(/^["']|["']$/g, '') : '');
+    const num = n => { const v = parseFloat(get(n)); return isNaN(v) ? 0 : v; };
+
+    const race = get(3) || '1';
+    const post = get(4) || '1';
+    const horse = get(45) || get(5) || 'Unnamed Runner';
+    const primePower = num(251) || 100.0;
+    const todayDist = num(18) || 1320;
+    const totalEarnings = num(88);
+
+    // Extract up to 12 Recent Workouts (Fields 102-173)
+    const ppWorks = [];
+    for (let w = 0; w < 12; w++) {
+      const wDate = get(102 + w);
+      if (!wDate) continue;
+      ppWorks.push({
+        date: wDate,
+        track: get(114 + w),
+        dist: get(126 + w),
+        time: get(138 + w),
+        trackCond: get(150 + w),
+        rank: get(162 + w)
+      });
+    }
+
+    // Extract up to 10 Past Performances (Fields 256-745, 846-855)
+    const ppRaces = [];
+    for (let i = 0; i < 10; i++) {
+      const date = get(256 + i);
+      if (!date) continue;
+      ppRaces.push({
+        date: date,
+        track: get(276 + i),
+        raceNum: get(296 + i) || '',
+        dist: get(316 + i),
+        surface: get(336 + i) || 'D',
+        trackCond: get(356 + i) || 'FT',
+        classText: get(536 + i),
+        fin: get(616 + i),
+        margin: get(736 + i),
+        winner: get(406 + i),
+        second: get(416 + i),
+        third: get(426 + i),
+        speed: num(846 + i),
+        paceE1: num(786 + i),
+        paceE2: num(806 + i),
+        paceLP: num(826 + i)
+      });
+    }
+
+    rows.push(newRow({
+      race, post, horse, cleanName: cleanHorseName(horse),
+      trainer: get(28), jockey: get(33), odds: get(44) || '2/1',
+      score: primePower, primePower, surfaceRating: num(846),
+      todayDistYards: todayDist, ppRaces, ppWorks, scratched: false,
+      earnings: totalEarnings, classRating: num(240) || 100
+    }));
+    loadedCount++;
+  });
+
+  updateRaceFilterDropdown();
+  renderRows();
+  return loadedCount;
+}
 
 document.getElementById('drfInput').addEventListener('change', e => {
   const file = e.target.files[0];
   if (!file) return;
   const reader = new FileReader();
-  reader.onload = function(evt){
-    const lines = evt.target.result.split(/\r\n|\n|\r/).filter(l => l.trim().length > 0);
-    rows = [];
-    
-    lines.forEach(line => {
-      const f = parseCSVLine(line);
-      if(f.length < 5) return;
-      
-      const get = n => (f[n-1] !== undefined ? f[n-1].trim().replace(/^["']|["']$/g, '') : '');
-      const num = n => { const v = parseFloat(get(n)); return isNaN(v) ? 0 : v; };
-
-      const race = get(3) || '1';
-      const post = get(4) || '1';
-      const horse = get(45) || get(5) || 'Unnamed Runner';
-      const primePower = num(251);
-      const todayDist = num(18) || 1320;
-
-      const ppRaces = [];
-      for(let i = 0; i < 10; i++){
-        const date = get(256 + i);
-        if(!date) continue;
-        ppRaces.push({
-          date: date,
-          track: get(276 + i),
-          raceNum: get(296 + i) || '',
-          dist: get(316 + i),
-          classText: get(536 + i),
-          fin: get(616 + i),
-          margin: get(736 + i),
-          winner: get(406 + i),
-          second: get(416 + i),
-          third: get(426 + i),
-          speed: num(846 + i)
-        });
-      }
-
-      rows.push(newRow({
-        race, post, horse, cleanName: cleanHorseName(horse),
-        trainer: get(28), jockey: get(33), odds: get(44) || '2/1',
-        score: primePower, primePower, surfaceRating: num(846),
-        todayDistYards: todayDist, ppRaces, scratched: false
-      }));
-    });
-
-    renderRows();
-    document.getElementById('drfStatus').innerText = `Loaded ${rows.length} horses successfully.`;
+  reader.onload = function(evt) {
+    const cnt = parseDrfContent(evt.target.result, false);
+    document.getElementById('drfStatus').innerText = `Loaded ${cnt} horses successfully.`;
     document.getElementById('drfStatus').className = 'status ok';
   };
   reader.readAsText(file);
 });
 
+document.getElementById('appendInput').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(evt) {
+    const cnt = parseDrfContent(evt.target.result, true);
+    document.getElementById('appendStatus').innerText = `Appended ${cnt} runners into workspace.`;
+    document.getElementById('appendStatus').className = 'status ok';
+  };
+  reader.readAsText(file);
+});
+
 /**
- * Main H2H Engine addressing all 3 mechanisms and live rating recalculations:
+ * Main H2H Engine addressing all 3 mechanisms and live rating recalculations
  */
 function runH2HEngine() {
   const activeRows = rows.filter(r => !r.scratched && r.horse);
+  const adjPercent = parseFloat(document.getElementById('h2hAdjFactor').value) || 0.05;
+  const minSepL = parseFloat(document.getElementById('minSeparation').value) || 1.0;
   
-  // Reset previous adjustments and baseline ratings
+  // Weights setup
+  const wPace = parseFloat(document.getElementById('weightPace').value) || 0.25;
+  const wSpeed = parseFloat(document.getElementById('weightSpeed').value) || 0.35;
+  const wClass = parseFloat(document.getElementById('weightClass').value) || 0.20;
+  const wForm = parseFloat(document.getElementById('weightForm').value) || 0.20;
+
+  // Reset previous adjustments and compute weighted baseline score
   activeRows.forEach(r => { 
     r.adjNotes = []; 
-    r.score = r.primePower || 100.0; 
+    
+    // Compute composite baseline rating from sub-factors
+    const avgSpeed = r.ppRaces.length ? (r.ppRaces.reduce((a, b) => a + (b.speed||0), 0) / r.ppRaces.length) : (r.surfaceRating || 80);
+    const avgPace = r.ppRaces.length ? (r.ppRaces.reduce((a, b) => a + (b.paceE2 + b.paceLP)/2, 0) / r.ppRaces.length) : 80;
+    const workBonus = Math.min(r.ppWorks.length * 1.5, 15);
+    
+    const composite = (r.primePower * 0.4) + (avgSpeed * wSpeed * 0.5) + (avgPace * wPace * 0.4) + (r.classRating * wClass * 0.3) + (workBonus * wForm);
+    r.score = composite.toFixed(1); 
   });
 
   const m1Results = [];
@@ -396,9 +652,9 @@ function runH2HEngine() {
   const matchMap = {};
   activeRows.forEach(h => {
     h.ppRaces.slice(0, 10).forEach(pp => {
-      if(!pp.date || !pp.track || !pp.raceNum) return;
+      if (!pp.date || !pp.track || !pp.raceNum) return;
       const key = `${pp.date}_${pp.track}_R${pp.raceNum}`;
-      if(!matchMap[key]) matchMap[key] = { date: pp.date, track: pp.track, raceNum: pp.raceNum, classText: pp.classText, dist: pp.dist, runners: [] };
+      if (!matchMap[key]) matchMap[key] = { date: pp.date, track: pp.track, raceNum: pp.raceNum, classText: pp.classText, dist: pp.dist, runners: [] };
       matchMap[key].runners.push({
         horseObj: h, horse: h.horse, cleanName: h.cleanName,
         fin: pp.fin, lenBehind: parseSignedLenBehind(pp.fin, pp.margin),
@@ -409,8 +665,8 @@ function runH2HEngine() {
 
   Object.values(matchMap).filter(m => m.runners.length > 1).forEach(m => {
     m.runners.sort((a,b) => (parseInt(a.fin)||99) - (parseInt(b.fin)||99));
-    for(let i=0; i<m.runners.length; i++){
-      for(let j=i+1; j<m.runners.length; j++){
+    for (let i = 0; i < m.runners.length; i++) {
+      for (let j = i + 1; j < m.runners.length; j++) {
         const r1 = m.runners[i];
         const r2 = m.runners[j];
         const sepL = Math.abs(r1.lenBehind - r2.lenBehind);
@@ -424,7 +680,7 @@ function runH2HEngine() {
         });
 
         // Apply direct active rating adjustment (Method 1)
-        applyAdjustment(r1.horseObj, r2.horseObj, `Beat ${r2.horse} on ${m.date} (${m.track}) by ${sepL.toFixed(1)}L`);
+        applyAdjustment(r1.horseObj, r2.horseObj, `Beat ${r2.horse} on ${m.date} (${m.track}) by ${sepL.toFixed(1)}L`, adjPercent);
       }
     }
   });
@@ -433,8 +689,8 @@ function runH2HEngine() {
   // METHOD 2: Name Matching in Top-3 (406-435)
   // Strips (GB)/(IRE) country suffixes via cleanHorseName()
   // ==========================================
-  for(let i=0; i<activeRows.length; i++){
-    for(let j=i+1; j<activeRows.length; j++){
+  for (let i = 0; i < activeRows.length; i++) {
+    for (let j = i + 1; j < activeRows.length; j++) {
       const A = activeRows[i];
       const B = activeRows[j];
 
@@ -443,7 +699,7 @@ function runH2HEngine() {
         const sC = cleanHorseName(pp.second);
         const tC = cleanHorseName(pp.third);
 
-        if(wC === B.cleanName || sC === B.cleanName || tC === B.cleanName){
+        if (wC === B.cleanName || sC === B.cleanName || tC === B.cleanName) {
           const posB = (wC === B.cleanName) ? 1 : ((sC === B.cleanName) ? 2 : 3);
           m2Results.push({
             finder: A.horse, target: B.horse, targetPos: posB, date: pp.date, track: pp.track
@@ -455,26 +711,26 @@ function runH2HEngine() {
 
   // ==========================================
   // METHOD 3: Common Company Comparison
-  // Compares beaten margins against a mutual 3rd rival (Requires >= 1.0L separation)
+  // Compares beaten margins against a mutual 3rd rival (Requires >= minSepL threshold)
   // ==========================================
-  for(let i=0; i<activeRows.length; i++){
-    for(let j=i+1; j<activeRows.length; j++){
+  for (let i = 0; i < activeRows.length; i++) {
+    for (let j = i + 1; j < activeRows.length; j++) {
       const A = activeRows[i];
       const B = activeRows[j];
 
       A.ppRaces.slice(0, 10).forEach(ppA => {
         const rivalC = cleanHorseName(ppA.winner);
-        if(!rivalC || rivalC === A.cleanName || rivalC === B.cleanName) return;
+        if (!rivalC || rivalC === A.cleanName || rivalC === B.cleanName) return;
 
         B.ppRaces.slice(0, 10).forEach(ppB => {
-          if(cleanHorseName(ppB.winner) === rivalC){
-            if(ppA.date === ppB.date && ppA.track === ppB.track) return; // Exclude same race
+          if (cleanHorseName(ppB.winner) === rivalC) {
+            if (ppA.date === ppB.date && ppA.track === ppB.track) return; // Exclude same race
 
             const marginA = parseSignedLenBehind(ppA.fin, ppA.margin);
             const marginB = parseSignedLenBehind(ppB.fin, ppB.margin);
             const sep = Math.abs(marginA - marginB);
 
-            if(sep >= 1.0){
+            if (sep >= minSepL) {
               const better = marginA < marginB ? A : B;
               const worse = marginA < marginB ? B : A;
               const isRivalToday = activeRows.some(r => r.cleanName === rivalC);
@@ -493,61 +749,264 @@ function runH2HEngine() {
 
   // Render Mechanism Results UI
   document.getElementById('m1List').innerHTML = m1Results.length > 0 ? 
-    m1Results.slice(0, 6).map(r => `<div style="padding:4px 0; font-family:var(--mono); font-size:12px;">🏆 <b>${r.winner}</b> beat <b>${r.loser}</b> on ${r.date} (${r.track}) by ${r.sepL}L <span style="color:var(--red);">${r.distanceFlag}</span></div>`).join('')
-    : '<div style="font-size:12px; color:var(--ink-soft);">No exact race identity matches found.</div>';
+    m1Results.slice(0, 15).map(r => `<div style="padding:4px 0; font-family:var(--mono); font-size:12px;">🏆 <b>${r.winner}</b> beat <b>${r.loser}</b> on ${r.date} (${r.track}) by ${r.sepL}L <span style="color:var(--red);">${r.distanceFlag}</span></div>`).join('')
+    : '<div style="font-size:12px; color:var(--ink-soft);">No direct race identity matches found across active field.</div>';
 
   document.getElementById('m2List').innerHTML = m2Results.length > 0 ?
-    m2Results.map(r => `<div style="padding:4px 0; font-family:var(--mono); font-size:12px;">🔍 <b>${r.finder}</b> faced <b>${r.target}</b> (finished #${r.targetPos}) on ${r.date} at ${r.track}</div>`).join('')
-    : '<div style="font-size:12px; color:var(--ink-soft);">No top-3 name matches found.</div>';
+    m2Results.slice(0, 15).map(r => `<div style="padding:4px 0; font-family:var(--mono); font-size:12px;">🔍 <b>${r.finder}</b> faced <b>${r.target}</b> (finished #${r.targetPos}) on ${r.date} at ${r.track}</div>`).join('')
+    : '<div style="font-size:12px; color:var(--ink-soft);">No top-3 name matches found across active field.</div>';
 
   document.getElementById('m3List').innerHTML = m3Results.length > 0 ?
-    m3Results.map(r => `<div style="padding:4px 0; font-family:var(--mono); font-size:12px;">📊 Common Rival <b>${r.commonRival}</b>: <b>${r.better}</b> performed better by ${r.sepL}L <span style="color:var(--amber-dim);">${r.todayRivalFlag}</span></div>`).join('')
-    : '<div style="font-size:12px; color:var(--ink-soft);">No common company matches found.</div>';
+    m3Results.slice(0, 15).map(r => `<div style="padding:4px 0; font-family:var(--mono); font-size:12px;">📊 Common Rival <b>${r.commonRival}</b>: <b>${r.better}</b> performed better by ${r.sepL}L <span style="color:var(--amber-dim);">${r.todayRivalFlag}</span></div>`).join('')
+    : '<div style="font-size:12px; color:var(--ink-soft);">No common company matches meeting separation threshold found.</div>';
 
+  renderSummaryOverview();
   renderRaceCards();
+  renderPaceAnalysis();
+  renderWorkoutsAnalysis();
+  renderClassAnalysis();
+  renderExportSummary();
 }
 
 /**
- * Applies direct +/- 5% H2H scoring adjustments into active ratings
+ * Applies rating adjustments into active scores
  */
-function applyAdjustment(winner, loser, note){
+function applyAdjustment(winner, loser, note, factor) {
   let baseWinPower = parseFloat(winner.score) || 100.0;
-  winner.score = (baseWinPower * 1.05).toFixed(1);
-  winner.adjNotes.push(`+5% H2H: ${note}`);
+  winner.score = (baseWinPower * (1.0 + factor)).toFixed(1);
+  winner.adjNotes.push(`+${(factor*100).toFixed(1)}% H2H: ${note}`);
 
   let baseLosePower = parseFloat(loser.score) || 100.0;
-  loser.score = (baseLosePower * 0.95).toFixed(1);
-  loser.adjNotes.push(`-5% H2H: Beaten by ${winner.horse}`);
+  loser.score = (baseLosePower * (1.0 - factor)).toFixed(1);
+  loser.adjNotes.push(`-${(factor*100).toFixed(1)}% H2H: Beaten by ${winner.horse}`);
 }
 
-function renderRaceCards(){
+function renderSummaryOverview() {
+  const totalRunners = rows.filter(r => !r.scratched).length;
+  const totalRaces = new Set(rows.map(r => r.race)).size;
+  const adjRunners = rows.filter(r => r.adjNotes.length > 0).length;
+
+  document.getElementById('summaryCardsContainer').innerHTML = `
+    <div class="summary-card"><div class="val">${totalRaces}</div><div class="lbl">Active Races</div></div>
+    <div class="summary-card"><div class="val">${totalRunners}</div><div class="lbl">Active Field Size</div></div>
+    <div class="summary-card"><div class="val">${adjRunners}</div><div class="lbl">H2H Rating Shifts</div></div>
+    <div class="summary-card"><div class="val">${document.getElementById('trackCondition').value}</div><div class="lbl">Surface Track Cond</div></div>
+  `;
+}
+
+function openPP(horseId) {
+  const h = rows.find(r => r.id === horseId);
+  if (!h) return;
+
+  const content = document.getElementById('ppContent');
+  content.innerHTML = `
+    <h2 style="margin-top:0; border-bottom:2px solid var(--paper-line); padding-bottom:8px;">
+      ${h.horse} <span style="font-weight:normal; font-size:14px; color:var(--ink-soft);">(${h.trainer} / ${h.jockey})</span>
+    </h2>
+    
+    <div class="pp-grid">
+      <div>
+        <div class="pp-section-title">Horse Profile &amp; Algorithmic Ratings</div>
+        <p style="margin:4px 0; font-size:13px;"><b>M/L Odds:</b> ${h.odds} | <b>Prime Power:</b> ${h.primePower} | <b>Active Rating:</b> ${h.score}</p>
+        <p style="margin:4px 0; font-size:13px;"><b>Career Earnings:</b> $${(h.earnings||0).toLocaleString()} | <b>Class Rating:</b> ${h.classRating}</p>
+        <p style="margin:4px 0; font-size:13px;"><b>Active H2H Adjustments:</b> ${h.adjNotes.join(', ') || 'None'}</p>
+      </div>
+      <div>
+        <div class="pp-section-title">Recent Workouts (${h.ppWorks.length})</div>
+        <div class="work-list">
+          ${h.ppWorks.length > 0 ? h.ppWorks.map(w => `<div>• ${w.date} ${w.track} ${formatDistance(w.dist)} - ${w.time} (${w.trackCond}) Rank: ${w.rank}</div>`).join('') : 'No workouts recorded.'}
+        </div>
+      </div>
+    </div>
+
+    <div class="pp-section-title">Past Performances (${h.ppRaces.length})</div>
+    <div style="overflow-x:auto;">
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Track</th>
+            <th>Dist</th>
+            <th>Class</th>
+            <th>Fin (Margin)</th>
+            <th>Speed</th>
+            <th>Pace (E1/E2/LP)</th>
+            <th>Top 3 Finishers</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${h.ppRaces.map(p => `
+            <tr>
+              <td>${p.date}</td>
+              <td>${p.track} R${p.raceNum}</td>
+              <td>${formatDistance(p.dist)}</td>
+              <td>${p.classText}</td>
+              <td><b>${p.fin}</b> (${p.margin}L)</td>
+              <td><b>${p.speed}</b></td>
+              <td>${p.paceE1} / ${p.paceE2} / ${p.paceLP}</td>
+              <td>1st: ${p.winner}<br>2nd: ${p.second}<br>3rd: ${p.third}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+  document.getElementById('ppOverlay').classList.add('show');
+}
+
+function closePP() { document.getElementById('ppOverlay').classList.remove('show'); }
+
+function renderRaceCards() {
   const raceMap = {};
   rows.forEach(r => {
-    if(!raceMap[r.race]) raceMap[r.race] = [];
+    if (!raceMap[r.race]) raceMap[r.race] = [];
     raceMap[r.race].push(r);
   });
 
-  const cardHTML = Object.keys(raceMap).sort().map(raceNum => `
+  const cardHTML = Object.keys(raceMap).sort((a,b)=>parseInt(a)-parseInt(b)).map(raceNum => {
+    const sortedRunners = [...raceMap[raceNum]].sort((a,b) => (parseFloat(b.score)||0) - (parseFloat(a.score)||0));
+    
+    return `
+      <div class="h2h-box">
+        <h3 style="margin-top:0; border-bottom:1px solid var(--paper-line); padding-bottom:8px;">Race ${raceNum} Field</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Rank</th>
+              <th>Post</th>
+              <th>Horse</th>
+              <th>Trainer / Jockey</th>
+              <th>Base Power</th>
+              <th>Active Rating</th>
+              <th>Speed Fig</th>
+              <th>Active Adjustments</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${sortedRunners.map((h, idx) => `
+              <tr ${h.scratched ? 'class="scratched-row"' : ''}>
+                <td><span class="${idx === 0 ? 'badge-tier1' : (idx === 1 ? 'badge-tier2' : 'badge-tier3')}">#${idx + 1}</span></td>
+                <td><b>${h.post}</b></td>
+                <td><span class="pp-link" onclick="openPP(${h.id})">${h.horse}</span></td>
+                <td>${h.trainer}<br><span style="color:var(--ink-soft); font-size:11px;">${h.jockey}</span></td>
+                <td>${h.primePower}</td>
+                <td><b style="color:var(--green); font-size:14px;">${h.score || h.primePower}</b></td>
+                <td><b>${h.surfaceRating || 'N/A'}</b></td>
+                <td style="font-size:11px; font-family:var(--mono);">${h.adjNotes.map(n => `<span class="h2h-adj">${n}</span> `).join('') || 'None'}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+  }).join('');
+
+  document.getElementById('raceCardsList').innerHTML = cardHTML;
+}
+
+function renderPaceAnalysis() {
+  const raceMap = {};
+  rows.forEach(r => {
+    if (!raceMap[r.race]) raceMap[r.race] = [];
+    raceMap[r.race].push(r);
+  });
+
+  const paceHTML = Object.keys(raceMap).sort((a,b)=>parseInt(a)-parseInt(b)).map(raceNum => `
     <div class="h2h-box">
-      <h3 style="margin-top:0;">Race ${raceNum} Card</h3>
+      <h3 style="margin-top:0; border-bottom:1px solid var(--paper-line); padding-bottom:8px;">Race ${raceNum} Pace &amp; Speed Analysis</h3>
       <table>
         <thead>
           <tr>
             <th>Post</th>
             <th>Horse</th>
-            <th>Base Prime Power</th>
-            <th>Active Rating (H2H Adj)</th>
-            <th>Adjustment Notes</th>
+            <th>Avg Early Pace (E1)</th>
+            <th>Avg Mid Pace (E2)</th>
+            <th>Avg Late Pace (LP)</th>
+            <th>Last Speed Fig</th>
+            <th>Avg Speed (3 Races)</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${raceMap[raceNum].map(h => {
+            const e1 = h.ppRaces.length ? (h.ppRaces.reduce((acc, p) => acc + (p.paceE1||0), 0) / h.ppRaces.length).toFixed(1) : 'N/A';
+            const e2 = h.ppRaces.length ? (h.ppRaces.reduce((acc, p) => acc + (p.paceE2||0), 0) / h.ppRaces.length).toFixed(1) : 'N/A';
+            const lp = h.ppRaces.length ? (h.ppRaces.reduce((acc, p) => acc + (p.paceLP||0), 0) / h.ppRaces.length).toFixed(1) : 'N/A';
+            
+            const last3Spd = h.ppRaces.slice(0, 3);
+            const avg3Spd = last3Spd.length ? (last3Spd.reduce((acc, p) => acc + (p.speed||0), 0) / last3Spd.length).toFixed(1) : 'N/A';
+
+            return `
+              <tr ${h.scratched ? 'class="scratched-row"' : ''}>
+                <td><b>${h.post}</b></td>
+                <td><b>${h.horse}</b></td>
+                <td>${e1}</td>
+                <td>${e2}</td>
+                <td>${lp}</td>
+                <td><b>${h.surfaceRating || 'N/A'}</b></td>
+                <td><b>${avg3Spd}</b></td>
+              </tr>
+            `;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>
+  `).join('');
+
+  document.getElementById('paceAnalysisList').innerHTML = paceHTML;
+}
+
+function renderWorkoutsAnalysis() {
+  const raceMap = {};
+  rows.forEach(r => {
+    if (!raceMap[r.race]) raceMap[r.race] = [];
+    raceMap[r.race].push(r);
+  });
+
+  const worksHTML = Object.keys(raceMap).sort((a,b)=>parseInt(a)-parseInt(b)).map(raceNum => `
+    <div class="h2h-box">
+      <h3 style="margin-top:0; border-bottom:1px solid var(--paper-line); padding-bottom:8px;">Race ${raceNum} Workouts Log &amp; Fitness Ratings</h3>
+      ${raceMap[raceNum].map(h => `
+        <div style="margin-bottom:12px; padding-bottom:8px; border-bottom:1px dashed var(--paper-line);">
+          <h4 style="margin:4px 0; font-size:13px; color:var(--board-950);">${h.horse} (${h.ppWorks.length} Workouts Recorded)</h4>
+          <div style="font-family:var(--mono); font-size:11.5px; color:var(--ink-soft);">
+            ${h.ppWorks.length > 0 ? h.ppWorks.map(w => `• ${w.date} ${w.track} ${formatDistance(w.dist)}: <b>${w.time}</b> (${w.trackCond}) Rank: ${w.rank}`).join('<br>') : 'No recent workouts recorded.'}
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `).join('');
+
+  document.getElementById('workoutsAnalysisList').innerHTML = worksHTML;
+}
+
+function renderClassAnalysis() {
+  const raceMap = {};
+  rows.forEach(r => {
+    if (!raceMap[r.race]) raceMap[r.race] = [];
+    raceMap[r.race].push(r);
+  });
+
+  const classHTML = Object.keys(raceMap).sort((a,b)=>parseInt(a)-parseInt(b)).map(raceNum => `
+    <div class="h2h-box">
+      <h3 style="margin-top:0; border-bottom:1px solid var(--paper-line); padding-bottom:8px;">Race ${raceNum} Class &amp; Earnings Profiles</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Post</th>
+            <th>Horse</th>
+            <th>Class Rating</th>
+            <th>Career Earnings</th>
+            <th>Last Class Encountered</th>
           </tr>
         </thead>
         <tbody>
           ${raceMap[raceNum].map(h => `
             <tr ${h.scratched ? 'class="scratched-row"' : ''}>
-              <td>${h.post}</td>
+              <td><b>${h.post}</b></td>
               <td><b>${h.horse}</b></td>
-              <td>${h.primePower}</td>
-              <td><b style="color:var(--green);">${h.score || h.primePower}</b></td>
-              <td style="font-size:11px; font-family:var(--mono);">${h.adjNotes.map(n => `<span class="h2h-adj">${n}</span> `).join('') || 'None'}</td>
+              <td>${h.classRating}</td>
+              <td>$${(h.earnings||0).toLocaleString()}</td>
+              <td>${h.ppRaces.length ? h.ppRaces[0].classText : 'N/A'}</td>
             </tr>
           `).join('')}
         </tbody>
@@ -555,14 +1014,60 @@ function renderRaceCards(){
     </div>
   `).join('');
 
-  document.getElementById('raceCardsList').innerHTML = cardHTML;
+  document.getElementById('classAnalysisList').innerHTML = classHTML;
 }
+
+function renderExportSummary() {
+  const raceMap = {};
+  rows.forEach(r => {
+    if (!raceMap[r.race]) raceMap[r.race] = [];
+    raceMap[r.race].push(r);
+  });
+
+  const summaryHTML = Object.keys(raceMap).sort((a,b)=>parseInt(a)-parseInt(b)).map(raceNum => {
+    const activeRunners = raceMap[raceNum].filter(r => !r.scratched);
+    activeRunners.sort((a,b) => (parseFloat(b.score)||0) - (parseFloat(a.score)||0));
+    
+    if (activeRunners.length === 0) return '';
+    const top1 = activeRunners[0];
+    const top2 = activeRunners[1] || null;
+    const top3 = activeRunners[2] || null;
+
+    return `
+      <div style="padding:10px 0; border-bottom:1px solid var(--paper-line); font-family:var(--mono); font-size:13px;">
+        <b>Race ${raceNum}:</b> 
+        🥇 <span class="badge-tier1">#${top1.post} ${top1.horse}</span> (Score: ${top1.score}) 
+        ${top2 ? `| 🥈 <span class="badge-tier2">#${top2.post} ${top2.horse}</span> (Score: ${top2.score})` : ''} 
+        ${top3 ? `| 🥉 <span class="badge-tier3">#${top3.post} ${top3.horse}</span> (Score: ${top3.score})` : ''}
+      </div>
+    `;
+  }).join('');
+
+  document.getElementById('exportSummaryContent').innerHTML = summaryHTML || '<p>No active races available.</p>';
+}
+
+document.getElementById('exportCsvBtn').addEventListener('click', () => {
+  let csv = 'Race,Post,Horse,Trainer,Jockey,Odds,BasePower,ActiveRating,SpeedFig,Scratched\n';
+  rows.forEach(r => {
+    csv += `"${r.race}","${r.post}","${r.horse}","${r.trainer}","${r.jockey}","${r.odds}","${r.primePower}","${r.score}","${r.surfaceRating}","${r.scratched}"\n`;
+  });
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.setAttribute('href', url);
+  a.setAttribute('download', 'handicapping_results.csv');
+  a.click();
+});
 
 document.getElementById('computeBtn').addEventListener('click', () => {
   runH2HEngine();
   document.getElementById('tabbar').style.display = 'flex';
   document.getElementById('cardSection').style.display = 'block';
   document.getElementById('h2hSection').style.display = 'none';
+  document.getElementById('paceSection').style.display = 'none';
+  document.getElementById('workoutsSection').style.display = 'none';
+  document.getElementById('classSection').style.display = 'none';
+  document.getElementById('exportSection').style.display = 'none';
 });
 
 document.querySelectorAll('.tabbar button').forEach(btn => {
@@ -572,10 +1077,12 @@ document.querySelectorAll('.tabbar button').forEach(btn => {
     const tab = e.target.dataset.tab;
     document.getElementById('cardSection').style.display = tab === 'card' ? 'block' : 'none';
     document.getElementById('h2hSection').style.display = tab === 'h2h' ? 'block' : 'none';
+    document.getElementById('paceSection').style.display = tab === 'pace' ? 'block' : 'none';
+    document.getElementById('workoutsSection').style.display = tab === 'workouts' ? 'block' : 'none';
+    document.getElementById('classSection').style.display = tab === 'class' ? 'block' : 'none';
+    document.getElementById('exportSection').style.display = tab === 'export' ? 'block' : 'none';
   });
 });
-
-function closePP(){ document.getElementById('ppOverlay').classList.remove('show'); }
 </script>
 </body>
 </html>
