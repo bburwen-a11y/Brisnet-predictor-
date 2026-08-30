@@ -81,8 +81,8 @@
   .col-race{width:45px; min-width:45px;}
   .col-post{width:45px; min-width:45px;}
   .col-horse{min-width:140px;}
-  .col-trainer{min-width:210px;}
-  .col-jockey{min-width:210px;}
+  .col-trainer{min-width:220px;}
+  .col-jockey{min-width:220px;}
   .col-odds{width:70px; min-width:70px;}
   .col-power{width:95px; min-width:95px;}
   .col-speed{width:80px; min-width:80px;}
@@ -160,7 +160,7 @@
   <header>
     <p class="eyebrow">Professional Handicapping &amp; Value Engine</p>
     <h1>Overlay Board</h1>
-    <p class="tagline">Auto-detecting DRF format layout with smart text-name &amp; stats matching.</p>
+    <p class="tagline">Auto-detecting DRF layout engine with accurate Trainer and Jockey stats extraction.</p>
   </header>
 
   <main>
@@ -361,27 +361,30 @@ function parseCSVLine(line){
   return out.map(v => v.trim());
 }
 
-// Helper: Verifies whether a string is a real person name (contains alphabetic letters)
+// Checks if a string contains valid text name (non-numeric, >= 2 letters)
 function isTextName(str) {
   if (!str) return false;
   const cleaned = str.replace(/^["']|["']$/g, '').trim();
-  if (!cleaned || /^\d+$/.test(cleaned)) return false; // Reject pure numbers/ID codes
+  if (!cleaned || /^\d+$/.test(cleaned)) return false;
   return /[a-zA-Z]{2,}/.test(cleaned);
 }
 
-// Smart Extraction for Trainer or Jockey Name across typical DRF candidate indices
+// Scans field array for valid text name across candidate indices
 function findName(f, candidateIndices) {
   for (const idx of candidateIndices) {
+    if (idx <= 0 || idx > f.length) continue;
     const val = f[idx - 1] ? f[idx - 1].trim().replace(/^["']|["']$/g, '') : '';
     if (isTextName(val)) return val;
   }
   return '';
 }
 
-// Smart Extraction for Starts-Wins-Places-Shows stats
+// Scans field array for numeric/formatted stats (Starts, Wins, Places, Shows)
 function findStats(f, candidateStatIndices) {
   for (const baseIdx of candidateStatIndices) {
-    // Check if 4 consecutive fields form non-zero stats
+    if (baseIdx <= 0 || baseIdx > f.length) continue;
+
+    // Direct 4-field numeric block scan
     const s = parseInt(f[baseIdx - 1]);
     const w = parseInt(f[baseIdx]);
     const p = parseInt(f[baseIdx + 1]);
@@ -391,7 +394,7 @@ function findStats(f, candidateStatIndices) {
       return { starts: s, wins: w, places: p, shows: sh };
     }
 
-    // Check single field embedded string (e.g. "25 5 4 3" or "25-5-4-3")
+    // Single-field embedded string scan (e.g. "25 5 4 3" or "25-5-4-3")
     const strVal = f[baseIdx - 1] ? f[baseIdx - 1].trim().replace(/^["']|["']$/g, '') : '';
     const nums = strVal.match(/\d+/g);
     if (nums && nums.length >= 4) {
@@ -401,6 +404,18 @@ function findStats(f, candidateStatIndices) {
       }
     }
   }
+
+  // Broad fallback scan across entire record for any 4 consecutive numeric stats block
+  for (let i = 0; i < Math.min(f.length - 3, 70); i++) {
+    const s = parseInt(f[i]);
+    const w = parseInt(f[i + 1]);
+    const p = parseInt(f[i + 2]);
+    const sh = parseInt(f[i + 3]);
+    if (!isNaN(s) && s >= 1 && s <= 999 && !isNaN(w) && !isNaN(p) && !isNaN(sh) && (w + p + sh) <= s) {
+      return { starts: s, wins: w, places: p, shows: sh };
+    }
+  }
+
   return { starts: 0, wins: 0, places: 0, shows: 0 };
 }
 
@@ -439,15 +454,15 @@ document.getElementById('drfInput').addEventListener('change', e => {
       const mlOdds = (isExtendedDRF ? get(44) : get(14)) || '2/1';
       const primePower = extractPrimePower(f);
 
-      // Extract Trainer Name and Stats using multi-fallback candidate fields
-      const trainerCandidates = isExtendedDRF ? [27, 24, 18, 25] : [9, 8, 7, 10];
-      const trainerStatCandidates = isExtendedDRF ? [28, 29, 32, 25] : [10, 11, 14];
+      // Expanded Trainer Name & Stats Candidate Indices across Single-File / Extended Formats
+      const trainerCandidates = isExtendedDRF ? [27, 24, 18, 25, 26, 30] : [12, 13, 11, 10, 8, 7, 9, 14];
+      const trainerStatCandidates = isExtendedDRF ? [28, 29, 32, 25] : [18, 19, 20, 21, 10, 11, 14, 15];
       const trainer = findName(f, trainerCandidates) || 'Unknown Trainer';
       const trainerStats = findStats(f, trainerStatCandidates);
 
-      // Extract Jockey Name and Stats using multi-fallback candidate fields
-      const jockeyCandidates = isExtendedDRF ? [37, 32, 33, 34, 35, 36] : [15, 14, 16, 17];
-      const jockeyStatCandidates = isExtendedDRF ? [38, 39, 42, 33] : [16, 17, 18];
+      // Expanded Jockey Name & Stats Candidate Indices across Single-File / Extended Formats
+      const jockeyCandidates = isExtendedDRF ? [37, 32, 33, 34, 35, 36] : [15, 16, 17, 14, 37, 28, 29];
+      const jockeyStatCandidates = isExtendedDRF ? [38, 39, 42, 33] : [47, 48, 60, 61, 28, 29, 30, 16, 17, 18];
       const jockey = findName(f, jockeyCandidates) || 'Unknown Jockey';
       const jockeyStats = findStats(f, jockeyStatCandidates);
 
