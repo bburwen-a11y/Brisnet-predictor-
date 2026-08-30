@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Overlay Board — Race Value & Prediction Engine</title>
+<title>Overlay Board — Complete Race Card & Prediction Engine</title>
 <style>
   :root{
     --board-950:#0F2A20;
@@ -113,7 +113,7 @@
   .bestof{border:2px solid var(--board-950); border-radius:5px; padding:18px 20px; margin:0 0 20px; background:var(--paper);}
   .bestof h3{margin:0 0 4px; font-size:18px;}
   .bo-row{display:flex; align-items:center; gap:12px; padding:10px 0; border-top:1px solid var(--paper-line);}
-  .bo-rank{width:26px; height:26px; line-height:26px; text-align:center; background:var(--board-950); color:#fff; border-radius:50%; font-family:var(--mono); font-size:12px; font-weight:800;}
+  .bo-rank{width:32px; height:32px; line-height:32px; text-align:center; background:var(--board-950); color:var(--amber); border-radius:50%; font-family:var(--mono); font-size:12px; font-weight:800;}
   .bo-horse{font-size:15px; font-weight:800; cursor:pointer; text-decoration:underline dotted;}
   .bo-meta{font-size:12px; color:var(--ink-soft); font-family:var(--mono);}
 
@@ -121,7 +121,7 @@
   @media(max-width:768px){ .cp-grid{grid-template-columns:1fr;} }
   .cp-box{border:1px solid var(--paper-line); border-radius:4px; padding:14px; background:var(--paper-dim);}
   .cp-box.contender{border-left:5px solid var(--green);}
-  .cp-box.pretender{border-left:5px solid var(--red); opacity:0.85;}
+  .cp-box.pretender{border-left:5px solid var(--red); opacity:0.9;}
   .cp-head{font-family:var(--mono); font-size:12px; font-weight:800; text-transform:uppercase; margin-bottom:8px;}
   .cp-box.contender .cp-head{color:var(--green);}
   .cp-box.pretender .cp-head{color:var(--red);}
@@ -144,6 +144,11 @@
 
   .badge-changed{
     background:var(--red); color:#fff; font-family:var(--mono); font-size:10px;
+    padding:2px 5px; border-radius:3px; font-weight:700; margin-left:4px; text-transform:uppercase;
+  }
+
+  .badge-top-pick{
+    background:var(--board-950); color:var(--amber); font-family:var(--mono); font-size:10px;
     padding:2px 5px; border-radius:3px; font-weight:700; margin-left:4px; text-transform:uppercase;
   }
 
@@ -173,7 +178,7 @@
   <header>
     <p class="eyebrow">Professional Handicapping &amp; Value Engine</p>
     <h1>Overlay Board</h1>
-    <p class="tagline">Corrected BRIS file mappings for Speed Ratings (846+i), Finish Position (616+i), Past Race Number (296+i), and Workouts (102+).</p>
+    <p class="tagline">Full Race Card Coverage: Single Best Pick per Race + Complete Contenders &amp; Pretenders Breakdowns across all runners.</p>
   </header>
 
   <main>
@@ -238,28 +243,29 @@
     </section>
 
     <div class="tabbar" id="tabbar" style="display:none;">
-      <button data-tab="best" class="on" id="tabBest">Best Bets</button>
+      <button data-tab="card" class="on" id="tabCard">Full Race Cards</button>
+      <button data-tab="best" id="tabBest">Best Bets (Top Choice per Race)</button>
       <button data-tab="analysis">Contenders vs Pretenders</button>
-      <button data-tab="card">Full Race Cards</button>
       <button data-tab="h2h">Head-to-Head Comparison</button>
     </div>
 
+    <section id="cardSection" style="display:none;">
+      <h2>Full Race Cards &amp; Complete Fields</h2>
+      <div id="raceCardsList"></div>
+    </section>
+
     <section id="bestSection" style="display:none;">
       <div class="bestof">
-        <h3>Top Selections by Race</h3>
-        <p style="font-size:12.5px; color:var(--ink-soft); margin-bottom:12px;">Ranked selections for every race based on Prime Power ratings, trainer/jockey performance, and speed figures.</p>
+        <h3>Single "Best Bet" Pick Per Race</h3>
+        <p style="font-size:12.5px; color:var(--ink-soft); margin-bottom:12px;">The single top choice to win for each race on the card based on Prime Power, speed ratings, and trainer/jockey metrics.</p>
         <div id="bestBetsList"></div>
       </div>
     </section>
 
     <section id="analysisSection" style="display:none;">
       <h2>Contenders vs. Pretenders</h2>
+      <p style="font-size:12.5px; color:var(--ink-soft); margin-bottom:14px;">Every horse is classified as either a primary contender or a pretender (questionable ability or long odds).</p>
       <div id="contenderCards"></div>
-    </section>
-
-    <section id="cardSection" style="display:none;">
-      <h2>Race Cards &amp; Detailed Past Performances</h2>
-      <div id="raceCardsList"></div>
     </section>
 
     <section id="h2hSection" style="display:none;">
@@ -306,17 +312,12 @@ let computedRaces = {};
 
 const rowsBody = document.getElementById('rowsBody');
 
-/**
- * Converts distance numerical values (yards or feet) to furlongs/miles.
- */
 function formatDistance(distVal) {
   let yards = parseFloat(distVal);
   if (isNaN(yards) || yards <= 0) return distVal || 'N/A';
-  
   if (yards > 2500) yards = yards / 3.0;
 
   const furlongs = yards / 220.0;
-
   if (furlongs < 8.0) {
     const fRounded = Math.round(furlongs * 2) / 2; 
     return (fRounded % 1 === 0 ? fRounded.toFixed(0) : fRounded.toFixed(1)) + 'f';
@@ -467,9 +468,7 @@ document.getElementById('drfInput').addEventListener('change', e => {
       const places = num(99);
       const shows = num(100);
 
-      // FIX: BRIS Speed Ratings start at Field 846 (846 is current/last speed)
       const lastSpeed = num(846);
-      // FIX: Best Speed Figure is at Field 101
       const bestSpeed = num(101);
 
       const ppRaces = [];
@@ -479,19 +478,18 @@ document.getElementById('drfInput').addEventListener('change', e => {
         ppRaces.push({
           date: date,
           track: get(276 + i),
-          raceNum: get(296 + i) || '', // FIX: Past race number is 296–305
+          raceNum: get(296 + i) || '',
           dist: get(316 + i),
           surf: get(326 + i),
-          fin: get(616 + i),          // FIX: Official Finish Position is 616–625
-          speed: num(846 + i),        // FIX: BRIS Speed Rating is 846–855
+          fin: get(616 + i),
+          speed: num(846 + i),
           comment: get(396 + i)
         });
       }
 
-      // FIX: Workouts are in Fields 102–149 (6 fields per workout line)
       const ppWorks = [];
       for(let w = 0; w < 4; w++){
-        const baseIndex = 102 + (w * 12); // Workout entries at 102, 114, 126, 138
+        const baseIndex = 102 + (w * 12);
         const wDate = get(baseIndex);
         if(!wDate) continue;
         ppWorks.push({
@@ -620,10 +618,6 @@ document.getElementById('reloadRssBtn').addEventListener('click', () => {
   rssInput.click();
 });
 
-/**
- * Head-to-Head matching strictly on Same Track, Same Date, and Same Past Race Number (296-305).
- * Results are ordered by Current Race Number.
- */
 function findPastMatchups() {
   const activeRows = rows.filter(r => !r.scratched && r.horse);
   const raceMap = {};
@@ -633,9 +627,7 @@ function findPastMatchups() {
     h.ppRaces.forEach(pp => {
       if(!pp.date || !pp.track || !pp.raceNum) return;
       
-      // Strict key requiring date, track, and past race number
       const key = `${pp.date}_${pp.track}_R${pp.raceNum}`;
-      
       if(!raceMap[key]) raceMap[key] = { date: pp.date, track: pp.track, raceNum: pp.raceNum, runners: [] };
       
       let numericFin = parseInt(pp.fin);
@@ -671,7 +663,6 @@ function findPastMatchups() {
 
   container.innerHTML = matchups.map(m => {
     m.runners.sort((a, b) => a.finNum - b.finNum);
-    
     const winner = m.runners[0];
     const losers = m.runners.slice(1);
 
@@ -786,7 +777,7 @@ function computeRaceCard(){
     computedRaces[raceKey].push(r);
   });
 
-  const bestBets = [];
+  const bestBetsList = [];
   const contenderHTML = [];
   const cardHTML = [];
 
@@ -795,47 +786,63 @@ function computeRaceCard(){
   raceKeys.forEach(raceNum => {
     const field = computedRaces[raceNum];
     
+    // Sort entire field by Prime Power / Score descending
     field.sort((a,b) => (parseFloat(b.score || b.primePower) || 0) - (parseFloat(a.score || a.primePower) || 0));
 
-    const topPower = field[0];
+    // Best Bet is STRICTLY the ONE top horse to win this race
+    const topPick = field[0];
+    const topPowerVal = parseFloat(topPick.score || topPick.primePower) || 0;
+
+    bestBetsList.push({
+      race: raceNum,
+      horse: topPick,
+      reason: `Top Pick to Win — Leading Prime Power (${topPowerVal.toFixed(1)})`
+    });
+
     const contenders = [];
     const pretenders = [];
 
-    field.forEach((h, idx) => {
+    field.forEach((h) => {
       const hPower = parseFloat(h.score || h.primePower) || 0;
-      const topPowerVal = parseFloat(topPower.score || topPower.primePower) || 0;
       const powerGap = topPowerVal - hPower;
       
-      if(idx === 0 || powerGap <= 8.0){
-        contenders.push(h);
+      // Parse morning line odds to check for extreme longshots (e.g. 20/1 or worse)
+      let oddsVal = 0;
+      if (h.odds) {
+        const parts = h.odds.split('/');
+        if (parts.length === 2 && parseFloat(parts[1]) > 0) {
+          oddsVal = parseFloat(parts[0]) / parseFloat(parts[1]);
+        }
+      }
+
+      // Classification: Contender if within 8 points of top pick or low odds; Pretender if large power gap or 20/1+ odds
+      if (powerGap <= 8.0 && oddsVal < 20.0) {
+        contenders.push({ horse: h, gap: powerGap, isTop: h.id === topPick.id });
       } else {
-        pretenders.push(h);
+        let pretenderReason = [];
+        if (powerGap > 8.0) pretenderReason.push(`Power Gap -${powerGap.toFixed(1)} pts`);
+        if (oddsVal >= 20.0) pretenderReason.push(`Long Odds (${h.odds})`);
+        if (h.lastSpeed && h.lastSpeed < 70) pretenderReason.push(`Low Speed Fig (${h.lastSpeed})`);
+        if (pretenderReason.length === 0) pretenderReason.push('Questionable ability for current class');
+
+        pretenders.push({ horse: h, reason: pretenderReason.join(', ') });
       }
     });
 
-    field.forEach((h, idx) => {
-      const hPower = parseFloat(h.score || h.primePower) || 0;
-      bestBets.push({
-        race: raceNum,
-        rank: idx + 1,
-        horse: h,
-        reason: idx === 0 ? `Top Prime Power (${hPower.toFixed(1)})` : `Ranked #${idx + 1} (${hPower.toFixed(1)} PP)`
-      });
-    });
-
     contenderHTML.push(`
-      <div style="margin-bottom:18px;">
-        <h3 style="margin:0 0 8px;">Race ${raceNum} (${field.length} Horses)</h3>
+      <div style="margin-bottom:22px; border:1px solid var(--paper-line); border-radius:4px; padding:16px; background:#fff;">
+        <h3 style="margin:0 0 10px; font-size:16px;">Race ${raceNum} — Full Field Breakdown (${field.length} Horses)</h3>
         <div class="cp-grid">
           <div class="cp-box contender">
             <div class="cp-head">Contenders (${contenders.length})</div>
             ${contenders.map(c => `
               <div class="cp-item">
-                <span class="cp-horse" onclick="openPP('${c.horse}')">#${c.post} ${c.horse}</span> 
-                ${c.jockeyChanged ? '<span class="badge-changed">NEW RIDER</span>' : ''}<br>
-                Prime Power: <b>${c.score || c.primePower}</b><br>
-                Trainer: <b>${c.trainer || 'N/A'}</b> (${c.trainerStarts || 0}: ${c.trainerWins || 0}-${c.trainerPlaces || 0}-${c.trainerShows || 0})<br>
-                Jockey: <b>${c.jockey || 'N/A'}</b> (${c.jockeyStarts || 0}: ${c.jockeyWins || 0}-${c.jockeyPlaces || 0}-${c.jockeyShows || 0})
+                <span class="cp-horse" onclick="openPP('${c.horse.horse}')">#${c.horse.post} ${c.horse.horse}</span> 
+                ${c.isTop ? '<span class="badge-top-pick">TOP PICK</span>' : ''}
+                ${c.horse.jockeyChanged ? '<span class="badge-changed">NEW RIDER</span>' : ''}<br>
+                Prime Power: <b>${c.horse.score || c.horse.primePower}</b> | M/L: <b>${c.horse.odds}</b><br>
+                Trainer: <b>${c.horse.trainer || 'N/A'}</b> (${c.horse.trainerStarts || 0}: ${c.horse.trainerWins || 0}-${c.horse.trainerPlaces || 0}-${c.horse.trainerShows || 0})<br>
+                Jockey: <b>${c.horse.jockey || 'N/A'}</b> (${c.horse.jockeyStarts || 0}: ${c.horse.jockeyWins || 0}-${c.horse.jockeyPlaces || 0}-${c.horse.jockeyShows || 0})
               </div>
             `).join('')}
           </div>
@@ -843,9 +850,9 @@ function computeRaceCard(){
             <div class="cp-head">Pretenders (${pretenders.length})</div>
             ${pretenders.map(p => `
               <div class="cp-item">
-                <span class="cp-horse" onclick="openPP('${p.horse}')">#${p.post} ${p.horse}</span><br>
-                Prime Power: ${p.score || p.primePower}<br>
-                Trainer: ${p.trainer || 'N/A'} | Jockey: ${p.jockey || 'N/A'}
+                <span class="cp-horse" onclick="openPP('${p.horse.horse}')">#${p.horse.post} ${p.horse.horse}</span> | M/L: <b>${p.horse.odds}</b><br>
+                Prime Power: <b>${p.horse.score || p.horse.primePower}</b> | Last Speed: <b>${p.horse.lastSpeed || 'N/A'}</b><br>
+                <span style="color:var(--red); font-size:11.5px; font-weight:600;">⚠️ ${p.reason}</span>
               </div>
             `).join('')}
           </div>
@@ -854,8 +861,10 @@ function computeRaceCard(){
     `);
 
     cardHTML.push(`
-      <div style="border:1px solid var(--paper-line); padding:14px; margin-bottom:14px; background:#fff; border-radius:4px;">
-        <h3 style="margin:0 0 10px;">Race ${raceNum} — Full Field (${field.length} Horses)</h3>
+      <div style="border:1px solid var(--paper-line); padding:16px; margin-bottom:18px; background:#fff; border-radius:4px;">
+        <h3 style="margin:0 0 10px; font-size:16px; border-bottom:2px solid var(--board-950); padding-bottom:6px;">
+          Race ${raceNum} — Complete Field (${field.length} Horses)
+        </h3>
         <table style="width:100%; font-size:12px;">
           <thead>
             <tr style="background:var(--board-950); color:#fff;">
@@ -869,11 +878,14 @@ function computeRaceCard(){
             </tr>
           </thead>
           <tbody>
-            ${field.map(h => `
-              <tr>
+            ${field.map(h => {
+              const isTop = h.id === topPick.id;
+              return `
+              <tr style="${isTop ? 'background:rgba(217,167,59,0.15); font-weight:bold;' : ''}">
                 <td style="padding:6px; font-family:var(--mono);">${h.post}</td>
                 <td style="padding:6px;">
                   <span class="bo-horse" onclick="openPP('${h.horse}')">${h.horse}</span>
+                  ${isTop ? '<span class="badge-top-pick">BEST BET</span>' : ''}
                   ${h.jockeyChanged ? '<span class="badge-changed">NEW RIDER</span>' : ''}
                 </td>
                 <td style="padding:6px;">${h.trainer ? `${h.trainer} (${h.trainerStarts}: ${h.trainerWins}-${h.trainerPlaces}-${h.trainerShows})` : 'N/A'}</td>
@@ -882,25 +894,25 @@ function computeRaceCard(){
                 <td style="padding:6px;">${h.surfaceRating || h.lastSpeed}</td>
                 <td style="padding:6px; font-family:var(--mono);">${h.odds}</td>
               </tr>
-            `).join('')}
+            `}).join('')}
           </tbody>
         </table>
       </div>
     `);
   });
 
-  document.getElementById('bestBetsList').innerHTML = bestBets.map((b) => `
+  document.getElementById('bestBetsList').innerHTML = bestBetsList.map((b) => `
     <div class="bo-row">
-      <div class="bo-rank">${b.rank}</div>
+      <div class="bo-rank">R${b.race}</div>
       <div>
         <div>
-          <span class="bo-horse" onclick="openPP('${b.horse.horse}')">Race ${b.race} — #${b.horse.post} ${b.horse.horse}</span>
+          <span class="bo-horse" onclick="openPP('${b.horse.horse}')">Race ${b.race} Pick: #${b.horse.post} ${b.horse.horse}</span>
+          <span class="badge-top-pick">BEST BET TO WIN</span>
           ${b.horse.jockeyChanged ? '<span class="badge-changed">NEW RIDER UPDATE</span>' : ''}
         </div>
         <div class="bo-meta">
-          Prime Power: <b>${b.horse.score || b.horse.primePower}</b> | 
-          Trainer: <b>${b.horse.trainer}</b> (${b.horse.trainerStarts}: ${b.horse.trainerWins}-${b.horse.trainerPlaces}-${b.horse.trainerShows}) | 
-          Jockey: <b>${b.horse.jockey}</b> (${b.horse.jockeyStarts}: ${b.horse.jockeyWins}-${b.horse.jockeyPlaces}-${b.horse.jockeyShows})
+          Prime Power: <b>${b.horse.score || b.horse.primePower}</b> | M/L Odds: <b>${b.horse.odds}</b> | 
+          Trainer: <b>${b.horse.trainer}</b> (${b.horse.trainerStarts}: ${b.horse.trainerWins}-${b.horse.trainerPlaces}-${b.horse.trainerShows})
         </div>
         <div style="font-size:12px; color:var(--ink-soft); margin-top:2px;">${b.reason}</div>
       </div>
@@ -913,9 +925,9 @@ function computeRaceCard(){
   updateH2HDropdowns();
 
   document.getElementById('tabbar').style.display = 'flex';
-  document.getElementById('bestSection').style.display = 'block';
+  document.getElementById('cardSection').style.display = 'block';
+  document.getElementById('bestSection').style.display = 'none';
   document.getElementById('analysisSection').style.display = 'none';
-  document.getElementById('cardSection').style.display = 'none';
   document.getElementById('h2hSection').style.display = 'none';
 }
 
@@ -926,9 +938,9 @@ document.querySelectorAll('.tabbar button').forEach(btn => {
     document.querySelectorAll('.tabbar button').forEach(b => b.classList.remove('on'));
     e.target.classList.add('on');
     const tab = e.target.dataset.tab;
+    document.getElementById('cardSection').style.display = tab === 'card' ? 'block' : 'none';
     document.getElementById('bestSection').style.display = tab === 'best' ? 'block' : 'none';
     document.getElementById('analysisSection').style.display = tab === 'analysis' ? 'block' : 'none';
-    document.getElementById('cardSection').style.display = tab === 'card' ? 'block' : 'none';
     document.getElementById('h2hSection').style.display = tab === 'h2h' ? 'block' : 'none';
   });
 });
