@@ -78,6 +78,8 @@
   .scratched-row{opacity:.45;}
   .scratched-row td input{text-decoration:line-through;}
   
+  .scratched-card-row{text-decoration:line-through; opacity:0.5; background:rgba(139,42,42,0.08) !important;}
+
   .col-race{width:45px; min-width:45px;}
   .col-post{width:45px; min-width:45px;}
   .col-horse{min-width:140px;}
@@ -144,6 +146,11 @@
   .h2h-winner-badge { background:var(--green); color:#fff; font-family:var(--mono); font-size:10px; padding:2px 6px; border-radius:3px; font-weight:700; }
 
   .badge-changed{
+    background:var(--red); color:#fff; font-family:var(--mono); font-size:10px;
+    padding:2px 5px; border-radius:3px; font-weight:700; margin-left:4px; text-transform:uppercase;
+  }
+
+  .badge-scr{
     background:var(--red); color:#fff; font-family:var(--mono); font-size:10px;
     padding:2px 5px; border-radius:3px; font-weight:700; margin-left:4px; text-transform:uppercase;
   }
@@ -440,14 +447,14 @@ document.getElementById('drfInput').addEventListener('change', e => {
     
     lines.forEach(line => {
       const f = parseCSVLine(line);
-      if(f.length < 50) return;
+      if(f.length < 5) return; // Allow short/variable DRF records so no horse is dropped
       
       const get = n => (f[n-1] !== undefined ? f[n-1].trim().replace(/^["']|["']$/g, '') : '');
       const num = n => { const v = parseFloat(get(n)); return isNaN(v) ? 0 : v; };
 
       const race = get(3) || '1';
-      const post = get(4);
-      const horse = get(45);
+      const post = get(4) || '1';
+      const horse = get(45) || get(5) || 'Unnamed Runner';
       const mlOdds = get(44) || '2/1';
 
       const primePower = extractPrimePower(f);
@@ -509,7 +516,8 @@ document.getElementById('drfInput').addEventListener('change', e => {
         jockey, origJockey: jockey, jockeyStarts, jockeyWins, jockeyPlaces, jockeyShows,
         starts, wins, places, shows,
         score: primePower, surfaceRating: lastSpeed, primePower,
-        lastSpeed, bestSpeed, ppRaces, ppWorks
+        lastSpeed, bestSpeed, ppRaces, ppWorks,
+        scratched: false
       }));
     });
 
@@ -555,7 +563,7 @@ function processScratchesAndChanges(rawText, fileName = "Pasted Content"){
     const text = item.textContent.toLowerCase();
     
     rows.forEach(r => {
-      if(!r.horse || r.horse.length < 3) return;
+      if(!r.horse || r.horse.length < 2) return;
       const hName = r.horse.toLowerCase();
 
       if(text.includes(hName)){
@@ -770,9 +778,10 @@ document.getElementById('h2hSelectB').addEventListener('change', renderH2H);
 
 function computeRaceCard(){
   computedRaces = {};
-  const activeRows = rows.filter(r => !r.scratched);
 
-  activeRows.forEach(r => {
+  // Preserve ALL rows so every entry appears on full race cards
+  rows.forEach(r => {
+    if(!r.horse) return;
     const raceKey = r.race || '1';
     if(!computedRaces[raceKey]) computedRaces[raceKey] = [];
     computedRaces[raceKey].push(r);
@@ -785,39 +794,42 @@ function computeRaceCard(){
   const raceKeys = Object.keys(computedRaces).sort((a,b) => parseInt(a) - parseInt(b));
 
   raceKeys.forEach(raceNum => {
-    const field = computedRaces[raceNum];
-    
-    // Sort entire field by Prime Power / Score descending
-    field.sort((a,b) => (parseFloat(b.score || b.primePower) || 0) - (parseFloat(a.score || a.primePower) || 0));
+    const fullField = computedRaces[raceNum];
+    const activeField = fullField.filter(h => !h.scratched);
 
-    const topPick = field[0];
-    const topPowerVal = parseFloat(topPick.score || topPick.primePower) || 0;
+    // Sort active field by Prime Power / Score descending
+    activeField.sort((a,b) => (parseFloat(b.score || b.primePower) || 0) - (parseFloat(a.score || a.primePower) || 0));
+
+    const topPick = activeField.length > 0 ? activeField[0] : null;
+    const topPowerVal = topPick ? (parseFloat(topPick.score || topPick.primePower) || 0) : 0;
 
     // Single Best Pick per race
-    bestBetsHTML.push(`
-      <div class="bo-race-block">
-        <h4 style="margin:0 0 8px; font-size:14px; font-family:var(--mono); color:var(--board-950);">Race ${raceNum}</h4>
-        <div class="bo-row">
-          <div class="bo-rank">1</div>
-          <div style="flex:1;">
-            <div>
-              <span class="bo-horse" onclick="openPP('${topPick.horse}')">#${topPick.post} ${topPick.horse}</span>
-              <span class="badge-top-pick">TOP PICK</span>
-              ${topPick.jockeyChanged ? '<span class="badge-changed">NEW RIDER</span>' : ''}
-            </div>
-            <div class="bo-meta">
-              Prime Power: <b>${topPick.score || topPick.primePower}</b> | M/L Odds: <b>${topPick.odds}</b> | 
-              Trainer: <b>${topPick.trainer || 'N/A'}</b> | Jockey: <b>${topPick.jockey || 'N/A'}</b>
+    if (topPick) {
+      bestBetsHTML.push(`
+        <div class="bo-race-block">
+          <h4 style="margin:0 0 8px; font-size:14px; font-family:var(--mono); color:var(--board-950);">Race ${raceNum}</h4>
+          <div class="bo-row">
+            <div class="bo-rank">1</div>
+            <div style="flex:1;">
+              <div>
+                <span class="bo-horse" onclick="openPP('${topPick.horse}')">#${topPick.post} ${topPick.horse}</span>
+                <span class="badge-top-pick">TOP PICK</span>
+                ${topPick.jockeyChanged ? '<span class="badge-changed">NEW RIDER</span>' : ''}
+              </div>
+              <div class="bo-meta">
+                Prime Power: <b>${topPick.score || topPick.primePower}</b> | M/L Odds: <b>${topPick.odds}</b> | 
+                Trainer: <b>${topPick.trainer || 'N/A'}</b> | Jockey: <b>${topPick.jockey || 'N/A'}</b>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    `);
+      `);
+    }
 
     const contenders = [];
     const pretenders = [];
 
-    field.forEach((h) => {
+    activeField.forEach((h) => {
       const hPower = parseFloat(h.score || h.primePower) || 0;
       const powerGap = topPowerVal - hPower;
       
@@ -830,7 +842,7 @@ function computeRaceCard(){
       }
 
       if (powerGap <= 8.0 && oddsVal < 20.0) {
-        contenders.push({ horse: h, gap: powerGap, isTop: h.id === topPick.id });
+        contenders.push({ horse: h, gap: powerGap, isTop: topPick && h.id === topPick.id });
       } else {
         let pretenderReason = [];
         if (powerGap > 8.0) pretenderReason.push(`Power Gap -${powerGap.toFixed(1)} pts`);
@@ -864,17 +876,17 @@ function computeRaceCard(){
                 <span class="cp-horse" onclick="openPP('${p.horse.horse}')">#${p.horse.post} ${p.horse.horse}</span> | M/L: <b>${p.horse.odds}</b><br>
                 <span style="color:var(--red); font-size:11.5px; font-weight:600;">⚠️ ${p.reason}</span>
               </div>
-            `).join('') : '<div style="font-size:12px; color:var(--ink-soft);">None — Entire field classified as contenders.</div>'}
+            `).join('') : '<div style="font-size:12px; color:var(--ink-soft);">None — Entire active field classified as contenders.</div>'}
           </div>
         </div>
       </div>
     `);
 
-    // Complete Unshorted Race Card Table
+    // Complete Unshorted Race Card Table with all runners (scratched shown strikethrough)
     cardHTML.push(`
       <div style="border:1px solid var(--paper-line); padding:16px; margin-bottom:18px; background:#fff; border-radius:4px;">
         <h3 style="margin:0 0 10px; font-size:16px; border-bottom:2px solid var(--board-950); padding-bottom:6px;">
-          Race ${raceNum} — Full Field (${field.length} Horses)
+          Race ${raceNum} — Full Field (${fullField.length} Total / ${activeField.length} Active)
         </h3>
         <table style="width:100%; font-size:12px;">
           <thead>
@@ -889,13 +901,15 @@ function computeRaceCard(){
             </tr>
           </thead>
           <tbody>
-            ${field.map(h => {
-              const isTop = h.id === topPick.id;
+            ${fullField.map(h => {
+              const isTop = topPick && h.id === topPick.id && !h.scratched;
+              const trClass = h.scratched ? 'class="scratched-card-row"' : (isTop ? 'style="background:rgba(217,167,59,0.15); font-weight:bold;"' : '');
               return `
-              <tr style="${isTop ? 'background:rgba(217,167,59,0.15); font-weight:bold;' : ''}">
+              <tr ${trClass}>
                 <td style="padding:6px; font-family:var(--mono);">${h.post}</td>
                 <td style="padding:6px;">
                   <span class="bo-horse" onclick="openPP('${h.horse}')">${h.horse}</span>
+                  ${h.scratched ? '<span class="badge-scr">SCRATCHED</span>' : ''}
                   ${isTop ? '<span class="badge-top-pick">BEST BET</span>' : ''}
                   ${h.jockeyChanged ? '<span class="badge-changed">NEW RIDER</span>' : ''}
                 </td>
@@ -947,6 +961,7 @@ function openPP(horseName){
   content.innerHTML = `
     <h2 style="margin:0 0 4px; font-size:20px;">
       #${horse.post} ${horse.horse}
+      ${horse.scratched ? '<span class="badge-scr">SCRATCHED</span>' : ''}
       ${horse.jockeyChanged ? '<span class="badge-changed">JOCKEY CHANGED</span>' : ''}
     </h2>
     <div style="font-family:var(--mono); font-size:12px; color:var(--ink-soft); margin-bottom:12px; line-height:1.6;">
