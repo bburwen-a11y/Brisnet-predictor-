@@ -160,7 +160,7 @@
   <header>
     <p class="eyebrow">Professional Handicapping &amp; Value Engine</p>
     <h1>Overlay Board</h1>
-    <p class="tagline">Pulls Prime Power explicitly from Field 1275, along with precise Trainer and Jockey names and W-P-S stats.</p>
+    <p class="tagline">Pulls Prime Power explicitly from Field 251 (0-indexed 250), along with precise Trainer and Jockey names and W-P-S stats.</p>
   </header>
 
   <main>
@@ -169,7 +169,7 @@
       <div class="upload-grid">
         <div class="upload-card">
           <h3>Brisnet .DRF Single File</h3>
-          <p>Parses explicit Field 1275 for Prime Power, Trainer names/W-P-S, Jockey names/W-P-S, and speed figures.</p>
+          <p>Parses explicit Field 251 for Prime Power, Trainer names/W-P-S, Jockey names/W-P-S, and speed figures.</p>
           <label class="file-btn" for="drfInput">Select .DRF / .CSV</label>
           <input type="file" id="drfInput" accept=".drf,.csv,.txt">
           <div class="status" id="drfStatus"></div>
@@ -352,15 +352,12 @@ function parseCSVLine(line){
 
 /**
  * PINNED PRIME POWER EXTRACTION FUNCTION
- * Reads strictly from Field 1275 (with Field 201 as fallback) and scales values correctly.
+ * Reads strictly from Field 251 (0-indexed 250) and scales values correctly.
  */
 function extractPrimePower(f) {
   const get = n => (f[n - 1] !== undefined ? f[n - 1].trim() : '');
   
-  let rawVal = parseFloat(get(1275));
-  if (isNaN(rawVal) || rawVal === 0) {
-    rawVal = parseFloat(get(201));
-  }
+  let rawVal = parseFloat(get(251));
 
   if (isNaN(rawVal) || rawVal <= 0) return '';
 
@@ -394,22 +391,22 @@ document.getElementById('drfInput').addEventListener('change', e => {
       const horse = get(45);
       const mlOdds = get(44) || '2/1';
 
-      // Prime Power explicitly pulled from Field 1275 / 201
+      // Prime Power explicitly pulled from Field 251 (0-indexed 250)
       const primePower = extractPrimePower(f);
 
-      // Trainer & Stats (Field 27 for Name, Fields 28-31 for Starts, Wins, Places, Shows)
-      const trainer = get(27);
-      const trainerStarts = num(28);
-      const trainerWins = num(29);
-      const trainerPlaces = num(30);
-      const trainerShows = num(31);
+      // Trainer & Stats (Field 28 for Name, Fields 29-32 for Starts, Wins, Places, Shows)
+      const trainer = get(28);
+      const trainerStarts = num(29);
+      const trainerWins = num(30);
+      const trainerPlaces = num(31);
+      const trainerShows = num(32);
 
-      // Jockey & Stats (Field 37 for Name, Fields 38-41 for Starts, Wins, Places, Shows)
-      const jockey = get(37);
-      const jockeyStarts = num(38);
-      const jockeyWins = num(39);
-      const jockeyPlaces = num(40);
-      const jockeyShows = num(41);
+      // Jockey & Stats (Field 33 for Name, Fields 35-38 for Starts, Wins, Places, Shows)
+      const jockey = get(33);
+      const jockeyStarts = num(35);
+      const jockeyWins = num(36);
+      const jockeyPlaces = num(37);
+      const jockeyShows = num(38);
 
       // Horse Career Stats
       const starts = num(97);
