@@ -173,24 +173,24 @@
   <header>
     <p class="eyebrow">Professional Handicapping &amp; Value Engine</p>
     <h1>Overlay Board</h1>
-    <p class="tagline">Pulls Prime Power explicitly from Field 251 (0-indexed 250), converts distances to furlongs/miles, and provides exact same-race Head-to-Head matchup analysis[span_5](start_span)[span_5](end_span).</p>
+    <p class="tagline">Corrected BRIS file mappings for Speed Ratings (846+i), Finish Position (616+i), Past Race Number (296+i), and Workouts (102+).</p>
   </header>
 
   <main>
     <section>
-      <h2><span class="step-num">1</span> Load Race Data &amp; Scratches / Rider Changes[span_6](start_span)[span_6](end_span)</h2>
+      <h2><span class="step-num">1</span> Load Race Data &amp; Scratches / Rider Changes</h2>
       <div class="upload-grid">
         <div class="upload-card">
-          <h3>Brisnet .DRF Single File[span_7](start_span)[span_7](end_span)</h3>
-          <p>Parses explicit Field 251 for Prime Power, Trainer names/W-P-S, Jockey names/W-P-S, and speed figures[span_8](start_span)[span_8](end_span).</p>
+          <h3>Brisnet .DRF Single File</h3>
+          <p>Parses explicit Field 251 for Prime Power, Trainer/Jockey stats, speed ratings (846+i), finish position (616+i), and workouts (102+).</p>
           <label class="file-btn" for="drfInput">Select .DRF / .CSV</label>
           <input type="file" id="drfInput" accept=".drf,.csv,.txt">
           <div class="status" id="drfStatus"></div>
         </div>
 
         <div class="upload-card">
-          <h3>Equibase RSS / XML Feed[span_9](start_span)[span_9](end_span)</h3>
-          <p>Import official feed XML to process scratches and detect late Jockey Changes with updated rider stats[span_10](start_span)[span_10](end_span).</p>
+          <h3>Equibase RSS / XML Feed</h3>
+          <p>Import official feed XML to process scratches and detect late Jockey Changes with updated rider stats.</p>
           <label class="file-btn" for="rssInput">Select XML/RSS</label>
           <input type="file" id="rssInput" accept=".xml,.rss,.txt,.xml.rss">
           
@@ -210,7 +210,7 @@
     </section>
 
     <section>
-      <h2><span class="step-num">2</span> Field Entries[span_11](start_span)[span_11](end_span)</h2>
+      <h2><span class="step-num">2</span> Field Entries</h2>
       <div class="table-wrap">
         <table>
           <thead>
@@ -222,7 +222,7 @@
               <th class="col-jockey">Jockey (Starts / W-P-S)</th>
               <th class="col-odds">M/L Odds</th>
               <th class="col-power">Prime Power</th>
-              <th class="col-speed">Speed Fit</th>
+              <th class="col-speed">Speed Fig</th>
               <th class="col-scr">Scr</th>
               <th class="col-del"></th>
             </tr>
@@ -247,7 +247,7 @@
     <section id="bestSection" style="display:none;">
       <div class="bestof">
         <h3>Top Selections by Race</h3>
-        <p style="font-size:12.5px; color:var(--ink-soft); margin-bottom:12px;">Ranked selections for every race based on Prime Power ratings, trainer/jockey performance, and speed figures[span_12](start_span)[span_12](end_span).</p>
+        <p style="font-size:12.5px; color:var(--ink-soft); margin-bottom:12px;">Ranked selections for every race based on Prime Power ratings, trainer/jockey performance, and speed figures.</p>
         <div id="bestBetsList"></div>
       </div>
     </section>
@@ -258,12 +258,12 @@
     </section>
 
     <section id="cardSection" style="display:none;">
-      <h2>Race Cards &amp; Detailed Past Performances[span_13](start_span)[span_13](end_span)</h2>
+      <h2>Race Cards &amp; Detailed Past Performances</h2>
       <div id="raceCardsList"></div>
     </section>
 
     <section id="h2hSection" style="display:none;">
-      <h2>Head-to-Head Analysis &amp; Comparison[span_14](start_span)[span_14](end_span)</h2>
+      <h2>Head-to-Head Analysis &amp; Comparison</h2>
 
       <div class="h2h-past-box">
         <h3 style="margin:0 0 10px; font-size:15px; border-bottom:1px solid var(--paper-line); padding-bottom:6px;">
@@ -307,23 +307,20 @@ let computedRaces = {};
 const rowsBody = document.getElementById('rowsBody');
 
 /**
- * Converts distance numerical values (typically yards or feet) to furlongs/miles.
+ * Converts distance numerical values (yards or feet) to furlongs/miles.
  */
 function formatDistance(distVal) {
   let yards = parseFloat(distVal);
   if (isNaN(yards) || yards <= 0) return distVal || 'N/A';
   
-  // If provided as feet (e.g. > 2500 feet), convert feet to yards
   if (yards > 2500) yards = yards / 3.0;
 
-  // Convert yards to furlongs (1 furlong = 220 yards)
   const furlongs = yards / 220.0;
 
   if (furlongs < 8.0) {
     const fRounded = Math.round(furlongs * 2) / 2; 
     return (fRounded % 1 === 0 ? fRounded.toFixed(0) : fRounded.toFixed(1)) + 'f';
   } else {
-    // Miles representation
     const miles = yards / 1760.0;
     if (Math.abs(miles - 1.0) < 0.03) return '1m';
     if (Math.abs(miles - 1.0625) < 0.03) return '1 1/16m';
@@ -470,8 +467,10 @@ document.getElementById('drfInput').addEventListener('change', e => {
       const places = num(99);
       const shows = num(100);
 
-      const lastSpeed = num(626);
-      const bestSpeed = num(1389);
+      // FIX: BRIS Speed Ratings start at Field 846 (846 is current/last speed)
+      const lastSpeed = num(846);
+      // FIX: Best Speed Figure is at Field 101
+      const bestSpeed = num(101);
 
       const ppRaces = [];
       for(let i = 0; i < 10; i++){
@@ -480,18 +479,19 @@ document.getElementById('drfInput').addEventListener('change', e => {
         ppRaces.push({
           date: date,
           track: get(276 + i),
-          raceNum: get(286 + i) || '', // Past race number
+          raceNum: get(296 + i) || '', // FIX: Past race number is 296–305
           dist: get(316 + i),
           surf: get(326 + i),
-          fin: get(476 + i),
-          speed: num(626 + i),
+          fin: get(616 + i),          // FIX: Official Finish Position is 616–625
+          speed: num(846 + i),        // FIX: BRIS Speed Rating is 846–855
           comment: get(396 + i)
         });
       }
 
+      // FIX: Workouts are in Fields 102–149 (6 fields per workout line)
       const ppWorks = [];
       for(let w = 0; w < 4; w++){
-        const baseIndex = 1390 + (w * 6);
+        const baseIndex = 102 + (w * 12); // Workout entries at 102, 114, 126, 138
         const wDate = get(baseIndex);
         if(!wDate) continue;
         ppWorks.push({
@@ -621,7 +621,7 @@ document.getElementById('reloadRssBtn').addEventListener('click', () => {
 });
 
 /**
- * Head-to-Head matching strictly on Same Track, Same Date, and Same Past Race Number.
+ * Head-to-Head matching strictly on Same Track, Same Date, and Same Past Race Number (296-305).
  * Results are ordered by Current Race Number.
  */
 function findPastMatchups() {
@@ -631,15 +631,13 @@ function findPastMatchups() {
   activeRows.forEach(h => {
     if(!h.ppRaces) return;
     h.ppRaces.forEach(pp => {
-      if(!pp.date || !pp.track) return;
+      if(!pp.date || !pp.track || !pp.raceNum) return;
       
-      // Strict key requiring date, track, and past race number if available
-      const rNum = pp.raceNum ? `_R${pp.raceNum}` : '';
-      const key = `${pp.date}_${pp.track}${rNum}`;
+      // Strict key requiring date, track, and past race number
+      const key = `${pp.date}_${pp.track}_R${pp.raceNum}`;
       
       if(!raceMap[key]) raceMap[key] = { date: pp.date, track: pp.track, raceNum: pp.raceNum, runners: [] };
       
-      // Parse numeric finish rank
       let numericFin = parseInt(pp.fin);
       if (isNaN(numericFin)) numericFin = 99;
 
@@ -656,10 +654,8 @@ function findPastMatchups() {
     });
   });
 
-  // Filter matchups with at least 2 current runners facing each other
   const matchups = Object.values(raceMap).filter(m => m.runners.length > 1);
 
-  // Sort matchups by Current Race Number of the horses involved
   matchups.sort((a, b) => {
     const minRaceA = Math.min(...a.runners.map(r => r.currentRace));
     const minRaceB = Math.min(...b.runners.map(r => r.currentRace));
@@ -674,17 +670,15 @@ function findPastMatchups() {
   }
 
   container.innerHTML = matchups.map(m => {
-    // Sort runners within matchup by finishing order
     m.runners.sort((a, b) => a.finNum - b.finNum);
     
     const winner = m.runners[0];
     const losers = m.runners.slice(1);
-    const beatenText = losers.map(l => `${l.horse} (${l.fin})`).join(', ');
 
     return `
       <div class="h2h-past-matchup">
         <div style="font-family:var(--mono); font-weight:700; color:var(--board-950); margin-bottom:4px; display:flex; justify-content:space-between; align-items:center;">
-          <span>📅 ${m.date} — Track: ${m.track} ${m.raceNum ? '(Race ' + m.raceNum + ')' : ''} — Dist: ${formatDistance(m.runners[0].dist)} (${m.runners[0].surf})</span>
+          <span>📅 ${m.date} — Track: ${m.track} (Race ${m.raceNum}) — Dist: ${formatDistance(m.runners[0].dist)} (${m.runners[0].surf})</span>
           <span class="h2h-winner-badge">Outcome: ${winner.horse} Beat ${losers.map(l=>l.horse).join(', ')}</span>
         </div>
         <table style="width:100%; font-family:var(--mono); font-size:11.5px; margin-top:6px; border:1px solid var(--paper-line);">
@@ -786,7 +780,6 @@ function computeRaceCard(){
   computedRaces = {};
   const activeRows = rows.filter(r => !r.scratched);
 
-  // Group runners by Race Number
   activeRows.forEach(r => {
     const raceKey = r.race || '1';
     if(!computedRaces[raceKey]) computedRaces[raceKey] = [];
@@ -797,13 +790,11 @@ function computeRaceCard(){
   const contenderHTML = [];
   const cardHTML = [];
 
-  // Sort races numerically
   const raceKeys = Object.keys(computedRaces).sort((a,b) => parseInt(a) - parseInt(b));
 
   raceKeys.forEach(raceNum => {
     const field = computedRaces[raceNum];
     
-    // Sort field by Prime Power score descending
     field.sort((a,b) => (parseFloat(b.score || b.primePower) || 0) - (parseFloat(a.score || a.primePower) || 0));
 
     const topPower = field[0];
@@ -822,7 +813,6 @@ function computeRaceCard(){
       }
     });
 
-    // Provide complete ranked list of ALL horses for Best Bets / Top Selections
     field.forEach((h, idx) => {
       const hPower = parseFloat(h.score || h.primePower) || 0;
       bestBets.push({
@@ -954,7 +944,7 @@ function openPP(horseName){
       ${horse.jockeyChanged ? '<span class="badge-changed">JOCKEY CHANGED</span>' : ''}
     </h2>
     <div style="font-family:var(--mono); font-size:12px; color:var(--ink-soft); margin-bottom:12px; line-height:1.6;">
-      Prime Power: <b>${horse.score || horse.primePower}</b><br>
+      Prime Power: <b>${horse.score || horse.primePower}</b> | Best Speed: <b>${horse.bestSpeed || 'N/A'}</b><br>
       Trainer: <b>${horse.trainer || 'N/A'}</b> | Record: <b>${horse.trainerStarts || 0} Starts (${horse.trainerWins || 0}-${horse.trainerPlaces || 0}-${horse.trainerShows || 0})</b><br>
       Jockey: <b>${horse.jockey || 'N/A'}</b> | Record: <b>${horse.jockeyStarts || 0} Starts (${horse.jockeyWins || 0}-${horse.jockeyPlaces || 0}-${horse.jockeyShows || 0})</b><br>
       Horse Career: <b>${horse.starts} Starts — ${horse.wins} W / ${horse.places} P / ${horse.shows} S</b>
@@ -967,10 +957,11 @@ function openPP(horseName){
           <tr>
             <th>Date</th>
             <th>Track</th>
+            <th>Race</th>
             <th>Dist</th>
             <th>Surf</th>
             <th>Finish</th>
-            <th>Speed</th>
+            <th>BRIS Speed</th>
             <th>Comment</th>
           </tr>
         </thead>
@@ -979,6 +970,7 @@ function openPP(horseName){
             <tr>
               <td>${p.date}</td>
               <td>${p.track}</td>
+              <td>${p.raceNum ? 'R' + p.raceNum : '-'}</td>
               <td>${formatDistance(p.dist)}</td>
               <td>${p.surf}</td>
               <td>${p.fin}</td>
