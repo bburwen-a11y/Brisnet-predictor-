@@ -140,6 +140,7 @@
   .h2h-past-box { background: #fff; border: 1px solid var(--paper-line); border-radius: 4px; padding: 16px; margin-bottom: 20px; }
   .h2h-past-matchup { border-bottom: 1px dashed var(--paper-line); padding: 10px 0; font-size: 12.5px; }
   .h2h-past-matchup:last-child { border-bottom: none; }
+  .h2h-winner-badge { background:var(--green); color:#fff; font-family:var(--mono); font-size:10px; padding:2px 6px; border-radius:3px; font-weight:700; }
 
   .badge-changed{
     background:var(--red); color:#fff; font-family:var(--mono); font-size:10px;
@@ -172,24 +173,24 @@
   <header>
     <p class="eyebrow">Professional Handicapping &amp; Value Engine</p>
     <h1>Overlay Board</h1>
-    <p class="tagline">Pulls Prime Power explicitly from Field 251 (0-indexed 250), along with precise Trainer and Jockey names and W-P-S stats.</p>
+    <p class="tagline">Pulls Prime Power explicitly from Field 251 (0-indexed 250), converts distances to furlongs/miles, and provides exact same-race Head-to-Head matchup analysis[span_5](start_span)[span_5](end_span).</p>
   </header>
 
   <main>
     <section>
-      <h2><span class="step-num">1</span> Load Race Data &amp; Scratches / Rider Changes</h2>
+      <h2><span class="step-num">1</span> Load Race Data &amp; Scratches / Rider Changes[span_6](start_span)[span_6](end_span)</h2>
       <div class="upload-grid">
         <div class="upload-card">
-          <h3>Brisnet .DRF Single File</h3>
-          <p>Parses explicit Field 251 for Prime Power, Trainer names/W-P-S, Jockey names/W-P-S, and speed figures.</p>
+          <h3>Brisnet .DRF Single File[span_7](start_span)[span_7](end_span)</h3>
+          <p>Parses explicit Field 251 for Prime Power, Trainer names/W-P-S, Jockey names/W-P-S, and speed figures[span_8](start_span)[span_8](end_span).</p>
           <label class="file-btn" for="drfInput">Select .DRF / .CSV</label>
           <input type="file" id="drfInput" accept=".drf,.csv,.txt">
           <div class="status" id="drfStatus"></div>
         </div>
 
         <div class="upload-card">
-          <h3>Equibase RSS / XML Feed</h3>
-          <p>Import official feed XML to process scratches and detect late Jockey Changes with updated rider stats.</p>
+          <h3>Equibase RSS / XML Feed[span_9](start_span)[span_9](end_span)</h3>
+          <p>Import official feed XML to process scratches and detect late Jockey Changes with updated rider stats[span_10](start_span)[span_10](end_span).</p>
           <label class="file-btn" for="rssInput">Select XML/RSS</label>
           <input type="file" id="rssInput" accept=".xml,.rss,.txt,.xml.rss">
           
@@ -209,7 +210,7 @@
     </section>
 
     <section>
-      <h2><span class="step-num">2</span> Field Entries</h2>
+      <h2><span class="step-num">2</span> Field Entries[span_11](start_span)[span_11](end_span)</h2>
       <div class="table-wrap">
         <table>
           <thead>
@@ -245,8 +246,8 @@
 
     <section id="bestSection" style="display:none;">
       <div class="bestof">
-        <h3>Top Bet Selections</h3>
-        <p style="font-size:12.5px; color:var(--ink-soft); margin-bottom:12px;">Ranked selections based on Prime Power ratings, trainer/jockey performance, and speed figures.</p>
+        <h3>Top Selections by Race</h3>
+        <p style="font-size:12.5px; color:var(--ink-soft); margin-bottom:12px;">Ranked selections for every race based on Prime Power ratings, trainer/jockey performance, and speed figures[span_12](start_span)[span_12](end_span).</p>
         <div id="bestBetsList"></div>
       </div>
     </section>
@@ -257,19 +258,19 @@
     </section>
 
     <section id="cardSection" style="display:none;">
-      <h2>Race Cards &amp; Detailed Past Performances</h2>
+      <h2>Race Cards &amp; Detailed Past Performances[span_13](start_span)[span_13](end_span)</h2>
       <div id="raceCardsList"></div>
     </section>
 
     <section id="h2hSection" style="display:none;">
-      <h2>Head-to-Head Analysis &amp; Comparison</h2>
+      <h2>Head-to-Head Analysis &amp; Comparison[span_14](start_span)[span_14](end_span)</h2>
 
       <div class="h2h-past-box">
         <h3 style="margin:0 0 10px; font-size:15px; border-bottom:1px solid var(--paper-line); padding-bottom:6px;">
-          Detected Past Performance Direct Matchups
+          Direct Head-to-Head Past Matchups (Ordered by Current Race Number)
         </h3>
         <div id="pastMatchupsList">
-          <p style="font-size:12.5px; color:var(--ink-soft); margin:0;">Scanning past performances for horses that previously faced each other...</p>
+          <p style="font-size:12.5px; color:var(--ink-soft); margin:0;">Scanning past performances for horses that previously faced each other on the same track, date, and race...</p>
         </div>
       </div>
 
@@ -304,6 +305,34 @@ let rowId = 0;
 let computedRaces = {};
 
 const rowsBody = document.getElementById('rowsBody');
+
+/**
+ * Converts distance numerical values (typically yards or feet) to furlongs/miles.
+ */
+function formatDistance(distVal) {
+  let yards = parseFloat(distVal);
+  if (isNaN(yards) || yards <= 0) return distVal || 'N/A';
+  
+  // If provided as feet (e.g. > 2500 feet), convert feet to yards
+  if (yards > 2500) yards = yards / 3.0;
+
+  // Convert yards to furlongs (1 furlong = 220 yards)
+  const furlongs = yards / 220.0;
+
+  if (furlongs < 8.0) {
+    const fRounded = Math.round(furlongs * 2) / 2; 
+    return (fRounded % 1 === 0 ? fRounded.toFixed(0) : fRounded.toFixed(1)) + 'f';
+  } else {
+    // Miles representation
+    const miles = yards / 1760.0;
+    if (Math.abs(miles - 1.0) < 0.03) return '1m';
+    if (Math.abs(miles - 1.0625) < 0.03) return '1 1/16m';
+    if (Math.abs(miles - 1.125) < 0.03) return '1 1/8m';
+    if (Math.abs(miles - 1.25) < 0.03) return '1 1/4m';
+    if (Math.abs(miles - 1.5) < 0.03) return '1 1/2m';
+    return miles.toFixed(2) + 'm';
+  }
+}
 
 function newRow(partial){
   return Object.assign({
@@ -417,7 +446,7 @@ document.getElementById('drfInput').addEventListener('change', e => {
       const get = n => (f[n-1] !== undefined ? f[n-1].trim().replace(/^["']|["']$/g, '') : '');
       const num = n => { const v = parseFloat(get(n)); return isNaN(v) ? 0 : v; };
 
-      const race = get(3);
+      const race = get(3) || '1';
       const post = get(4);
       const horse = get(45);
       const mlOdds = get(44) || '2/1';
@@ -451,7 +480,8 @@ document.getElementById('drfInput').addEventListener('change', e => {
         ppRaces.push({
           date: date,
           track: get(276 + i),
-          dist: num(316 + i),
+          raceNum: get(286 + i) || '', // Past race number
+          dist: get(316 + i),
           surf: get(326 + i),
           fin: get(476 + i),
           speed: num(626 + i),
@@ -590,6 +620,10 @@ document.getElementById('reloadRssBtn').addEventListener('click', () => {
   rssInput.click();
 });
 
+/**
+ * Head-to-Head matching strictly on Same Track, Same Date, and Same Past Race Number.
+ * Results are ordered by Current Race Number.
+ */
 function findPastMatchups() {
   const activeRows = rows.filter(r => !r.scratched && r.horse);
   const raceMap = {};
@@ -598,13 +632,23 @@ function findPastMatchups() {
     if(!h.ppRaces) return;
     h.ppRaces.forEach(pp => {
       if(!pp.date || !pp.track) return;
-      const key = `${pp.date}_${pp.track}`;
-      if(!raceMap[key]) raceMap[key] = { date: pp.date, track: pp.track, runners: [] };
+      
+      // Strict key requiring date, track, and past race number if available
+      const rNum = pp.raceNum ? `_R${pp.raceNum}` : '';
+      const key = `${pp.date}_${pp.track}${rNum}`;
+      
+      if(!raceMap[key]) raceMap[key] = { date: pp.date, track: pp.track, raceNum: pp.raceNum, runners: [] };
+      
+      // Parse numeric finish rank
+      let numericFin = parseInt(pp.fin);
+      if (isNaN(numericFin)) numericFin = 99;
+
       raceMap[key].runners.push({
         horse: h.horse,
-        race: h.race,
+        currentRace: parseInt(h.race) || 1,
         post: h.post,
         fin: pp.fin,
+        finNum: numericFin,
         speed: pp.speed,
         dist: pp.dist,
         surf: pp.surf
@@ -612,41 +656,62 @@ function findPastMatchups() {
     });
   });
 
+  // Filter matchups with at least 2 current runners facing each other
   const matchups = Object.values(raceMap).filter(m => m.runners.length > 1);
+
+  // Sort matchups by Current Race Number of the horses involved
+  matchups.sort((a, b) => {
+    const minRaceA = Math.min(...a.runners.map(r => r.currentRace));
+    const minRaceB = Math.min(...b.runners.map(r => r.currentRace));
+    return minRaceA - minRaceB;
+  });
+
   const container = document.getElementById('pastMatchupsList');
 
   if(matchups.length === 0) {
-    container.innerHTML = `<div style="font-size:12.5px; color:var(--ink-soft);">No prior direct head-to-head encounters found in the past performance lines for this card.</div>`;
+    container.innerHTML = `<div style="font-size:12.5px; color:var(--ink-soft);">No exact same-track, same-date, same-race head-to-head encounters found in past performance lines.</div>`;
     return;
   }
 
-  container.innerHTML = matchups.map(m => `
-    <div class="h2h-past-matchup">
-      <div style="font-family:var(--mono); font-weight:700; color:var(--board-950); margin-bottom:4px;">
-        📅 ${m.date} — Track: ${m.track} (${m.runners[0].dist}y, ${m.runners[0].surf})
-      </div>
-      <table style="width:100%; font-family:var(--mono); font-size:11.5px; margin-top:4px;">
-        <thead>
-          <tr style="background:var(--paper-dim); text-align:left;">
-            <th style="padding:4px 6px;">Horse Name</th>
-            <th style="padding:4px 6px;">Card Race</th>
-            <th style="padding:4px 6px;">Finish</th>
-            <th style="padding:4px 6px;">Speed Fig</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${m.runners.map(r => `
-            <tr>
-              <td style="padding:4px 6px;"><b>${r.horse}</b></td>
-              <td style="padding:4px 6px;">Race ${r.race} (#${r.post})</td>
-              <td style="padding:4px 6px;">${r.fin}</td>
-              <td style="padding:4px 6px;"><b>${r.speed}</b></td>
+  container.innerHTML = matchups.map(m => {
+    // Sort runners within matchup by finishing order
+    m.runners.sort((a, b) => a.finNum - b.finNum);
+    
+    const winner = m.runners[0];
+    const losers = m.runners.slice(1);
+    const beatenText = losers.map(l => `${l.horse} (${l.fin})`).join(', ');
+
+    return `
+      <div class="h2h-past-matchup">
+        <div style="font-family:var(--mono); font-weight:700; color:var(--board-950); margin-bottom:4px; display:flex; justify-content:space-between; align-items:center;">
+          <span>📅 ${m.date} — Track: ${m.track} ${m.raceNum ? '(Race ' + m.raceNum + ')' : ''} — Dist: ${formatDistance(m.runners[0].dist)} (${m.runners[0].surf})</span>
+          <span class="h2h-winner-badge">Outcome: ${winner.horse} Beat ${losers.map(l=>l.horse).join(', ')}</span>
+        </div>
+        <table style="width:100%; font-family:var(--mono); font-size:11.5px; margin-top:6px; border:1px solid var(--paper-line);">
+          <thead>
+            <tr style="background:var(--paper-dim); text-align:left;">
+              <th style="padding:4px 6px;">Current Race</th>
+              <th style="padding:4px 6px;">Horse Name</th>
+              <th style="padding:4px 6px;">Finish Pos</th>
+              <th style="padding:4px 6px;">Speed Fig</th>
+              <th style="padding:4px 6px;">Head-to-Head Result</th>
             </tr>
-          `).join('')}
-        </tbody>
-      </table>
-    </div>
-  `).join('');
+          </thead>
+          <tbody>
+            ${m.runners.map((r, idx) => `
+              <tr style="${idx === 0 ? 'font-weight:bold; background:rgba(46,110,69,0.08);' : ''}">
+                <td style="padding:4px 6px;">Race ${r.currentRace} (#${r.post})</td>
+                <td style="padding:4px 6px;">${r.horse}</td>
+                <td style="padding:4px 6px;">${r.fin}</td>
+                <td style="padding:4px 6px;">${r.speed}</td>
+                <td style="padding:4px 6px;">${idx === 0 ? '🏆 Defeated field below' : 'Finished behind ' + winner.horse}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+  }).join('');
 }
 
 function updateH2HDropdowns(){
@@ -656,7 +721,7 @@ function updateH2HDropdowns(){
   selB.innerHTML = '';
 
   const activeRows = rows.filter(r => !r.scratched && r.horse);
-  activeRows.forEach((r, idx) => {
+  activeRows.forEach((r) => {
     const optText = `R${r.race} #${r.post} ${r.horse}`;
     selA.appendChild(new Option(optText, r.id));
     selB.appendChild(new Option(optText, r.id));
@@ -692,7 +757,7 @@ function renderH2HCard(h) {
               <tr>
                 <td>${p.date}</td>
                 <td>${p.track}</td>
-                <td>${p.dist}y</td>
+                <td>${formatDistance(p.dist)}</td>
                 <td>${p.fin}</td>
                 <td><b>${p.speed}</b></td>
               </tr>
@@ -721,17 +786,24 @@ function computeRaceCard(){
   computedRaces = {};
   const activeRows = rows.filter(r => !r.scratched);
 
+  // Group runners by Race Number
   activeRows.forEach(r => {
-    if(!computedRaces[r.race]) computedRaces[r.race] = [];
-    computedRaces[r.race].push(r);
+    const raceKey = r.race || '1';
+    if(!computedRaces[raceKey]) computedRaces[raceKey] = [];
+    computedRaces[raceKey].push(r);
   });
 
   const bestBets = [];
   const contenderHTML = [];
   const cardHTML = [];
 
-  Object.keys(computedRaces).forEach(raceNum => {
+  // Sort races numerically
+  const raceKeys = Object.keys(computedRaces).sort((a,b) => parseInt(a) - parseInt(b));
+
+  raceKeys.forEach(raceNum => {
     const field = computedRaces[raceNum];
+    
+    // Sort field by Prime Power score descending
     field.sort((a,b) => (parseFloat(b.score || b.primePower) || 0) - (parseFloat(a.score || a.primePower) || 0));
 
     const topPower = field[0];
@@ -748,15 +820,22 @@ function computeRaceCard(){
       } else {
         pretenders.push(h);
       }
+    });
 
-      if(idx === 0 && hPower > 0){
-        bestBets.push({ race: raceNum, horse: h, reason: `Top Prime Power (${hPower.toFixed(1)}) | Trainer: ${h.trainer} | Jockey: ${h.jockey}` });
-      }
+    // Provide complete ranked list of ALL horses for Best Bets / Top Selections
+    field.forEach((h, idx) => {
+      const hPower = parseFloat(h.score || h.primePower) || 0;
+      bestBets.push({
+        race: raceNum,
+        rank: idx + 1,
+        horse: h,
+        reason: idx === 0 ? `Top Prime Power (${hPower.toFixed(1)})` : `Ranked #${idx + 1} (${hPower.toFixed(1)} PP)`
+      });
     });
 
     contenderHTML.push(`
       <div style="margin-bottom:18px;">
-        <h3 style="margin:0 0 8px;">Race ${raceNum}</h3>
+        <h3 style="margin:0 0 8px;">Race ${raceNum} (${field.length} Horses)</h3>
         <div class="cp-grid">
           <div class="cp-box contender">
             <div class="cp-head">Contenders (${contenders.length})</div>
@@ -786,12 +865,12 @@ function computeRaceCard(){
 
     cardHTML.push(`
       <div style="border:1px solid var(--paper-line); padding:14px; margin-bottom:14px; background:#fff; border-radius:4px;">
-        <h3 style="margin:0 0 10px;">Race ${raceNum} (${field.length} Runners)</h3>
+        <h3 style="margin:0 0 10px;">Race ${raceNum} — Full Field (${field.length} Horses)</h3>
         <table style="width:100%; font-size:12px;">
           <thead>
             <tr style="background:var(--board-950); color:#fff;">
               <th style="padding:6px;">Post</th>
-              <th style="padding:6px;">Horse</th>
+              <th style="padding:6px;">Horse Name</th>
               <th style="padding:6px;">Trainer (Starts/W-P-S)</th>
               <th style="padding:6px;">Jockey (Starts/W-P-S)</th>
               <th style="padding:6px;">Prime Power</th>
@@ -820,9 +899,9 @@ function computeRaceCard(){
     `);
   });
 
-  document.getElementById('bestBetsList').innerHTML = bestBets.map((b, i) => `
+  document.getElementById('bestBetsList').innerHTML = bestBets.map((b) => `
     <div class="bo-row">
-      <div class="bo-rank">${i+1}</div>
+      <div class="bo-rank">${b.rank}</div>
       <div>
         <div>
           <span class="bo-horse" onclick="openPP('${b.horse.horse}')">Race ${b.race} — #${b.horse.post} ${b.horse.horse}</span>
@@ -900,7 +979,7 @@ function openPP(horseName){
             <tr>
               <td>${p.date}</td>
               <td>${p.track}</td>
-              <td>${p.dist}y</td>
+              <td>${formatDistance(p.dist)}</td>
               <td>${p.surf}</td>
               <td>${p.fin}</td>
               <td><b>${p.speed}</b></td>
@@ -917,7 +996,7 @@ function openPP(horseName){
         ${horse.ppWorks.map(w => `
           <div class="work-item">
             <div><b>${w.date}</b> — ${w.track}</div>
-            <div>${w.dist} | ${w.time} (${w.cond})</div>
+            <div>${formatDistance(w.dist)} | ${w.time} (${w.cond})</div>
             <div style="color:var(--ink-soft);">${w.rank ? 'Rank: ' + w.rank : ''}</div>
           </div>
         `).join('')}
