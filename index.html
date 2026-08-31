@@ -160,6 +160,10 @@
     background:var(--green); color:#fff; font-family:var(--mono); font-size:10px;
     padding:2px 5px; border-radius:3px; font-weight:700; margin-left:4px; text-transform:uppercase;
   }
+  .badge-fts{
+    background:var(--amber-dim); color:#fff; font-family:var(--mono); font-size:10px;
+    padding:2px 5px; border-radius:3px; font-weight:700; margin-left:4px; text-transform:uppercase;
+  }
 
   #ppOverlay{display:none; position:fixed; inset:0; background:rgba(15,42,32,.65); z-index:100; overflow-y:auto; padding:16px;}
   #ppOverlay.show{display:block;}
@@ -273,7 +277,7 @@
 
     <section id="analysisSection" style="display:none;">
       <h2>Contenders vs. Pretenders</h2>
-      <p style="font-size:12.5px; color:var(--ink-soft); margin-bottom:14px;">Classification based on Composite Index gap and longshot thresholding per race.</p>
+      <p style="font-size:12.5px; color:var(--ink-soft); margin-bottom:14px;">Classification based on Composite Index gap and longshot thresholding per race. First-time starters bypass the point gap penalty.</p>
       <div id="contenderCards"></div>
     </section>
 
@@ -378,7 +382,7 @@ function computeCompositeIndex(runner, field) {
   let paceBonus = 0;
   if (runner.runStyle === 'E' || runner.runStyle === 'E/P') {
     const earlyRunners = field.filter(h => !h.scratched && (h.runStyle === 'E' || h.runStyle === 'E/P'));
-    if (earlyRunners.length === 1) paceBonus = 3.5; // Lone Speed Advantage
+    if (earlyRunners.length === 1) paceBonus = 3.5;
   }
 
   return power + speedBonus + connectionsBonus + paceBonus;
@@ -893,9 +897,17 @@ function computeRaceCard(){
     activeField.forEach((h) => {
       const indexGap = topIndexVal - h.compositeIndex;
       const oddsVal = parseOddsDecimal(h.odds);
+      const isFirstTimeStarter = (h.starts === 0 || !h.score || parseFloat(h.score) === 0);
 
-      if (indexGap <= 10.0 && oddsVal < 20.0) {
-        contenders.push({ horse: h, gap: indexGap, isTop: topPick && h.id === topPick.id });
+      // FIRST-TIME STARTER RULE: Never classify FTS as a pretender due to composite point gap alone
+      if (isFirstTimeStarter) {
+        if (oddsVal < 25.0) {
+          contenders.push({ horse: h, gap: 0, isTop: false, isFTS: true });
+        } else {
+          pretenders.push({ horse: h, reason: `First-Time Starter with Extreme Odds (${h.odds})` });
+        }
+      } else if (indexGap <= 10.0 && oddsVal < 20.0) {
+        contenders.push({ horse: h, gap: indexGap, isTop: topPick && h.id === topPick.id, isFTS: false });
       } else {
         let pretenderReason = [];
         if (indexGap > 10.0) pretenderReason.push(`Composite Gap -${indexGap.toFixed(1)} pts`);
@@ -917,8 +929,9 @@ function computeRaceCard(){
               <div class="cp-item">
                 <span class="cp-horse" onclick="openPP('${c.horse.horse}')">#${c.horse.post} ${c.horse.horse}</span> 
                 ${c.isTop ? '<span class="badge-top-pick">TOP PICK</span>' : ''}
+                ${c.isFTS ? '<span class="badge-fts">1ST TIME STARTER</span>' : ''}
                 ${c.horse.jockeyChanged ? '<span class="badge-changed">NEW RIDER</span>' : ''}<br>
-                Composite Score: <b>${c.horse.compositeIndex.toFixed(1)}</b> | M/L: <b>${c.horse.odds}</b>
+                Composite Score: <b>${c.isFTS ? 'N/A (FTS)' : c.horse.compositeIndex.toFixed(1)}</b> | M/L: <b>${c.horse.odds}</b>
               </div>
             `).join('')}
           </div>
@@ -956,6 +969,7 @@ function computeRaceCard(){
           <tbody>
             ${fullField.map(h => {
               const isTop = topPick && h.id === topPick.id && !h.scratched;
+              const isFTS = (h.starts === 0 || !h.score || parseFloat(h.score) === 0);
               const trClass = h.scratched ? 'class="scratched-card-row"' : (isTop ? 'style="background:rgba(217,167,59,0.15); font-weight:bold;"' : '');
               return `
               <tr ${trClass}>
@@ -964,13 +978,14 @@ function computeRaceCard(){
                   <span class="bo-horse" onclick="openPP('${h.horse}')">${h.horse}</span>
                   ${h.scratched ? '<span class="badge-scr">SCRATCHED</span>' : ''}
                   ${isTop ? '<span class="badge-top-pick">BEST BET</span>' : ''}
+                  ${isFTS ? '<span class="badge-fts">1ST TIME STARTER</span>' : ''}
                   ${h.jockeyChanged ? '<span class="badge-changed">NEW RIDER</span>' : ''}
                 </td>
                 <td style="padding:6px;">${h.trainer ? `${h.trainer} (${h.trainerStarts}: ${h.trainerWins}-${h.trainerPlaces}-${h.trainerShows})` : 'N/A'}</td>
                 <td style="padding:6px;">${h.jockey ? `${h.jockey} (${h.jockeyStarts}: ${h.jockeyWins}-${h.jockeyPlaces}-${h.jockeyShows})` : 'N/A'}</td>
                 <td style="padding:6px; font-weight:700; color:var(--green);">${h.compositeIndex ? h.compositeIndex.toFixed(1) : '-'}</td>
-                <td style="padding:6px;">${h.score || h.primePower}</td>
-                <td style="padding:6px;">${h.surfaceRating || h.lastSpeed}</td>
+                <td style="padding:6px;">${h.score || h.primePower || 'FTS'}</td>
+                <td style="padding:6px;">${h.surfaceRating || h.lastSpeed || 'FTS'}</td>
                 <td style="padding:6px; font-family:var(--mono);">${h.odds}</td>
               </tr>
             `}).join('')}
@@ -1016,10 +1031,11 @@ function openPP(horseName){
     <h2 style="margin:0 0 4px; font-size:20px;">
       #${horse.post} ${horse.horse}
       ${horse.scratched ? '<span class="badge-scr">SCRATCHED</span>' : ''}
+      ${(horse.starts === 0 || !horse.score || parseFloat(horse.score) === 0) ? '<span class="badge-fts">1ST TIME STARTER</span>' : ''}
       ${horse.jockeyChanged ? '<span class="badge-changed">JOCKEY CHANGED</span>' : ''}
     </h2>
     <div style="font-family:var(--mono); font-size:12px; color:var(--ink-soft); margin-bottom:12px; line-height:1.6;">
-      Composite Score: <b>${horse.compositeIndex ? horse.compositeIndex.toFixed(1) : 'N/A'}</b> | Prime Power: <b>${horse.score || horse.primePower}</b> | Best Speed: <b>${horse.bestSpeed || 'N/A'}</b><br>
+      Composite Score: <b>${horse.compositeIndex ? horse.compositeIndex.toFixed(1) : 'N/A'}</b> | Prime Power: <b>${horse.score || horse.primePower || 'FTS'}</b> | Best Speed: <b>${horse.bestSpeed || 'N/A'}</b><br>
       Trainer: <b>${horse.trainer || 'N/A'}</b> | Record: <b>${horse.trainerStarts || 0} Starts (${horse.trainerWins || 0}-${horse.trainerPlaces || 0}-${horse.trainerShows || 0})</b><br>
       Jockey: <b>${horse.jockey || 'N/A'}</b> | Record: <b>${horse.jockeyStarts || 0} Starts (${horse.jockeyWins || 0}-${horse.jockeyPlaces || 0}-${horse.jockeyShows || 0})</b><br>
       Horse Career: <b>${horse.starts} Starts — ${horse.wins} W / ${horse.places} P / ${horse.shows} S</b>
@@ -1055,7 +1071,7 @@ function openPP(horseName){
           `).join('')}
         </tbody>
       </table>
-    ` : '<div style="font-size:12.5px; color:var(--ink-soft); margin-bottom:14px;">No past performance lines available.</div>'}
+    ` : '<div style="font-size:12.5px; color:var(--ink-soft); margin-bottom:14px;">No past performance lines available (First-Time Starter).</div>'}
 
     <div style="font-size:12px; font-weight:700; text-transform:uppercase; margin-bottom:6px;">Recent Workouts</div>
     ${horse.ppWorks && horse.ppWorks.length > 0 ? `
