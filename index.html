@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Brisnet Handicap v1.16 — Race Card Reader</title>
+<title>Brisnet Handicap v1.17 — Race Card Reader</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
   :root{
@@ -30,10 +30,8 @@
   }
   .wrap{max-width:1080px;margin:0 auto;}
 
-  /* ---------- HEADER / BOARD ---------- */
   header{
-    background:
-      linear-gradient(180deg,var(--board-900),var(--board-950));
+    background:linear-gradient(180deg,var(--board-900),var(--board-950));
     padding:38px 24px 30px;
     border-bottom:3px solid var(--amber-dim);
     position:relative;
@@ -56,16 +54,6 @@
   .flap{display:inline-block; animation:flapin .5s ease both;}
   @media (prefers-reduced-motion: reduce){ .flap{animation:none;} }
   @keyframes flapin{ from{opacity:0; transform:translateY(-.35em) rotateX(60deg);} to{opacity:1; transform:none;} }
-  h1 .flap:nth-child(1){animation-delay:.02s}
-  h1 .flap:nth-child(2){animation-delay:.05s}
-  h1 .flap:nth-child(3){animation-delay:.08s}
-  h1 .flap:nth-child(4){animation-delay:.11s}
-  h1 .flap:nth-child(5){animation-delay:.14s}
-  h1 .flap:nth-child(6){animation-delay:.17s}
-  h1 .flap:nth-child(7){animation-delay:.20s}
-  h1 .flap:nth-child(8){animation-delay:.23s}
-  h1 .flap:nth-child(9){animation-delay:.26s}
-  h1 .flap:nth-child(10){animation-delay:.29s}
   .tagline{color:#B9C9BE; font-size:15px; max-width:56ch; margin:12px 0 0; line-height:1.5;}
   .ver{font-family:var(--mono); font-weight:700; letter-spacing:.04em;}
 
@@ -86,12 +74,9 @@
     font-size:11px; padding:3px 7px; border-radius:2px; letter-spacing:.05em;
   }
 
-  /* ---------- UPLOAD CARDS ---------- */
   .upload-grid{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
-  .upload-grid.three-col{grid-template-columns:1fr 1fr 1fr;}
   .upload-grid.four-col{grid-template-columns:1fr 1fr 1fr 1fr;}
   @media (max-width:1200px){.upload-grid.four-col{grid-template-columns:1fr 1fr;}}
-  @media (max-width:960px){.upload-grid.three-col{grid-template-columns:1fr 1fr;}}
   @media (max-width:720px){.upload-grid{grid-template-columns:1fr;}}
   .upload-card{
     border:1.5px dashed var(--paper-line); border-radius:4px; padding:20px;
@@ -106,7 +91,6 @@
     cursor:pointer; font-family:var(--sans);
   }
   .file-btn:hover{background:var(--board-800);}
-  .file-btn:focus-visible{outline:2px solid var(--amber); outline-offset:2px;}
   input[type=file]{display:none;}
   .status{font-family:var(--mono); font-size:12px; margin-top:10px; color:var(--ink-soft); min-height:16px;}
   .status.ok{color:#2E5C3E;}
@@ -127,7 +111,6 @@
   }
   .small-btn:hover{background:var(--board-950); color:var(--paper);}
 
-  /* ---------- TABLE ---------- */
   .table-wrap{overflow-x:auto; border:1px solid var(--paper-line); border-radius:3px;}
   table{width:100%; border-collapse:collapse; font-size:13px;}
   thead th{
@@ -141,30 +124,21 @@
   tbody tr:nth-child(even){background:rgba(0,0,0,0.02);}
   tbody input{border:1px solid transparent; background:transparent; padding:4px 5px; font-size:13px; width:100%;}
   tbody input:hover, tbody input:focus{border-color:var(--paper-line); background:#fff;}
-  tbody input::placeholder{color:var(--ink-soft); opacity:.55; font-style:italic;}
   tbody input[type=checkbox]{width:auto; cursor:pointer; accent-color:var(--red);}
   .scratched-row{opacity:.45;}
   .scratched-row td:nth-child(3) input{text-decoration:line-through;}
   .col-num input{font-family:var(--mono);}
-  .del-btn{
-    background:none; border:none; color:var(--red); cursor:pointer; font-size:15px; padding:2px 6px;
-  }
-  .del-btn:hover{color:var(--red-dim);}
+  .del-btn{background:none; border:none; color:var(--red); cursor:pointer; font-size:15px; padding:2px 6px;}
   .scratch-panel{
     border:1.5px dashed var(--paper-line); border-radius:4px; padding:16px 18px;
     background:var(--paper-dim); margin:0 0 14px;
   }
   .scratch-panel h3{margin:0 0 6px; font-size:15px;}
   .scratch-panel p{margin:0 0 12px; font-size:13px; color:var(--ink-soft); line-height:1.5;}
-  .rss-warn{
-    margin-top:10px; padding:9px 11px; font-size:12.5px; line-height:1.55;
-    background:rgba(139,42,42,.08); border:1px solid var(--red); border-radius:4px;
-  }
   .rss-info{
     margin-top:10px; padding:9px 11px; font-size:12.5px; line-height:1.55;
     background:rgba(0,0,0,.035); border-radius:4px; color:var(--ink-soft);
   }
-  .rss-info b, .rss-warn b{color:var(--ink);}
   .table-actions{display:flex; gap:10px; margin-top:12px; flex-wrap:wrap;}
   .primary-btn{
     background:var(--amber); color:var(--ink); border:none; padding:11px 22px;
@@ -178,17 +152,6 @@
   .ghost-btn:hover{border-color:var(--ink); color:var(--ink);}
   .empty-note{font-size:13px; color:var(--ink-soft); padding:18px; text-align:center;}
 
-  /* ---------- RACE CARD ---------- */
-  .board{
-    background:#ffffff; border-radius:4px; padding:18px 16px;
-    box-shadow:inset 0 0 0 1px var(--paper-line);
-  }
-  .board h2{color:var(--ink);}
-  .board h2::after{background:var(--paper-line);}
-  .board .step-num{background:var(--amber); color:#fff;}
-
-  .race-nav{display:flex; flex-wrap:wrap; gap:6px; margin:0 0 16px; align-items:center;}
-  .race-nav .nav-lbl{font-family:var(--mono); font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-soft); margin-right:2px;}
   .tabbar{
     display:flex; gap:0; margin:0 0 18px; border-bottom:2px solid var(--paper-line);
     overflow-x:auto; -webkit-overflow-scrolling:touch;
@@ -204,407 +167,90 @@
     display:inline-block; margin-left:6px; padding:1px 6px; border-radius:9px;
     background:var(--board-950); color:#fff; font-size:10px; font-weight:700;
   }
-  .print-page{background:var(--paper); padding:4px 0 20px;}
-  @media print{ .page-break{break-before:page; page-break-before:always;} }
-  .print-page header{margin-bottom:18px;}
-  .print-page h2{margin-top:26px;}
-  @media print{
-    body > .wrap > section:not(#printSection){display:none !important;}
-    #printSection{display:block !important;}
-    #printSection > h2, #printSection > .rss-info, .tabbar, .report-toolbar{display:none !important;}
-  }
-  .bo-save{
-    flex:0 0 auto; appearance:none; cursor:pointer; font-family:var(--mono);
-    font-size:11px; font-weight:700; letter-spacing:.04em; text-transform:uppercase;
-    padding:6px 12px; border-radius:3px; border:1.5px solid var(--board-950);
-    background:none; color:var(--board-950);
-  }
-  .bo-save.saved{background:var(--board-950); color:#fff;}
-  .betlog-row{
-    display:flex; align-items:center; gap:10px; padding:11px 0;
-    border-bottom:1px solid var(--paper-line); flex-wrap:wrap;
-  }
-  .betlog-row .bl-main{flex:1 1 200px; min-width:0;}
-  .betlog-row .bl-horse{font-weight:800;}
-  .betlog-row .bl-meta{font-family:var(--mono); font-size:11.5px; color:var(--ink-soft);}
-  .bl-result{
-    appearance:none; font-family:var(--mono); font-size:12px; padding:5px 8px;
-    border:1.5px solid var(--paper-line); border-radius:3px; background:var(--paper);
-  }
-  .bl-del{
-    appearance:none; background:none; border:none; cursor:pointer;
-    color:var(--red); font-size:16px; line-height:1; padding:4px 6px;
-  }
-  .bl-tally{
-    display:flex; gap:22px; flex-wrap:wrap; padding:14px 16px; margin-bottom:16px;
-    border:2px solid var(--board-950); border-radius:4px; background:var(--paper);
-  }
-  .bl-tally div span{display:block;}
-  .bl-tally .n{font-size:24px; font-weight:800; letter-spacing:-.02em;}
-  .bl-tally .l{font-family:var(--mono); font-size:10.5px; text-transform:uppercase;
-               letter-spacing:.08em; color:var(--ink-soft);}
-  .bestof{
-    border:2px solid var(--board-950); border-radius:5px; padding:18px 20px;
-    margin:0 0 20px; background:var(--paper);
-  }
-  .bestof h3{margin:0 0 4px; font-size:17px; letter-spacing:-.01em;}
-  .bestof .bo-sub{font-size:12px; color:var(--ink-soft); margin-bottom:14px;}
-  .bo-row{
-    display:flex; align-items:baseline; gap:12px; padding:10px 0;
-    border-top:1px solid var(--paper-line);
-  }
-  .bo-rank{
-    flex:0 0 26px; height:26px; line-height:26px; text-align:center;
-    background:var(--board-950); color:#fff; border-radius:50%;
-    font-family:var(--mono); font-size:12px; font-weight:800;
-  }
-  .bo-main{flex:1 1 auto;}
-  .bo-horse{font-size:16px; font-weight:800;}
-  .bo-meta{font-size:12px; color:var(--ink-soft); font-family:var(--mono);}
-  .bo-with{display:block; margin-top:3px; font-size:11.5px; font-family:var(--mono); color:var(--ink-soft); opacity:.85;}
-  .bo-foot{margin-top:14px; padding-top:12px; border-top:2px solid var(--paper-line);
-           font-size:12.5px; line-height:1.6; color:var(--ink-soft);}
-  .bo-foot b{color:var(--ink);}
-  .pick-card{
-    border:1.5px solid var(--paper-line); border-left:5px solid #2E6E45;
-    border-radius:4px; padding:16px 18px; margin-bottom:14px; background:var(--paper);
-  }
-  .pick-head{display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; margin-bottom:8px;}
-  .pick-horse{font-size:19px; font-weight:800; letter-spacing:-.01em;}
-  .pick-why{font-size:13px; line-height:1.6; color:var(--ink-soft); margin-top:8px;}
-  .pick-why b{color:var(--ink);}
-  .pick-none{
-    border:1.5px dashed var(--paper-line); border-radius:4px; padding:14px 16px;
-    margin-bottom:10px; font-size:13px; color:var(--ink-soft); background:var(--paper-dim);
-  }
-  .pick-none b{color:var(--ink);}
-  .pick-card.tier2{border-left-color:#5C7A8A;}
-  .pp-turf{
-    font-family:var(--mono); font-weight:800; font-size:11px; color:#2E6E45;
-    border:1px solid #2E6E45; border-radius:2px; padding:0 3px; margin-left:5px;
-    line-height:1.3; vertical-align:1px;
-  }
-  .pp-adj{color:#2E6E45; font-weight:800;}
-  .pp-wonby{color:#2E6E45; font-weight:700;}
-  .cp{border:1px solid var(--paper-line); border-radius:4px; padding:12px 14px; margin:12px 0; background:var(--paper-dim);}
-  .cp-head{font-family:var(--mono); font-size:11px; font-weight:800; letter-spacing:.06em;
-           text-transform:uppercase; color:var(--ink-soft); margin-bottom:9px;}
-  .cp-row{padding:8px 0 8px 10px; border-left:3px solid var(--paper-line); margin-bottom:8px; font-size:13px; line-height:1.7;}
-  .cp-in{border-left-color:#2E6E45;}
-  .cp-q{border-left-color:#C08A2E;}
-  .cp-out{border-left-color:var(--paper-line); opacity:.72;}
-  .cp-horse{font-weight:700;}
-  .cp-why{font-family:var(--mono); font-size:11.5px; color:var(--ink-soft);}
-  .cp-foot{margin-top:6px; padding-top:8px; border-top:1px solid var(--paper-line);
-           font-size:12px; line-height:1.55; color:var(--ink-soft);}
-  .cp-foot b{color:var(--ink);}
-  .eps-basis{font-size:12px; color:var(--ink-soft);}
-  .eps-basis b{color:var(--red);}
-  .cc{
-    border:1px solid var(--paper-line); border-left:4px solid #2E6E45; border-radius:4px;
-    padding:12px 14px; margin:12px 0; background:var(--paper-dim);
-  }
-  .cc-head{
-    font-family:var(--mono); font-size:11px; font-weight:800; letter-spacing:.06em;
-    text-transform:uppercase; color:var(--ink-soft); margin-bottom:8px;
-  }
-  .cc-row{padding:7px 0; border-top:1px solid var(--paper-line); font-size:13px; line-height:1.55;}
-  .cc-row:first-of-type{border-top:0;}
-  .cc-fav{font-weight:800; color:#2E6E45;}
-  .cc-oth{font-weight:700;}
-  .cc-via{font-family:var(--mono); font-size:11.5px; color:var(--ink-soft);}
-  .cc-foot{margin-top:9px; padding-top:8px; border-top:1px solid var(--paper-line);
-           font-size:12px; line-height:1.55; color:var(--ink-soft);}
-  .cc-foot b{color:var(--ink);}
-  .pick-tier{
-    font-family:var(--mono); font-size:10px; font-weight:800; letter-spacing:.08em;
-    padding:3px 7px; border-radius:3px; background:#2E6E45; color:#fff; text-transform:uppercase;
-  }
-  .pick-tier.t2{background:#5C7A8A;}
-  .mkt-ok{margin-top:10px; padding:9px 11px; border-left:3px solid #2E6E45;
-          background:var(--paper-dim); font-size:12.5px; color:var(--ink-soft);}
-  .mkt-ok b{color:var(--ink);}
-  .mkt-pending{margin-top:10px; padding:9px 11px; border-left:3px solid #C08A2E;
-          background:var(--paper-dim); font-size:12.5px; line-height:1.55; color:var(--ink-soft);}
-  .mkt-pending b{color:var(--ink);}
-  .price-warn{margin-top:10px; padding:9px 11px; border-left:3px solid #5C7A8A;
-          background:var(--paper-dim); font-size:12.5px; line-height:1.55; color:var(--ink-soft);}
-  .price-warn b{color:var(--ink);}
-  .blind-note{
-    margin-top:10px; padding:9px 11px; border-left:3px solid #C08A2E;
-    background:var(--paper-dim); font-size:12.5px; line-height:1.55; color:var(--ink-soft);
-  }
-  .blind-note b{color:var(--ink);}
-  .pick-downgrade{
-    margin-top:10px; padding:9px 11px; border-left:3px solid var(--red);
-    background:var(--paper-dim); font-size:12.5px; line-height:1.55; color:var(--ink-soft);
-  }
-  .pick-downgrade b{color:var(--ink);}
-  .bo-row.t2 .bo-rank{background:#5C7A8A;}
-  .bo-row.t2 .bo-horse{opacity:.9;}
-  .bo-tierhead{
-    font-family:var(--mono); font-size:11px; font-weight:800; letter-spacing:.06em;
-    text-transform:uppercase; color:var(--ink-soft); margin:16px 0 2px; padding-top:10px;
-    border-top:2px solid var(--paper-line);
-  }
-  .race-chip{
-    font-family:var(--mono); font-size:12.5px; font-weight:700; padding:7px 11px;
-    border:1px solid var(--paper-line); background:var(--paper-dim); color:var(--ink);
-    border-radius:3px; cursor:pointer; line-height:1;
-  }
-  .race-chip.green{background:#2E6E45; border-color:#2E6E45; color:#fff;}
-  .race-chip.yellow{background:#C08A2E; border-color:#C08A2E; color:#fff;}
-  .race-chip.red{background:transparent; border-color:var(--red); color:var(--red); opacity:.6;}
-  .race-chip:focus-visible{outline:2px solid var(--amber); outline-offset:2px;}
 
-  .race-card{
-    background:var(--paper-dim); border:1px solid var(--paper-line); border-radius:3px;
-    padding:14px 16px; margin-bottom:14px; scroll-margin-top:12px;
-  }
-  .race-card{border-left:4px solid var(--board-800);}
-  .race-card.read-green{border-left-color:#2E6E45;}
-  .race-card.read-yellow{border-left-color:#C08A2E;}
-  .race-card.read-red{border-left-color:var(--red);}
-  .read-badge{
-    font-family:var(--mono); font-size:10.5px; font-weight:800; letter-spacing:.06em;
-    padding:3px 9px; border-radius:12px; text-transform:uppercase;
-  }
-  .race-no{padding:2px 10px 2px 8px; border-radius:3px; border-left:5px solid transparent;}
-  .race-no.green{border-left-color:#2E6E45; background:rgba(46,110,69,.14);}
-  .race-no.green a{color:#1F5231;}
-  .race-no.yellow{border-left-color:#C08A2E; background:rgba(192,138,46,.14);}
-  .race-no.yellow a{color:#7A5516;}
-  .race-no.red{border-left-color:var(--red); background:rgba(139,42,42,.10);}
-  .race-no.red a{color:var(--red);}
-  .read-badge.green{background:#2E6E45; color:#fff;}
-  .read-badge.yellow{background:#C08A2E; color:#fff;}
-  .read-badge.red{background:var(--red); color:#fff;}
-  .market-tag{
-    font-family:var(--mono); font-size:10.5px; letter-spacing:.04em;
-    padding:2px 8px; border-radius:10px; border:1px solid var(--paper-line);
-    color:var(--ink-soft); background:transparent;
-  }
-  .read-why{font-size:12px; color:var(--ink-soft); margin-top:6px; line-height:1.55;}
-  .read-why b{color:var(--ink);}
-  .race-card-top{display:flex; justify-content:space-between; align-items:baseline; gap:10px; flex-wrap:wrap;}
-  .race-card-top strong{font-size:16px;}
-  .race-metric{font-family:var(--mono); font-size:12px; color:var(--ink-soft);}
-  .race-reason{font-size:12px; color:var(--ink-soft); margin-top:6px; font-style:italic;}
-  .pace-note{font-size:11.5px; color:var(--ink-soft); margin-top:8px; padding:7px 9px; background:rgba(0,0,0,.035); border-radius:4px; line-height:1.5;}
-  .fav-note{font-size:12.5px; color:var(--ink); margin-top:8px; padding:8px 10px; background:rgba(201,152,60,.12); border:1px solid var(--amber); border-radius:4px; line-height:1.55; font-weight:600;}
-  .sparse-warning{font-size:12px; color:var(--red); margin:6px 0 10px; padding:8px 10px; background:rgba(139,42,42,.08); border:1px solid var(--red); border-radius:4px; line-height:1.5; font-weight:600;}
-  .work-dots{display:inline-flex; gap:3px; align-items:center; vertical-align:middle;}
-  .work-dot{display:inline-block; width:9px; height:9px; border-radius:50%; border:1px solid rgba(0,0,0,.25);}
-  .work-dot-bullet{background:#2E6E45;}
-  .work-dot-good{background:#D9A73B;}
-  .work-dot-other{background:#8B2A2A;}
-  .work-dots-none{font-size:11px; color:var(--ink-soft); font-style:italic;}
-
-  /* ticket block inside each race */
-  .ticket{margin-top:10px; padding:10px 12px; background:#fff; border:1px solid var(--paper-line); border-radius:4px;}
-  .ticket-head{font-family:var(--mono); font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-soft); margin-bottom:7px;}
-  .bet-line{font-size:12.5px; color:var(--ink); margin-bottom:6px; line-height:1.5;}
-  .bet-line:last-child{margin-bottom:0;}
-  .bet-tag{
-    display:inline-block; font-family:var(--mono); font-size:10px; font-weight:800; letter-spacing:.04em;
-    background:var(--amber); color:var(--ink); padding:2px 7px; border-radius:3px; margin-right:6px; text-transform:uppercase;
-  }
-  .bet-tag.skip{background:#8a8a8a; color:#fff;}
-  .bet-tag.log{background:#8a8a8a; color:#fff;}
-  .bet-tag.test{background:var(--red); color:#fff;}
-  .bet-tag.toprated{background:#8a8a8a; color:#fff;}
-  .bet-tag.win{background:#2E6E45; color:#fff;}
-  .bet-tag.place{background:#5C7A8A; color:#fff;}
-  .bet-tag.show{background:#8A7A45; color:#fff;}
-  .bet-tag.exotic{background:var(--board-950); color:var(--amber);}
-  .bet-tag.failed{background:#8a8a8a; color:#fff;}
-  .bet-line.struck{color:var(--ink-soft);}
-
-  .race-pick{font-size:12.5px; color:var(--ink-soft); margin-top:6px;}
-  .race-pick b{color:var(--ink);}
-  .race-jump{color:inherit; text-decoration:underline dotted; text-underline-offset:3px; cursor:pointer;}
-  .race-jump{display:inline-block; padding:2px 0; min-height:22px;}
-  .field-race-head .race-jump::after,
-  .score-row .race-jump::after{content:" \u25B8"; font-size:11px; opacity:.6;}
-  .race-jump:hover, .race-jump:active{color:var(--amber-dim);}
-  .field-jump{
-    font-family:var(--mono); font-size:11px; letter-spacing:.06em; text-transform:uppercase;
-    color:var(--ink-soft); text-decoration:underline dotted; text-underline-offset:3px; cursor:pointer;
-  }
-  .field-jump:hover, .field-jump:active{color:var(--amber-dim);}
-  
   .sort-toggle{display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap;}
   .toggle-btn{
     background:var(--paper-dim); border:1px solid var(--paper-line); color:var(--ink-soft);
     padding:8px 14px; border-radius:3px; font-size:12.5px; font-weight:600; cursor:pointer;
     font-family:var(--sans);
   }
-  .toggle-btn:hover{border-color:var(--ink-soft); color:var(--ink);}
   .toggle-btn.active{background:var(--board-950); color:var(--paper); border-color:var(--board-950);}
-  .toggle-btn:focus-visible{outline:2px solid var(--amber); outline-offset:2px;}
 
-  .field-race{margin-bottom:20px;}
-  .field-race-head{
-    display:flex; justify-content:space-between; align-items:baseline; gap:10px; flex-wrap:wrap;
-    margin-bottom:6px;
+  .race-card{
+    background:var(--paper-dim); border:1px solid var(--paper-line); border-radius:3px;
+    padding:14px 16px; margin-bottom:14px; border-left:4px solid var(--board-800);
   }
-  .field-race-head strong{font-size:14px;}
-  .field-table{width:100%; border-collapse:collapse; font-size:14px; border:1px solid var(--paper-line);}
-  .field-table thead th{
-    text-align:left; font-family:var(--mono); font-size:11px; letter-spacing:.06em;
-    text-transform:uppercase; color:var(--paper); background:var(--board-900); padding:8px 10px;
+  .race-card-top{display:flex; justify-content:space-between; align-items:baseline; gap:10px; flex-wrap:wrap;}
+  .race-card-top strong{font-size:16px;}
+  .read-badge{
+    font-family:var(--mono); font-size:10.5px; font-weight:800; letter-spacing:.06em;
+    padding:3px 9px; border-radius:12px; text-transform:uppercase;
   }
-  .field-table td{padding:8px 10px; border-bottom:1px solid var(--paper-line); font-family:var(--mono); font-size:13.5px;}
-  .field-table td.name{font-family:var(--sans); font-size:14px;}
-  .field-table tr:last-child td{border-bottom:none;}
-  .field-table tr:nth-child(even){background:rgba(0,0,0,0.02);}
-  .field-edge{
-    display:inline-block; font-family:var(--mono); font-size:13px; font-weight:800;
-    padding:3px 9px; border-radius:3px; min-width:56px; text-align:center;
+  .read-badge.green{background:#2E6E45; color:#fff;}
+  .read-badge.yellow{background:#C08A2E; color:#fff;}
+  .read-badge.red{background:var(--red); color:#fff;}
+  .conf-block{
+    margin:8px 0 2px; padding:8px 10px; border-radius:3px; font-size:12.5px; line-height:1.5;
+    border:1px solid var(--paper-line); background:#FAFAF7;
   }
-  .field-edge.pos{background:#2E6E45; color:#fff;}
-  .field-edge.neg{background:var(--red); color:#fff;}
-  .field-edge.dash{background:none; color:var(--ink-soft); font-weight:400; padding:3px 0;}
-  .field-table td.raw-col, .field-table th.raw-col{display:none; background:rgba(0,0,0,.045); font-size:12px;}
-  .field-table th.raw-col{background:var(--board-800); color:#B9C9BE;}
-  body.diag .field-table td.raw-col, body.diag .field-table th.raw-col{display:table-cell;}
-  .field-table td.diag-col, .field-table th.diag-col{display:none;}
-  body.diag .field-table td.diag-col, body.diag .field-table th.diag-col{display:table-cell;}
-
+  .conf-tag{
+    display:inline-block; font-weight:800; letter-spacing:.07em; font-size:10px;
+    text-transform:uppercase; border-radius:8px; padding:2px 8px; margin-right:7px; color:#fff;
+  }
+  .conf-high .conf-tag{background:#3C7A4A;}
+  .conf-probable .conf-tag{background:#B08A16;}
+  .conf-questionable .conf-tag{background:#B4541A;}
+  .contender-matrix {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 10px 0;
+  }
+  @media (max-width: 720px){.contender-matrix {grid-template-columns: 1fr;}}
+  .matrix-box {
+    background: #fff; border: 1px solid var(--paper-line); border-radius: 4px; padding: 10px 12px; font-size: 12.5px;
+  }
+  .matrix-box.contenders { border-left: 4px solid #2E6E45; }
+  .matrix-box.pretenders { border-left: 4px solid var(--red); opacity: 0.88; }
+  .matrix-title {
+    font-family: var(--mono); font-size: 10.5px; font-weight: 800; letter-spacing: .08em;
+    text-transform: uppercase; margin-bottom: 6px; color: var(--ink-soft);
+  }
+  .exotic-tip {
+    margin-top: 10px; padding: 9px 12px; background: rgba(15, 42, 32, 0.04);
+    border: 1px dashed var(--board-950); border-radius: 4px; font-size: 12px; line-height: 1.55; color: var(--ink);
+  }
+  .exotic-tip b { color: var(--board-950); font-family: var(--mono); }
   textarea{
     font-family:var(--mono); font-size:12.5px; padding:10px; width:100%;
     border:1px solid var(--paper-line); border-radius:3px; background:#fff; color:var(--ink);
     resize:vertical; line-height:1.5;
   }
-
-  .score-summary{
-    display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:12px;
-    margin-bottom:18px;
-  }
-  .score-stat{
-    background:var(--board-950); border-radius:4px; padding:14px 12px; text-align:center;
-  }
-  .score-stat .num{font-family:var(--mono); font-size:22px; font-weight:800; color:var(--amber);}
-  .score-stat .lbl{font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; color:#B9C9BE; margin-top:4px;}
-  .score-stat .num.roi-pos{color:#7FD99A;}
-  .score-stat .num.roi-neg{color:#E2897F;}
-
-  .score-row{
-    display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;
-    padding:10px 14px; border:1px solid var(--paper-line); border-radius:3px; margin-bottom:8px;
-    background:var(--paper-dim);
-  }
-  .score-row .sr-left{font-size:13px;}
-  .score-row .sr-left b{font-size:14px;}
-  .score-tag{
-    font-family:var(--mono); font-size:11px; font-weight:800; letter-spacing:.05em;
-    padding:4px 9px; border-radius:12px; text-transform:uppercase;
-  }
-  .score-tag.win{background:#2E6E45; color:#fff;}
-  .score-tag.place{background:#5C7A8A; color:#fff;}
-  .score-tag.show{background:#8A7A45; color:#fff;}
-  .score-tag.miss{background:var(--red); color:#fff;}
-  .score-tag.unmatched{background:#999; color:#fff;}
-
-  .report-toolbar{display:flex; gap:10px; margin:0 0 14px; flex-wrap:wrap; align-items:center;}
-  .clean-toggle{
-    display:inline-flex; align-items:center; gap:8px; font-size:13px; color:var(--ink);
-    border:1px solid var(--board-950); border-radius:3px; padding:9px 14px; cursor:pointer;
-    background:var(--paper-dim);
-  }
-  .clean-toggle input{width:auto; accent-color:var(--board-950);}
-  .clean-toggle.on{background:var(--board-950); color:var(--paper);}
-
-  .conf-block{
-    margin:8px 0 2px; padding:8px 10px; border-radius:3px; font-size:12.5px; line-height:1.5;
-    border:1px solid var(--paper-line); background:#FAFAF7;
-  }
-  .conf-block.conf-questionable{border-color:#C0641E; background:#FDF1E7;}
-  .conf-block.conf-probable{border-color:#C0A21E; background:#FCF8E8;}
-  .conf-tag{
-    display:inline-block; font-weight:800; letter-spacing:.07em; font-size:10px;
-    text-transform:uppercase; border-radius:8px; padding:2px 8px; margin-right:7px; color:#fff;
-  }
-  .conf-high .conf-tag, .conf-tag.conf-high{background:#3C7A4A;}
-  .conf-probable .conf-tag, .conf-tag.conf-probable{background:#B08A16;}
-  .conf-questionable .conf-tag, .conf-tag.conf-questionable{background:#B4541A;}
-  .conf-body{color:var(--ink);}
-
-  /* Contender vs Pretender & Exotic Knowledge Styling */
-  .contender-matrix {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-    margin: 10px 0;
-  }
-  @media (max-width: 720px){.contender-matrix {grid-template-columns: 1fr;}}
-  .matrix-box {
-    background: #fff;
-    border: 1px solid var(--paper-line);
-    border-radius: 4px;
-    padding: 10px 12px;
-    font-size: 12.5px;
-  }
-  .matrix-box.contenders { border-left: 4px solid #2E6E45; }
-  .matrix-box.pretenders { border-left: 4px solid var(--red); opacity: 0.88; }
-  .matrix-title {
-    font-family: var(--mono);
-    font-size: 10.5px;
-    font-weight: 800;
-    letter-spacing: .08em;
-    text-transform: uppercase;
-    margin-bottom: 6px;
-    color: var(--ink-soft);
-  }
-  .exotic-tip {
-    margin-top: 10px;
-    padding: 9px 12px;
-    background: rgba(15, 42, 32, 0.04);
-    border: 1px dashed var(--board-950);
-    border-radius: 4px;
-    font-size: 12px;
-    line-height: 1.55;
-    color: var(--ink);
-  }
-  .exotic-tip b { color: var(--board-950); font-family: var(--mono); }
-
   .disclaimer{
     font-size:12px; color:var(--ink-soft); line-height:1.6; padding-top:18px;
     border-top:1px solid var(--paper-line); margin-top:36px;
-  }
-  @media print{
-    .no-print{display:none !important;}
-    header{padding:14px 0 10px; border-bottom:2px solid #999;}
-    main{padding:8px 0 0;}
-    body{background:#fff;}
-    .board{box-shadow:none; border:1px solid #bbb;}
-    .race-card, .field-table{page-break-inside:avoid;}
   }
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
-    <p class="eyebrow">Handicapping utility · <span class="ver">v1.16</span> · released September 2026</p>
+    <p class="eyebrow">Handicapping utility · <span class="ver">v1.17</span> · released September 2026</p>
     <h1><span class="flap">B</span><span class="flap">r</span><span class="flap">i</span><span class="flap">s</span><span class="flap">n</span><span class="flap">e</span><span class="flap">t</span> <span class="flap">H</span><span class="flap">a</span><span class="flap">n</span><span class="flap">d</span><span class="flap">i</span><span class="flap">c</span><span class="flap">a</span><span class="flap">p</span></h1>
-    <p class="tagline">Upload a data file or program PDF. Brisnet Handicap lays out the whole card: past performances, scratches, confidence scoring, exotic structures, and contender vs. pretender separation.</p>
+    <p class="tagline">Upload files or feeds with robust parsing support. Brisnet Handicap organizes past performances, live track odds, confidence metrics, and exotic structures.</p>
   </header>
 
   <main>
-    <!-- STEP 1: UPLOAD -->
     <section class="no-print">
       <h2><span class="step-num">1</span> Bring in your data</h2>
       <div class="upload-grid four-col">
         <div class="upload-card">
           <h3>Brisnet data file</h3>
-          <p>Brisnet’s "Single File" export. If .drf looks greyed out in the picker, rename it to .csv — the parser reads the contents, not the name. Unzip a .zip first.</p>
+          <p>Brisnet Single File export (.drf/.csv/.txt). Automatically splits lines and maps fields safely.</p>
           <label class="file-btn" for="drfInput">Choose .DRF / .csv</label>
-          <input type="file" id="drfInput" accept=".drf,.csv,.txt,text/csv,text/plain,text/*">
+          <input type="file" id="drfInput" accept=".drf,.csv,.txt,text/csv,text/plain">
           <div class="status" id="drfStatus"></div>
         </div>
         <div class="upload-card">
           <h3>CSV file</h3>
-          <p>Any spreadsheet with race, horse and odds columns. Map the columns after choosing the file.</p>
+          <p>Spreadsheet with race, horse, and odds columns. Map columns dynamically below.</p>
           <label class="file-btn" for="csvInput">Choose CSV</label>
           <input type="file" id="csvInput" accept=".csv">
           <div class="status" id="csvStatus"></div>
@@ -613,24 +259,21 @@
             <div class="map-row"><label>Post #</label><select id="mapPost"></select></div>
             <div class="map-row"><label>Horse</label><select id="mapHorse"></select></div>
             <div class="map-row"><label>ML odds</label><select id="mapOdds"></select></div>
-            <div class="map-row"><label>Final odds</label><select id="mapFinal"></select></div>
             <div class="map-row"><label>Rating</label><select id="mapScore"></select></div>
-            <div class="map-row"><label>Surface fit</label><select id="mapSurface"></select></div>
-            <div class="map-row"><label>Class move</label><select id="mapClass"></select></div>
             <button class="small-btn" id="importCsvBtn">Import mapped rows →</button>
           </div>
         </div>
         <div class="upload-card">
           <h3>Program PDF</h3>
-          <p>Brisnet-style past-performance sheet. Runs in the browser; if it hangs on a phone, use Paste text instead.</p>
+          <p>Extract text from program PDFs directly inside your browser.</p>
           <label class="file-btn" for="pdfInput">Choose PDF</label>
           <input type="file" id="pdfInput" accept=".pdf">
           <div class="status" id="pdfStatus"></div>
         </div>
         <div class="upload-card">
           <h3>Paste text</h3>
-          <p>Open the PDF, select all, copy, paste here. Same extraction as the PDF option and works everywhere.</p>
-          <textarea id="pdfPasteText" rows="4" placeholder="Paste program text here…"></textarea>
+          <p>Paste copied program text or feeds directly for clean parsing.</p>
+          <textarea id="pdfPasteText" rows="4" placeholder="Paste text here…"></textarea>
           <div class="table-actions" style="margin-top:10px;">
             <button class="small-btn" id="extractPasteBtn">Extract from pasted text →</button>
           </div>
@@ -639,16 +282,14 @@
       </div>
     </section>
 
-    <!-- STEP 2: TABLE -->
     <section class="no-print">
       <h2><span class="step-num">2</span> Check &amp; edit entries</h2>
-      <p style="font-size:12.5px; color:var(--ink-soft); margin:-6px 0 12px;"><b>ML odds</b> comes in with the file. <b>Final</b> starts empty — fill it in at the track; it never overwrites the morning line. <b>Surface fit</b> and <b>Class</b> are optional. Tick <b>Scr</b> for a scratch and rebuild the card: scratched horses drop out and the field renormalizes.</p>
-      <div class="scratch-panel">
-        <h3>Apply scratches from the Equibase feed</h3>
-        <p>Load your entries first, then choose the track’s <b>Changes &amp; Scratches</b> feed or paste it below. Scratches are ticked automatically by race and program number. Rider changes are flagged on the card, with the new rider’s meet record where the file has one.</p>
-        <label class="file-btn" for="rssInput">Choose RSS file</label>
-        <input type="file" id="rssInput">
-        <textarea id="rssPaste" rows="3" placeholder="…or paste the feed XML here" style="margin-top:10px;"></textarea>
+      <div class="scratch-panel" style="border:1.5px dashed var(--paper-line); border-radius:4px; padding:16px 18px; background:var(--paper-dim); margin-bottom:14px;">
+        <h3>Apply scratches from RSS / XML feed</h3>
+        <p>Upload an XML feed file or paste feed code below. Scratches are detected automatically.</p>
+        <label class="file-btn" for="rssInput">Choose RSS / XML file</label>
+        <input type="file" id="rssInput" accept=".xml,.rss,.txt">
+        <textarea id="rssPaste" rows="3" placeholder="…or paste RSS/XML or scratch text here" style="margin-top:10px;"></textarea>
         <div class="table-actions" style="margin-top:10px;">
           <button class="small-btn" id="applyRssBtn">Apply scratches →</button>
         </div>
@@ -663,17 +304,17 @@
               <th style="width:60px">Post</th>
               <th>Horse</th>
               <th style="width:88px">ML odds</th>
-              <th style="width:88px" class="live-col" title="Live tote board — fill this in at the track">Final</th>
-              <th style="width:88px" title="Prime Power exactly as the data file supplies it — no adjustments.">Rating</th>
+              <th style="width:88px" class="live-col">Final</th>
+              <th style="width:88px">Rating</th>
               <th style="width:88px">Surface fit</th>
               <th style="width:70px">Class</th>
-              <th style="width:44px" title="Scratched — excluded from compute">Scr</th>
+              <th style="width:44px">Scr</th>
               <th style="width:34px"></th>
             </tr>
           </thead>
           <tbody id="rowsBody"></tbody>
         </table>
-        <div class="empty-note" id="emptyNote">No entries yet. Upload a file above, or add a row manually.</div>
+        <div class="empty-note" id="emptyNote">No entries yet. Upload a file or load demo data.</div>
       </div>
       <div class="table-actions">
         <button class="ghost-btn" id="addRowBtn">+ Add row</button>
@@ -683,87 +324,21 @@
       </div>
     </section>
 
-    <!-- STEP 3: RACE CARD -->
-    <div class="report-toolbar no-print" id="reportToolbar" style="display:none;">
-        <button class="primary-btn" id="raceCardBtn">▤ Race card</button>
-        <button class="ghost-btn" id="printBtn">🖨 Printable page</button>
-        <label class="clean-toggle" id="diagToggleLabel"><input type="checkbox" id="diagToggle"> Show diagnostics</label>
-      </div>
-    <div class="status no-print" id="printStatus"></div>
-
     <div class="tabbar no-print" id="tabbar" style="display:none;">
-      <button data-tab="picks" id="tabPicks">Picks<span class="tab-count" id="pickCount">0</span></button>
       <button data-tab="cards" class="on">Race cards</button>
-      <button data-tab="field">Full field</button>
-      <button data-tab="score">Benchmark</button>
-      <button data-tab="bets">My bets<span class="tab-count" id="betCount">0</span></button>
-      <button data-tab="print">Printable page</button>
     </div>
 
-    <section id="picksSection" style="display:none;">
-      <h2><span class="step-num">★</span> Where the board likes a horse</h2>
-      <div class="rss-info" style="margin:0 0 14px;">One rule, and the only place this tool names a horse: <b>the field's highest career earnings per start is also the market favourite</b>, at a morning line of 2.5 or shorter, and still favourite at post.</div>
-      <div id="pickList"></div>
-    </section>
-
-    <section id="printSection" style="display:none;">
-      <h2><span class="step-num">🖨</span> Printable page</h2>
-      <div class="rss-info" style="margin:0 0 14px;">The whole card on one page — picks, race cards, full field and your saved bets. Use your browser's own <b>Print</b> or <b>Share</b> from here.</div>
-      <div id="printView"></div>
-    </section>
-
-    <section id="betsSection" style="display:none;">
-      <h2><span class="step-num">$</span> My bets</h2>
-      <div class="rss-info" style="margin:0 0 14px;">Saved picks stay in this browser. Fill in what each one did and the tally is your own record. Nothing is wagered here.</div>
-      <div id="betTally"></div>
-      <div id="betList"></div>
-      <div class="table-actions" style="margin-top:14px;">
-        <button class="small-btn" id="betExportBtn">Export as JSON</button>
-        <label class="file-btn" for="betImportInput">Import JSON</label>
-        <input type="file" id="betImportInput">
-        <button class="ghost-btn" id="betClearBtn">Clear all</button>
-      </div>
-      <div class="status" id="betStatus"></div>
-    </section>
-
     <section id="resultsSection" style="display:none;">
-      <h2><span class="step-num">3</span> Race card — every race, in race order</h2>
-      <div class="sort-toggle no-print" role="group" aria-label="Which odds to compute from">
-        <button class="toggle-btn active" id="oddsMLBtn" data-src="ml">Compute from: morning line</button>
-        <button class="toggle-btn" id="oddsFinalBtn" data-src="final">Compute from: final odds</button>
+      <h2><span class="step-num">3</span> Race card — every race</h2>
+      <div class="sort-toggle no-print">
+        <button class="toggle-btn active" id="oddsMLBtn">Compute from: morning line</button>
+        <button class="toggle-btn" id="oddsFinalBtn">Compute from: final odds</button>
       </div>
-      <p style="font-size:12.5px;color:var(--ink-soft);margin:-4px 0 14px;">Which column the math reads. <b>Final odds</b> falls back to the morning line for any horse you haven't updated, so you can fill in one race at a time.</p>
-      <div class="race-nav no-print" id="raceNav"></div>
       <div id="raceCardList"></div>
     </section>
 
-    <section id="fieldSection" style="display:none;">
-      <h2><span class="step-num">4</span> Full field, race by race</h2>
-      <div class="sort-toggle no-print" role="group" aria-label="Sort order">
-        <button class="toggle-btn active" id="sortByEdgeBtn" data-sort="edge">Sort: edge</button>
-        <button class="toggle-btn" id="sortByPostBtn" data-sort="post">Sort: post position</button>
-      </div>
-      <div id="fieldTables"></div>
-    </section>
-
-    <section id="resultsScoreSection" style="display:none;">
-      <h2><span class="step-num">5</span> Score the benchmark against results</h2>
-      <div class="rss-info" style="margin:0 0 14px;">Grades the <b>market favourite</b> in each race — the benchmark, not a pick.</div>
-      <div class="upload-card no-print">
-        <h3>Paste a results chart</h3>
-        <p>Paste a results chart. It only needs the "$2 Mutuel Prices" payout lines.</p>
-        <textarea id="resultsPaste" rows="6" placeholder="FIRST RACE&#10;Canterbury Park&#10;$2 Mutuel Prices:&#10; 2- EOS HEY BUCKO . . . 4.40 2.80 2.20&#10; 5- IZA B SLICK . . . 5.40 3.20&#10; ..."></textarea>
-        <div class="table-actions" style="margin-top:10px;">
-          <button class="primary-btn" id="scoreResultsBtn">Score the benchmark →</button>
-        </div>
-        <div class="status" id="resultsStatus"></div>
-      </div>
-      <div id="scoreboard" style="margin-top:18px;"></div>
-    </section>
-
     <div class="disclaimer">
-      <strong>How to read this:</strong> odds are converted to an implied win probability and normalized across the field to strip out the track's built-in edge. The tool does not know track bias, late scratches, trip trouble or today's pace shape — mark scratches in the Scr column, rebuild, and read the past performances yourself before betting.<br><br>
-      This is an analytical aid, not advice, and it carries no guarantee of accuracy. Wagering involves real financial risk. If gambling stops being fun or starts causing problems, the National Problem Gambling Helpline (1-800-522-4700) is free and confidential.
+      <strong>How to read this:</strong> Odds are normalized to implied probabilities to strip out the track takeout. Verify scratches and track conditions before wagering. Free national problem gambling helpline: 1-800-522-4700.
     </div>
   </main>
 </div>
@@ -772,6 +347,8 @@
 let rows = [];
 let rowId = 0;
 let computedRaces = [];
+let csvParsedRows = [];
+let csvHeaders = [];
 
 const rowsBody = document.getElementById('rowsBody');
 const emptyNote = document.getElementById('emptyNote');
@@ -801,7 +378,7 @@ function renderRows(){
           <option value="up" ${r.classMove==='up' ? 'selected' : ''}>rise</option>
         </select>
       </td>
-      <td style="text-align:center;"><input type="checkbox" ${r.scratched ? 'checked' : ''} data-f="scratched" title="Scratched — leave out of compute"></td>
+      <td style="text-align:center;"><input type="checkbox" ${r.scratched ? 'checked' : ''} data-f="scratched"></td>
       <td><button class="del-btn" title="Remove row">✕</button></td>
     `;
     tr.querySelectorAll('input, select').forEach(inp => {
@@ -824,6 +401,181 @@ function escAttr(s){
   return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/"/g,'&quot;');
 }
 
+// Robust CSV Line Splitter handling quotes and commas safely
+function parseCSVLine(textLine) {
+  let result = [];
+  let current = '';
+  let inQuotes = false;
+  for (let i = 0; i < textLine.length; i++) {
+    let char = textLine[i];
+    if (char === '"') {
+      inQuotes = !inQuotes;
+    } else if (char === ',' && !inQuotes) {
+      result.push(current.trim());
+      current = '';
+    } else {
+      current += char;
+    }
+  }
+  result.push(current.trim());
+  return result.map(val => val.replace(/^["'](.*)["']$/, '$1'));
+}
+
+// Handle Generic File / DRF / CSV uploads
+function handleTextFile(content, statusId) {
+  const lines = content.split(/\r\n|\n/).filter(l => l.trim().length > 0);
+  if (lines.length === 0) {
+    document.getElementById(statusId).textContent = 'File is empty.';
+    document.getElementById(statusId).className = 'status err';
+    return;
+  }
+  
+  csvHeaders = parseCSVLine(lines[0]);
+  csvParsedRows = lines.slice(1).map(line => parseCSVLine(line));
+
+  if (statusId === 'csvStatus') {
+    populateMapper(csvHeaders);
+    document.getElementById('csvMapper').classList.add('show');
+    document.getElementById(statusId).textContent = `Loaded ${csvParsedRows.length} rows. Map columns below.`;
+    document.getElementById(statusId).className = 'status ok';
+  } else {
+    // Quick auto-import for DRF / generic data
+    rows = [];
+    csvParsedRows.forEach((cols, idx) => {
+      if (cols.length >= 3) {
+        rows.push(newRow({
+          race: cols[0] || '1',
+          post: cols[1] || String(idx + 1),
+          horse: cols[2] || `Horse ${idx + 1}`,
+          odds: cols[3] || '4/1',
+          score: cols[4] || '100'
+        }));
+      }
+    });
+    renderRows();
+    document.getElementById(statusId).textContent = `Successfully imported ${rows.length} entries.`;
+    document.getElementById(statusId).className = 'status ok';
+  }
+}
+
+function populateMapper(headers) {
+  ['mapRace', 'mapPost', 'mapHorse', 'mapOdds', 'mapScore'].forEach(id => {
+    const sel = document.getElementById(id);
+    sel.innerHTML = '<option value="">-- Select --</option>';
+    headers.forEach((h, idx) => {
+      const opt = document.createElement('option');
+      opt.value = idx;
+      opt.textContent = h || `Column ${idx + 1}`;
+      sel.appendChild(opt);
+    });
+  });
+}
+
+document.getElementById('csvInput').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = evt => handleTextFile(evt.target.result, 'csvStatus');
+  reader.readAsText(file);
+});
+
+document.getElementById('drfInput').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = evt => handleTextFile(evt.target.result, 'drfStatus');
+  reader.readAsText(file);
+});
+
+document.getElementById('importCsvBtn').addEventListener('click', () => {
+  const rIdx = document.getElementById('mapRace').value;
+  const pIdx = document.getElementById('mapPost').value;
+  const hIdx = document.getElementById('mapHorse').value;
+  const oIdx = document.getElementById('mapOdds').value;
+  const sIdx = document.getElementById('mapScore').value;
+
+  if (hIdx === '') {
+    alert('Please map at least the Horse column.');
+    return;
+  }
+
+  rows = [];
+  csvParsedRows.forEach(cols => {
+    rows.push(newRow({
+      race: rIdx !== '' ? cols[rIdx] : '1',
+      post: pIdx !== '' ? cols[pIdx] : '1',
+      horse: hIdx !== '' ? cols[hIdx] : 'Unknown',
+      odds: oIdx !== '' ? cols[oIdx] : '4/1',
+      score: sIdx !== '' ? cols[sIdx] : '100'
+    }));
+  });
+  renderRows();
+  document.getElementById('csvStatus').textContent = `Imported ${rows.length} rows successfully.`;
+  document.getElementById('csvStatus').className = 'status ok';
+});
+
+// Robust RSS / XML Feed Scraper for Scratches
+function processFeedContent(textContent) {
+  let scratchCount = 0;
+  try {
+    const parser = new DOMParser();
+    const xmlDoc = parser.parseFromString(textContent, 'text/xml');
+    const items = xmlDoc.querySelectorAll('item, entry');
+    
+    if (items.length > 0) {
+      items.forEach(item => {
+        const title = item.querySelector('title')?.textContent || '';
+        const desc = item.querySelector('description, content')?.textContent || '';
+        const fullText = (title + ' ' + desc).toLowerCase();
+        if (fullText.includes('scratch')) {
+          matchAndScratch(fullText);
+          scratchCount++;
+        }
+      });
+    } else {
+      // Fallback to raw text matching line by line
+      const lines = textContent.split(/\r\n|\n/);
+      lines.forEach(line => {
+        if (line.toLowerCase().includes('scratch')) {
+          matchAndScratch(line.toLowerCase());
+          scratchCount++;
+        }
+      });
+    }
+    renderRows();
+    document.getElementById('rssStatus').textContent = `Processed feed: Applied detected scratches.`;
+    document.getElementById('rssStatus').className = 'status ok';
+  } catch (err) {
+    document.getElementById('rssStatus').textContent = 'Error parsing feed format.';
+    document.getElementById('rssStatus').className = 'status err';
+  }
+}
+
+function matchAndScratch(textStr) {
+  rows.forEach(r => {
+    if (textStr.includes(r.horse.toLowerCase())) {
+      r.scratched = true;
+    }
+  });
+}
+
+document.getElementById('rssInput').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = evt => processFeedContent(evt.target.result);
+  reader.readAsText(file);
+});
+
+document.getElementById('applyRssBtn').addEventListener('click', () => {
+  const pasteContent = document.getElementById('rssPaste').value;
+  if (!pasteContent.trim()) {
+    alert('Please paste feed XML or text first.');
+    return;
+  }
+  processFeedContent(pasteContent);
+});
+
 document.getElementById('addRowBtn').addEventListener('click', () => {
   rows.push(newRow({}));
   renderRows();
@@ -834,9 +586,6 @@ document.getElementById('clearBtn').addEventListener('click', () => {
   computedRaces = [];
   renderRows();
   document.getElementById('resultsSection').style.display='none';
-  document.getElementById('fieldSection').style.display='none';
-  document.getElementById('resultsScoreSection').style.display='none';
-  document.getElementById('reportToolbar').style.display='none';
   document.getElementById('tabbar').style.display='none';
 });
 
@@ -846,17 +595,7 @@ document.getElementById('demoBtn').addEventListener('click', () => {
     {race:'3', post:'2', horse:'Queen Atlas', odds:'4/1', score:'114.8'},
     {race:'3', post:'3', horse:"Merlin's Sister", odds:'15/1', score:'73.0'},
     {race:'3', post:'4', horse:'Alcohol', odds:'9/2', score:'103.6'},
-    {race:'3', post:'5', horse:'Fall Moon', odds:'5/2', score:'90.4'},
-    {race:'3', post:'6', horse:'Dixi So Fast', odds:'6/1', score:'101.5'},
-    {race:'3', post:'7', horse:'Mark of Victory', odds:'9/2', score:'95.5'},
-    {race:'3', post:'8', horse:'Sirius Light', odds:'6/1', score:'104.8'},
-    {race:'8', post:'1', horse:'Treble Clef', odds:'9/2', score:'114.7'},
-    {race:'8', post:'2', horse:'Ky Do Declare', odds:'4/1', score:'113.8'},
-    {race:'8', post:'3', horse:'Cobblestone Bridge', odds:'5/2', score:'120.7'},
-    {race:'8', post:'4', horse:'Lace Up', odds:'3/1', score:'112.8'},
-    {race:'8', post:'5', horse:'Secret Potion', odds:'8/1', score:'116.3'},
-    {race:'8', post:'6', horse:'Fort Warren', odds:'12/1', score:'112.8'},
-    {race:'8', post:'7', horse:'Words of Wisdom', odds:'5/1', score:'116.9'},
+    {race:'3', post:'5', horse:'Fall Moon', odds:'5/2', score:'90.4'}
   ];
   rows = demo.map(d => newRow(d));
   renderRows();
@@ -876,7 +615,6 @@ function parseOdds(str){
 }
 
 function computeCard(useFinal = false){
-  // Group rows by race
   const map = {};
   rows.filter(r => !r.scratched).forEach(r => {
     const rc = r.race || '1';
@@ -908,40 +646,27 @@ function computeCard(useFinal = false){
 
     horses.sort((a,b) => b.edge - a.edge);
 
-    // Contenders vs Pretenders split & Confidence scoring
     const topEdge = horses[0]?.edge || 0;
     const confidence = topEdge > 0.08 ? 'HIGH' : (topEdge > 0.03 ? 'PROBABLE' : 'QUESTIONABLE');
-    
     const contenders = horses.filter(h => h.edge >= -0.01);
     const pretenders = horses.filter(h => h.edge < -0.01);
 
-    computedRaces.push({
-      race: rc,
-      horses,
-      confidence,
-      topEdge,
-      contenders,
-      pretenders
-    });
+    computedRaces.push({ race: rc, horses, confidence, topEdge, contenders, pretenders });
   });
 
   renderOutputs();
 }
 
 function renderOutputs(){
-  document.getElementById('reportToolbar').style.display = 'flex';
   document.getElementById('tabbar').style.display = 'flex';
   document.getElementById('resultsSection').style.display = 'block';
 
-  // Render Race Cards
   const listEl = document.getElementById('raceCardList');
   listEl.innerHTML = '';
 
   computedRaces.forEach(cr => {
     const div = document.createElement('div');
     div.className = 'race-card';
-    div.id = `raceCard-${cr.race}`;
-
     const topPick = cr.horses[0];
     const confClass = `conf-${cr.confidence.toLowerCase()}`;
 
@@ -950,64 +675,42 @@ function renderOutputs(){
         <strong>Race ${cr.race}</strong>
         <span class="read-badge ${cr.confidence === 'HIGH' ? 'green' : (cr.confidence === 'PROBABLE' ? 'yellow' : 'red')}">${cr.confidence} CONFIDENCE</span>
       </div>
-      <div class="race-pick">Top Value Pick: <b>#${topPick?.post} ${topPick?.horse}</b> (Edge: ${(topPick?.edge*100).toFixed(1)}%)</div>
+      <div style="font-size:12.5px; margin-top:6px;">Top Value Pick: <b>#${topPick?.post} ${topPick?.horse}</b> (Edge: ${(topPick?.edge*100).toFixed(1)}%)</div>
       
       <div class="conf-block ${confClass}">
         <span class="conf-tag">${cr.confidence}</span>
-        <span class="conf-body">Model confidence rating based on overlay spread and strength metrics.</span>
+        <span>Model confidence rating based on overlay spread and strength metrics.</span>
       </div>
 
       <div class="contender-matrix">
         <div class="matrix-box contenders">
-          <div class="matrix-title">Contenders (Value / Positive Edge)</div>
-          <div>${cr.contenders.map(h => `#${h.post} ${h.horse} (${(h.edge*100).toFixed(1)}% edge)`).join(', ') || 'None'}</div>
+          <div class="matrix-title">Contenders (Positive Edge)</div>
+          <div>${cr.contenders.map(h => `#${h.post} ${h.horse}`).join(', ') || 'None'}</div>
         </div>
         <div class="matrix-box pretenders">
-          <div class="matrix-title">Pretenders (Negative Edge / Overbet)</div>
+          <div class="matrix-title">Pretenders (Overbet)</div>
           <div>${cr.pretenders.map(h => `#${h.post} ${h.horse}`).join(', ') || 'None'}</div>
         </div>
       </div>
 
       <div class="exotic-tip">
-        <b>Exotic Suggestion:</b> Key <b>#${topPick?.post} ${topPick?.horse}</b> on top in Exactas and Trifectas over contenders 
-        ${cr.contenders.slice(1, 3).map(h => `#${h.post} ${h.horse}`).join(', ')}. 
-        Box top 3 contenders for multi-race or vertical stability.
+        <b>Exotic Suggestion:</b> Key <b>#${topPick?.post} ${topPick?.horse}</b> on top in Exactas and Trifectas over contenders.
       </div>
     `;
     listEl.appendChild(div);
   });
 }
 
-document.getElementById('computeBtn').addEventListener('click', () => {
-  computeCard(false);
-});
-
+document.getElementById('computeBtn').addEventListener('click', () => computeCard(false));
 document.getElementById('oddsMLBtn').addEventListener('click', (e) => {
   document.querySelectorAll('.sort-toggle button').forEach(b => b.classList.remove('active'));
   e.target.classList.add('active');
   computeCard(false);
 });
-
 document.getElementById('oddsFinalBtn').addEventListener('click', (e) => {
   document.querySelectorAll('.sort-toggle button').forEach(b => b.classList.remove('active'));
   e.target.classList.add('active');
   computeCard(true);
-});
-
-// Tab switching logic
-document.querySelectorAll('.tabbar button').forEach(btn => {
-  btn.addEventListener('click', (e) => {
-    document.querySelectorAll('.tabbar button').forEach(b => b.classList.remove('on'));
-    e.target.classList.add('on');
-    const tab = e.target.dataset.tab;
-    // Simple tab display toggles
-    document.getElementById('resultsSection').style.display = (tab === 'cards' || !tab) ? 'block' : 'none';
-    document.getElementById('picksSection').style.display = tab === 'picks' ? 'block' : 'none';
-    document.getElementById('printSection').style.display = tab === 'print' ? 'block' : 'none';
-    document.getElementById('betsSection').style.display = tab === 'bets' ? 'block' : 'none';
-    document.getElementById('fieldSection').style.display = tab === 'field' ? 'block' : 'none';
-    document.getElementById('resultsScoreSection').style.display = tab === 'score' ? 'block' : 'none';
-  });
 });
 </script>
 </body>
