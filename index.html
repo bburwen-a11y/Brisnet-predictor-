@@ -135,10 +135,6 @@
   }
   .scratch-panel h3{margin:0 0 6px; font-size:15px;}
   .scratch-panel p{margin:0 0 12px; font-size:13px; color:var(--ink-soft); line-height:1.5;}
-  .rss-info{
-    margin-top:10px; padding:9px 11px; font-size:12.5px; line-height:1.55;
-    background:rgba(0,0,0,.035); border-radius:4px; color:var(--ink-soft);
-  }
   .table-actions{display:flex; gap:10px; margin-top:12px; flex-wrap:wrap;}
   .primary-btn{
     background:var(--amber); color:var(--ink); border:none; padding:11px 22px;
@@ -163,10 +159,6 @@
     margin-bottom:-2px; white-space:nowrap;
   }
   .tabbar button.on{color:var(--board-950); border-bottom-color:var(--board-950); font-weight:700;}
-  .tabbar .tab-count{
-    display:inline-block; margin-left:6px; padding:1px 6px; border-radius:9px;
-    background:var(--board-950); color:#fff; font-size:10px; font-weight:700;
-  }
 
   .sort-toggle{display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap;}
   .toggle-btn{
@@ -234,7 +226,7 @@
   <header>
     <p class="eyebrow">Handicapping utility · <span class="ver">v1.17</span> · released September 2026</p>
     <h1><span class="flap">B</span><span class="flap">r</span><span class="flap">i</span><span class="flap">s</span><span class="flap">n</span><span class="flap">e</span><span class="flap">t</span> <span class="flap">H</span><span class="flap">a</span><span class="flap">n</span><span class="flap">d</span><span class="flap">i</span><span class="flap">c</span><span class="flap">a</span><span class="flap">p</span></h1>
-    <p class="tagline">Upload files or feeds with robust parsing support. Brisnet Handicap organizes past performances, live track odds, confidence metrics, and exotic structures.</p>
+    <p class="tagline">Mobile-Optimized Race Card Reader. Uploaded data automatically computes and builds your card instantly.</p>
   </header>
 
   <main>
@@ -243,14 +235,14 @@
       <div class="upload-grid four-col">
         <div class="upload-card">
           <h3>Brisnet data file</h3>
-          <p>Brisnet Single File export (.drf/.csv/.txt). Automatically splits lines and maps fields safely.</p>
+          <p>Brisnet Single File export (.drf/.csv/.txt). Automatically parses and builds the card.</p>
           <label class="file-btn" for="drfInput">Choose .DRF / .csv</label>
           <input type="file" id="drfInput" accept=".drf,.csv,.txt,text/csv,text/plain">
           <div class="status" id="drfStatus"></div>
         </div>
         <div class="upload-card">
           <h3>CSV file</h3>
-          <p>Spreadsheet with race, horse, and odds columns. Map columns dynamically below.</p>
+          <p>Spreadsheet with race, horse, and odds columns. Map columns below.</p>
           <label class="file-btn" for="csvInput">Choose CSV</label>
           <input type="file" id="csvInput" accept=".csv">
           <div class="status" id="csvStatus"></div>
@@ -260,12 +252,12 @@
             <div class="map-row"><label>Horse</label><select id="mapHorse"></select></div>
             <div class="map-row"><label>ML odds</label><select id="mapOdds"></select></div>
             <div class="map-row"><label>Rating</label><select id="mapScore"></select></div>
-            <button class="small-btn" id="importCsvBtn">Import mapped rows →</button>
+            <button class="small-btn" id="importCsvBtn">Import &amp; Build Card →</button>
           </div>
         </div>
         <div class="upload-card">
           <h3>Program PDF</h3>
-          <p>Extract text from program PDFs directly inside your browser.</p>
+          <p>Extract text from program PDFs directly on your mobile device.</p>
           <label class="file-btn" for="pdfInput">Choose PDF</label>
           <input type="file" id="pdfInput" accept=".pdf">
           <div class="status" id="pdfStatus"></div>
@@ -275,7 +267,7 @@
           <p>Paste copied program text or feeds directly for clean parsing.</p>
           <textarea id="pdfPasteText" rows="4" placeholder="Paste text here…"></textarea>
           <div class="table-actions" style="margin-top:10px;">
-            <button class="small-btn" id="extractPasteBtn">Extract from pasted text →</button>
+            <button class="small-btn" id="extractPasteBtn">Extract &amp; Build →</button>
           </div>
           <div class="status" id="pdfPasteStatus"></div>
         </div>
@@ -286,12 +278,12 @@
       <h2><span class="step-num">2</span> Check &amp; edit entries</h2>
       <div class="scratch-panel" style="border:1.5px dashed var(--paper-line); border-radius:4px; padding:16px 18px; background:var(--paper-dim); margin-bottom:14px;">
         <h3>Apply scratches from RSS / XML feed</h3>
-        <p>Upload an XML feed file or paste feed code below. Scratches are detected automatically.</p>
+        <p>Upload an XML feed file or paste feed code below. Scratches update the card automatically.</p>
         <label class="file-btn" for="rssInput">Choose RSS / XML file</label>
         <input type="file" id="rssInput" accept=".xml,.rss,.txt">
         <textarea id="rssPaste" rows="3" placeholder="…or paste RSS/XML or scratch text here" style="margin-top:10px;"></textarea>
         <div class="table-actions" style="margin-top:10px;">
-          <button class="small-btn" id="applyRssBtn">Apply scratches →</button>
+          <button class="small-btn" id="applyRssBtn">Apply Scratches &amp; Rebuild →</button>
         </div>
         <div class="status" id="rssStatus"></div>
         <div id="rssReport"></div>
@@ -387,11 +379,13 @@ function renderRows(){
       inp.addEventListener(evt, e => {
         r[e.target.dataset.f] = isCheckbox ? e.target.checked : e.target.value;
         if (isCheckbox) tr.classList.toggle('scratched-row', r.scratched);
+        computeCard(false); // Live auto-recalculate on mobile edits
       });
     });
     tr.querySelector('.del-btn').addEventListener('click', () => {
       rows = rows.filter(x => x.id !== r.id);
       renderRows();
+      computeCard(false);
     });
     rowsBody.appendChild(tr);
   });
@@ -401,7 +395,6 @@ function escAttr(s){
   return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/"/g,'&quot;');
 }
 
-// Robust CSV Line Splitter handling quotes and commas safely
 function parseCSVLine(textLine) {
   let result = [];
   let current = '';
@@ -421,7 +414,6 @@ function parseCSVLine(textLine) {
   return result.map(val => val.replace(/^["'](.*)["']$/, '$1'));
 }
 
-// Handle Generic File / DRF / CSV uploads
 function handleTextFile(content, statusId) {
   const lines = content.split(/\r\n|\n/).filter(l => l.trim().length > 0);
   if (lines.length === 0) {
@@ -439,7 +431,6 @@ function handleTextFile(content, statusId) {
     document.getElementById(statusId).textContent = `Loaded ${csvParsedRows.length} rows. Map columns below.`;
     document.getElementById(statusId).className = 'status ok';
   } else {
-    // Quick auto-import for DRF / generic data
     rows = [];
     csvParsedRows.forEach((cols, idx) => {
       if (cols.length >= 3) {
@@ -453,8 +444,9 @@ function handleTextFile(content, statusId) {
       }
     });
     renderRows();
-    document.getElementById(statusId).textContent = `Successfully imported ${rows.length} entries.`;
+    document.getElementById(statusId).textContent = `Imported ${rows.length} entries successfully.`;
     document.getElementById(statusId).className = 'status ok';
+    computeCard(false); // Automatically build the card on successful import
   }
 }
 
@@ -512,11 +504,10 @@ document.getElementById('importCsvBtn').addEventListener('click', () => {
   renderRows();
   document.getElementById('csvStatus').textContent = `Imported ${rows.length} rows successfully.`;
   document.getElementById('csvStatus').className = 'status ok';
+  computeCard(false); // Automatically build card after CSV mapping
 });
 
-// Robust RSS / XML Feed Scraper for Scratches
 function processFeedContent(textContent) {
-  let scratchCount = 0;
   try {
     const parser = new DOMParser();
     const xmlDoc = parser.parseFromString(textContent, 'text/xml');
@@ -529,22 +520,20 @@ function processFeedContent(textContent) {
         const fullText = (title + ' ' + desc).toLowerCase();
         if (fullText.includes('scratch')) {
           matchAndScratch(fullText);
-          scratchCount++;
         }
       });
     } else {
-      // Fallback to raw text matching line by line
       const lines = textContent.split(/\r\n|\n/);
       lines.forEach(line => {
         if (line.toLowerCase().includes('scratch')) {
           matchAndScratch(line.toLowerCase());
-          scratchCount++;
         }
       });
     }
     renderRows();
-    document.getElementById('rssStatus').textContent = `Processed feed: Applied detected scratches.`;
+    document.getElementById('rssStatus').textContent = `Feed processed: Scratches applied.`;
     document.getElementById('rssStatus').className = 'status ok';
+    computeCard(false); // Rebuild card automatically after scratches
   } catch (err) {
     document.getElementById('rssStatus').textContent = 'Error parsing feed format.';
     document.getElementById('rssStatus').className = 'status err';
@@ -599,6 +588,7 @@ document.getElementById('demoBtn').addEventListener('click', () => {
   ];
   rows = demo.map(d => newRow(d));
   renderRows();
+  computeCard(false); // Automatically build card on demo load
 });
 
 function parseOdds(str){
