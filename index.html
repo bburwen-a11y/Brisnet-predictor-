@@ -219,6 +219,10 @@
     font-size:12px; color:var(--ink-soft); line-height:1.6; padding-top:18px;
     border-top:1px solid var(--paper-line); margin-top:36px;
   }
+  .rss-report-box {
+    background: #fff; border: 1px solid var(--paper-line); border-radius: 3px; padding: 10px;
+    font-size: 12px; margin-top: 10px; font-family: var(--mono);
+  }
 </style>
 </head>
 <body>
@@ -226,7 +230,7 @@
   <header>
     <p class="eyebrow">Handicapping utility · <span class="ver">v1.17</span> · released September 2026</p>
     <h1><span class="flap">B</span><span class="flap">r</span><span class="flap">i</span><span class="flap">s</span><span class="flap">n</span><span class="flap">e</span><span class="flap">t</span> <span class="flap">H</span><span class="flap">a</span><span class="flap">n</span><span class="flap">d</span><span class="flap">i</span><span class="flap">c</span><span class="flap">a</span><span class="flap">p</span></h1>
-    <p class="tagline">Mobile-Optimized Race Card Reader. Uploaded data automatically computes and builds your card instantly.</p>
+    <p class="tagline">Mobile-Optimized Race Card Reader. Automatically parses Equibase scratch feeds and builds cards instantly.</p>
   </header>
 
   <main>
@@ -276,12 +280,12 @@
 
     <section class="no-print">
       <h2><span class="step-num">2</span> Check &amp; edit entries</h2>
-      <div class="scratch-panel" style="border:1.5px dashed var(--paper-line); border-radius:4px; padding:16px 18px; background:var(--paper-dim); margin-bottom:14px;">
-        <h3>Apply scratches from RSS / XML feed</h3>
-        <p>Upload an XML feed file or paste feed code below. Scratches update the card automatically.</p>
-        <label class="file-btn" for="rssInput">Choose RSS / XML file</label>
+      <div class="scratch-panel">
+        <h3>Apply Equibase Scratches &amp; Changes (XML Feed)</h3>
+        <p>Upload the Equibase XML/RSS feed file or paste it below. Scratches update horses automatically with an activity report.</p>
+        <label class="file-btn" for="rssInput">Choose XML / RSS file</label>
         <input type="file" id="rssInput" accept=".xml,.rss,.txt">
-        <textarea id="rssPaste" rows="3" placeholder="…or paste RSS/XML or scratch text here" style="margin-top:10px;"></textarea>
+        <textarea id="rssPaste" rows="3" placeholder="…or paste Equibase XML/RSS feed content here" style="margin-top:10px;"></textarea>
         <div class="table-actions" style="margin-top:10px;">
           <button class="small-btn" id="applyRssBtn">Apply Scratches &amp; Rebuild →</button>
         </div>
@@ -379,7 +383,7 @@ function renderRows(){
       inp.addEventListener(evt, e => {
         r[e.target.dataset.f] = isCheckbox ? e.target.checked : e.target.value;
         if (isCheckbox) tr.classList.toggle('scratched-row', r.scratched);
-        computeCard(false); // Live auto-recalculate on mobile edits
+        computeCard(false);
       });
     });
     tr.querySelector('.del-btn').addEventListener('click', () => {
@@ -446,7 +450,7 @@ function handleTextFile(content, statusId) {
     renderRows();
     document.getElementById(statusId).textContent = `Imported ${rows.length} entries successfully.`;
     document.getElementById(statusId).className = 'status ok';
-    computeCard(false); // Automatically build the card on successful import
+    computeCard(false);
   }
 }
 
@@ -504,7 +508,7 @@ document.getElementById('importCsvBtn').addEventListener('click', () => {
   renderRows();
   document.getElementById('csvStatus').textContent = `Imported ${rows.length} rows successfully.`;
   document.getElementById('csvStatus').className = 'status ok';
-  computeCard(false); // Automatically build card after CSV mapping
+  computeCard(false);
 });
 
 function processFeedContent(textContent) {
@@ -513,39 +517,72 @@ function processFeedContent(textContent) {
     const xmlDoc = parser.parseFromString(textContent, 'text/xml');
     const items = xmlDoc.querySelectorAll('item, entry');
     
+    let scratchedCount = 0;
+    let scratchedList = [];
+
     if (items.length > 0) {
       items.forEach(item => {
         const title = item.querySelector('title')?.textContent || '';
         const desc = item.querySelector('description, content')?.textContent || '';
-        const fullText = (title + ' ' + desc).toLowerCase();
-        if (fullText.includes('scratch')) {
-          matchAndScratch(fullText);
+        const fullText = (title + ' ' + desc);
+        
+        if (fullText.toLowerCase().includes('scratch')) {
+          // Parse out horse names using regex matching <b># X Horse Name</b> or similar patterns in Equibase feeds
+          const matches = fullText.matchAll(/Race\s+(\d+):.*?<b>#\s*(\d+)\s+([^<]+)<\/b>\s*<i>Scratched<\/i>/gi);
+          for (const match of matches) {
+            const raceNum = parseInt(match[1], 10).toString();
+            const horseName = match[3].trim();
+            
+            rows.forEach(r => {
+              if (r.race.trim() === raceNum && r.horse.toLowerCase() === horseName.toLowerCase() && !r.scratched) {
+                r.scratched = true;
+                scratchedCount++;
+                scratchedList.push(`Race ${raceNum}: #${r.post} ${r.horse}`);
+              }
+            });
+          }
+          
+          // Fallback generic match if exact tag structure differs slightly
+          rows.forEach(r => {
+            if (fullText.toLowerCase().includes(r.horse.toLowerCase()) && fullText.toLowerCase().includes('scratched') && !r.scratched) {
+              r.scratched = true;
+              scratchedCount++;
+              scratchedList.push(`Race ${r.race}: #${r.post} ${r.horse}`);
+            }
+          });
         }
       });
     } else {
       const lines = textContent.split(/\r\n|\n/);
       lines.forEach(line => {
         if (line.toLowerCase().includes('scratch')) {
-          matchAndScratch(line.toLowerCase());
+          rows.forEach(r => {
+            if (line.toLowerCase().includes(r.horse.toLowerCase()) && !r.scratched) {
+              r.scratched = true;
+              scratchedCount++;
+              scratchedList.push(`Race ${r.race}: #${r.post} ${r.horse}`);
+            }
+          });
         }
       });
     }
+
     renderRows();
-    document.getElementById('rssStatus').textContent = `Feed processed: Scratches applied.`;
+    document.getElementById('rssStatus').textContent = `Equibase feed processed successfully.`;
     document.getElementById('rssStatus').className = 'status ok';
-    computeCard(false); // Rebuild card automatically after scratches
+    
+    const reportEl = document.getElementById('rssReport');
+    if (scratchedCount > 0) {
+      reportEl.innerHTML = `<div class="rss-report-box"><b>Scratches Applied (${scratchedCount}):</b><br>` + scratchedList.join('<br>') + `</div>`;
+    } else {
+      reportEl.innerHTML = `<div class="rss-report-box" style="color:var(--ink-soft)">Feed processed, but no matching active horses found for scratching. Check race numbers or horse names.</div>`;
+    }
+
+    computeCard(false);
   } catch (err) {
-    document.getElementById('rssStatus').textContent = 'Error parsing feed format.';
+    document.getElementById('rssStatus').textContent = 'Error parsing XML/RSS feed format.';
     document.getElementById('rssStatus').className = 'status err';
   }
-}
-
-function matchAndScratch(textStr) {
-  rows.forEach(r => {
-    if (textStr.includes(r.horse.toLowerCase())) {
-      r.scratched = true;
-    }
-  });
 }
 
 document.getElementById('rssInput').addEventListener('change', e => {
@@ -559,7 +596,7 @@ document.getElementById('rssInput').addEventListener('change', e => {
 document.getElementById('applyRssBtn').addEventListener('click', () => {
   const pasteContent = document.getElementById('rssPaste').value;
   if (!pasteContent.trim()) {
-    alert('Please paste feed XML or text first.');
+    alert('Please paste Equibase XML/RSS feed content first.');
     return;
   }
   processFeedContent(pasteContent);
@@ -576,19 +613,27 @@ document.getElementById('clearBtn').addEventListener('click', () => {
   renderRows();
   document.getElementById('resultsSection').style.display='none';
   document.getElementById('tabbar').style.display='none';
+  document.getElementById('rssReport').innerHTML = '';
 });
 
 document.getElementById('demoBtn').addEventListener('click', () => {
   const demo = [
-    {race:'3', post:'1', horse:'Paarl', odds:'10/1', score:'94.3'},
-    {race:'3', post:'2', horse:'Queen Atlas', odds:'4/1', score:'114.8'},
-    {race:'3', post:'3', horse:"Merlin's Sister", odds:'15/1', score:'73.0'},
-    {race:'3', post:'4', horse:'Alcohol', odds:'9/2', score:'103.6'},
-    {race:'3', post:'5', horse:'Fall Moon', odds:'5/2', score:'90.4'}
+    {race:'1', post:'2', horse:'Lady Giuliana', odds:'3/1', score:'102.0'},
+    {race:'1', post:'3', horse:'Here Kitty Kitty', odds:'5/2', score:'108.4'},
+    {race:'1', post:'5', horse:'Candymonium', odds:'4/1', score:'99.5'},
+    {race:'8', post:'5', horse:'Exuberant Mischief', odds:'9/2', score:'112.1'},
+    {race:'8', post:'6', horse:'Kukuk', odds:'6/1', score:'95.0'}
   ];
   rows = demo.map(d => newRow(d));
   renderRows();
-  computeCard(false); // Automatically build card on demo load
+  document.getElementById('rssPaste').value = `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <item><description>Race 01: &lt;b&gt;# 2 Lady Giuliana&lt;/b&gt; &lt;i&gt;Scratched&lt;/i&gt;</description></item>
+    <item><description>Race 08: &lt;b&gt;# 5 Exuberant Mischief&lt;/b&gt; &lt;i&gt;Scratched&lt;/i&gt;</description></item>
+  </channel>
+</rss>`;
+  processFeedContent(document.getElementById('rssPaste').value);
 });
 
 function parseOdds(str){
