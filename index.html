@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Horse Race Predictor — Complete Race Card & Prediction Engine</title>
+<title>Overlay Board v1.15 — Race Card Reader</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
   :root{
     --board-950:#0F2A20;
@@ -15,439 +16,802 @@
     --amber:#D9A73B;
     --amber-dim:#8A6A26;
     --red:#8B2A2A;
-    --green:#2E6E45;
+    --red-dim:#6E2222;
     --ink:#1E1B14;
     --ink-soft:#4A4433;
     --mono: ui-monospace, "SF Mono", "Roboto Mono", "Courier New", monospace;
     --sans: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
   }
   *{box-sizing:border-box;}
-  body{margin:0; background:#ffffff; color:var(--ink); font-family:var(--sans); -webkit-font-smoothing:antialiased;}
-  .wrap{max-width:1380px; margin:0 auto;}
-
-  header{
-    background: linear-gradient(180deg,var(--board-900),var(--board-950));
-    padding:32px 24px 26px; border-bottom:3px solid var(--amber-dim);
+  body{
+    margin:0; background:#ffffff; color:var(--ink);
+    font-family:var(--sans);
+    -webkit-font-smoothing:antialiased;
   }
-  .eyebrow{font-family:var(--mono); color:var(--amber); font-size:12px; letter-spacing:.22em; text-transform:uppercase; margin:0 0 8px;}
-  h1{margin:0; color:var(--paper); font-weight:800; font-size:clamp(26px,4.5vw,40px); line-height:1.05;}
-  .tagline{color:#B9C9BE; font-size:14.5px; max-width:68ch; margin:10px 0 0; line-height:1.5;}
+  .wrap{max-width:1080px;margin:0 auto;}
 
-  main{background:var(--paper); padding:24px 20px 60px;}
-  section{margin:0 0 32px;}
+  /* ---------- HEADER / BOARD ---------- */
+  header{
+    background:
+      linear-gradient(180deg,var(--board-900),var(--board-950));
+    padding:38px 24px 30px;
+    border-bottom:3px solid var(--amber-dim);
+    position:relative;
+    overflow:hidden;
+  }
+  header::before{
+    content:"";
+    position:absolute; inset:0;
+    background-image:repeating-linear-gradient(180deg, rgba(255,255,255,0.025) 0px, rgba(255,255,255,0.025) 1px, transparent 1px, transparent 3px);
+    pointer-events:none;
+  }
+  .eyebrow{
+    font-family:var(--mono); color:var(--amber); font-size:12px;
+    letter-spacing:.22em; text-transform:uppercase; margin:0 0 10px;
+  }
+  h1{
+    margin:0; color:var(--paper); font-weight:800; letter-spacing:.01em;
+    font-size:clamp(28px,5vw,44px); line-height:1.02;
+  }
+  .flap{display:inline-block; animation:flapin .5s ease both;}
+  @media (prefers-reduced-motion: reduce){ .flap{animation:none;} }
+  @keyframes flapin{ from{opacity:0; transform:translateY(-.35em) rotateX(60deg);} to{opacity:1; transform:none;} }
+  h1 .flap:nth-child(1){animation-delay:.02s}
+  h1 .flap:nth-child(2){animation-delay:.05s}
+  h1 .flap:nth-child(3){animation-delay:.08s}
+  h1 .flap:nth-child(4){animation-delay:.11s}
+  h1 .flap:nth-child(5){animation-delay:.14s}
+  h1 .flap:nth-child(6){animation-delay:.17s}
+  h1 .flap:nth-child(7){animation-delay:.20s}
+  h1 .flap:nth-child(8){animation-delay:.23s}
+  h1 .flap:nth-child(9){animation-delay:.26s}
+  h1 .flap:nth-child(10){animation-delay:.29s}
+  .tagline{color:#B9C9BE; font-size:15px; max-width:56ch; margin:12px 0 0; line-height:1.5;}
+  .ver{font-family:var(--mono); font-weight:700; letter-spacing:.04em;}
+
+  main{background:var(--paper); padding:28px 24px 60px;}
+  section{margin:0 0 34px;}
+  .panel{
+    background:var(--paper); border:1px solid var(--paper-line);
+    border-radius:2px;
+  }
   h2{
-    font-size:13px; letter-spacing:.16em; text-transform:uppercase; color:var(--ink-soft); margin:0 0 14px;
-    font-weight:700; display:flex; align-items:center; gap:10px;
+    font-size:13px; letter-spacing:.16em; text-transform:uppercase;
+    color:var(--ink-soft); margin:0 0 14px; font-weight:700;
+    display:flex; align-items:center; gap:10px;
   }
   h2::after{content:""; flex:1; height:1px; background:var(--paper-line);}
-  .step-num{font-family:var(--mono); background:var(--board-950); color:var(--amber); font-size:11px; padding:3px 7px; border-radius:2px;}
+  .step-num{
+    font-family:var(--mono); background:var(--board-950); color:var(--amber);
+    font-size:11px; padding:3px 7px; border-radius:2px; letter-spacing:.05em;
+  }
 
-  .upload-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:16px;}
-  .upload-card{border:1.5px dashed var(--paper-line); border-radius:4px; padding:18px; background:var(--paper-dim);}
+  /* ---------- UPLOAD CARDS ---------- */
+  .upload-grid{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  .upload-grid.three-col{grid-template-columns:1fr 1fr 1fr;}
+  .upload-grid.four-col{grid-template-columns:1fr 1fr 1fr 1fr;}
+  @media (max-width:1200px){.upload-grid.four-col{grid-template-columns:1fr 1fr;}}
+  @media (max-width:960px){.upload-grid.three-col{grid-template-columns:1fr 1fr;}}
+  @media (max-width:720px){.upload-grid{grid-template-columns:1fr;}}
+  .upload-card{
+    border:1.5px dashed var(--paper-line); border-radius:4px; padding:20px;
+    background:var(--paper-dim);
+  }
   .upload-card h3{margin:0 0 6px; font-size:15px; color:var(--ink);}
-  .upload-card p{margin:0 0 12px; font-size:12.5px; color:var(--ink-soft); line-height:1.5;}
+  .upload-card p{margin:0 0 14px; font-size:13px; color:var(--ink-soft); line-height:1.5;}
   .file-btn{
-    display:inline-flex; align-items:center; gap:8px; background:var(--board-950); color:var(--paper);
-    border:none; padding:9px 14px; border-radius:3px; font-size:12.5px; font-weight:600; cursor:pointer;
+    display:inline-flex; align-items:center; gap:8px;
+    background:var(--board-950); color:var(--paper); border:none;
+    padding:10px 16px; border-radius:3px; font-size:13px; font-weight:600;
+    cursor:pointer; font-family:var(--sans);
   }
   .file-btn:hover{background:var(--board-800);}
+  .file-btn:focus-visible{outline:2px solid var(--amber); outline-offset:2px;}
   input[type=file]{display:none;}
-  .status{font-family:var(--mono); font-size:12px; margin-top:8px; color:var(--ink-soft); min-height:16px; word-break:break-all;}
-  .status.ok{color:var(--green); font-weight:700;}
-  .status.err{color:var(--red); font-weight:700;}
+  .status{font-family:var(--mono); font-size:12px; margin-top:10px; color:var(--ink-soft); min-height:16px;}
+  .status.ok{color:#2E5C3E;}
+  .status.err{color:var(--red);}
 
-  .file-meta-box{
-    margin-top:10px; padding:8px 10px; background:#fff; border:1px solid var(--paper-line);
-    border-radius:3px; font-family:var(--mono); font-size:11.5px; display:none;
+  .mapper{margin-top:14px; display:none; border-top:1px solid var(--paper-line); padding-top:14px;}
+  .mapper.show{display:block;}
+  .map-row{display:grid; grid-template-columns:110px 1fr; gap:10px; align-items:center; margin-bottom:8px;}
+  .map-row label{font-size:12px; color:var(--ink-soft);}
+  select, input[type=text], input[type=number]{
+    font-family:var(--sans); font-size:13px; padding:6px 8px;
+    border:1px solid var(--paper-line); border-radius:3px; background:#fff; color:var(--ink);
+    width:100%;
   }
-  .file-meta-box.show{display:block;}
+  .small-btn{
+    background:transparent; border:1px solid var(--board-950); color:var(--board-950);
+    padding:7px 12px; border-radius:3px; font-size:12px; font-weight:600; cursor:pointer; margin-top:6px;
+  }
+  .small-btn:hover{background:var(--board-950); color:var(--paper);}
 
+  /* ---------- TABLE ---------- */
   .table-wrap{overflow-x:auto; border:1px solid var(--paper-line); border-radius:3px;}
-  table{width:100%; border-collapse:collapse; font-size:12.5px; table-layout:auto;}
+  table{width:100%; border-collapse:collapse; font-size:13px;}
   thead th{
-    text-align:left; font-family:var(--mono); font-size:10px; letter-spacing:.06em; text-transform:uppercase;
-    color:var(--paper); background:var(--board-900); padding:9px 10px; white-space:nowrap;
+    text-align:left; font-family:var(--mono); font-size:10.5px; letter-spacing:.08em;
+    text-transform:uppercase; color:var(--paper); background:var(--board-900);
+    padding:9px 10px; white-space:nowrap;
   }
-  tbody td{padding:5px 6px; border-bottom:1px solid var(--paper-line); vertical-align:middle;}
+  thead th.live-col{background:var(--amber-dim); color:#fff;}
+  tbody td{padding:5px 8px; border-bottom:1px solid var(--paper-line); vertical-align:middle;}
+  tbody td.live-col{background:rgba(217,167,59,.14);}
   tbody tr:nth-child(even){background:rgba(0,0,0,0.02);}
-  tbody input{
-    border:1px solid transparent; background:transparent; padding:4px 5px; 
-    font-size:12.5px; width:100%; box-sizing:border-box;
-  }
+  tbody input{border:1px solid transparent; background:transparent; padding:4px 5px; font-size:13px; width:100%;}
   tbody input:hover, tbody input:focus{border-color:var(--paper-line); background:#fff;}
+  tbody input::placeholder{color:var(--ink-soft); opacity:.55; font-style:italic;}
+  tbody input[type=checkbox]{width:auto; cursor:pointer; accent-color:var(--red);}
   .scratched-row{opacity:.45;}
-  .scratched-row td input{text-decoration:line-through;}
-  
-  .scratched-card-row{text-decoration:line-through; opacity:0.5; background:rgba(139,42,42,0.08) !important;}
-
-  .col-race{width:45px; min-width:45px;}
-  .col-post{width:45px; min-width:45px;}
-  .col-horse{min-width:140px;}
-  .col-trainer{min-width:160px;}
-  .col-jockey{min-width:170px;}
-  .col-odds{width:70px; min-width:70px;}
-  .col-power{width:95px; min-width:95px;}
-  .col-speed{width:80px; min-width:80px;}
-  .col-scr{width:40px; min-width:40px; text-align:center;}
-  .col-del{width:30px; min-width:30px; text-align:center;}
-
-  .del-btn{background:none; border:none; color:var(--red); cursor:pointer; font-size:15px; padding:2px 4px;}
-
+  .scratched-row td:nth-child(3) input{text-decoration:line-through;}
+  .col-num input{font-family:var(--mono);}
+  .del-btn{
+    background:none; border:none; color:var(--red); cursor:pointer; font-size:15px; padding:2px 6px;
+  }
+  .del-btn:hover{color:var(--red-dim);}
+  .scratch-panel{
+    border:1.5px dashed var(--paper-line); border-radius:4px; padding:16px 18px;
+    background:var(--paper-dim); margin:0 0 14px;
+  }
+  .scratch-panel h3{margin:0 0 6px; font-size:15px;}
+  .scratch-panel p{margin:0 0 12px; font-size:13px; color:var(--ink-soft); line-height:1.5;}
+  .rss-warn{
+    margin-top:10px; padding:9px 11px; font-size:12.5px; line-height:1.55;
+    background:rgba(139,42,42,.08); border:1px solid var(--red); border-radius:4px;
+  }
+  .rss-info{
+    margin-top:10px; padding:9px 11px; font-size:12.5px; line-height:1.55;
+    background:rgba(0,0,0,.035); border-radius:4px; color:var(--ink-soft);
+  }
+  .rss-info b, .rss-warn b{color:var(--ink);}
   .table-actions{display:flex; gap:10px; margin-top:12px; flex-wrap:wrap;}
   .primary-btn{
     background:var(--amber); color:var(--ink); border:none; padding:11px 22px;
-    border-radius:3px; font-weight:700; font-size:13.5px; cursor:pointer;
+    border-radius:3px; font-weight:700; font-size:13.5px; cursor:pointer; letter-spacing:.02em;
   }
   .primary-btn:hover{background:#c69528;}
-  .ghost-btn{background:none; border:1px solid var(--ink-soft); color:var(--ink-soft); padding:10px 16px; border-radius:3px; font-size:13px; cursor:pointer;}
+  .ghost-btn{
+    background:none; border:1px solid var(--ink-soft); color:var(--ink-soft);
+    padding:10px 16px; border-radius:3px; font-size:13px; cursor:pointer;
+  }
   .ghost-btn:hover{border-color:var(--ink); color:var(--ink);}
-  .small-btn{background:transparent; border:1px solid var(--board-950); color:var(--board-950); padding:5px 10px; border-radius:3px; font-size:11.5px; font-weight:600; cursor:pointer;}
-  .small-btn:hover{background:var(--board-950); color:var(--paper);}
+  .empty-note{font-size:13px; color:var(--ink-soft); padding:18px; text-align:center;}
 
-  .tabbar{display:flex; gap:0; margin:0 0 18px; border-bottom:2px solid var(--paper-line); overflow-x:auto;}
+  /* ---------- RACE CARD ---------- */
+  .board{
+    background:#ffffff; border-radius:4px; padding:18px 16px;
+    box-shadow:inset 0 0 0 1px var(--paper-line);
+  }
+  .board h2{color:var(--ink);}
+  .board h2::after{background:var(--paper-line);}
+  .board .step-num{background:var(--amber); color:#fff;}
+
+  .race-nav{display:flex; flex-wrap:wrap; gap:6px; margin:0 0 16px; align-items:center;}
+  .race-nav .nav-lbl{font-family:var(--mono); font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-soft); margin-right:2px;}
+  .tabbar{
+    display:flex; gap:0; margin:0 0 18px; border-bottom:2px solid var(--paper-line);
+    overflow-x:auto; -webkit-overflow-scrolling:touch;
+  }
   .tabbar button{
-    appearance:none; background:none; border:none; cursor:pointer; font-family:var(--mono); font-size:12px;
-    letter-spacing:.05em; text-transform:uppercase; padding:10px 14px; color:var(--ink-soft);
-    border-bottom:3px solid transparent; margin-bottom:-2px; white-space:nowrap;
+    flex:0 0 auto; appearance:none; background:none; border:none; cursor:pointer;
+    font-family:var(--mono); font-size:12px; letter-spacing:.05em; text-transform:uppercase;
+    padding:10px 14px; color:var(--ink-soft); border-bottom:3px solid transparent;
+    margin-bottom:-2px; white-space:nowrap;
   }
   .tabbar button.on{color:var(--board-950); border-bottom-color:var(--board-950); font-weight:700;}
-
-  .bestof{border:2px solid var(--board-950); border-radius:5px; padding:18px 20px; margin:0 0 20px; background:var(--paper);}
-  .bestof h3{margin:0 0 4px; font-size:18px;}
-  .bo-race-block{border:1px solid var(--paper-line); border-radius:4px; padding:14px; margin-bottom:12px; background:#fff;}
-  .bo-row{display:flex; align-items:center; gap:12px;}
-  .bo-rank{width:32px; height:32px; line-height:32px; text-align:center; background:var(--board-950); color:var(--amber); border-radius:50%; font-family:var(--mono); font-size:12px; font-weight:800; flex-shrink:0;}
-  .bo-horse{font-size:15px; font-weight:800; cursor:pointer; text-decoration:underline dotted;}
-  .bo-meta{font-size:12px; color:var(--ink-soft); font-family:var(--mono); margin-top:4px;}
-
-  .cp-grid{display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:10px;}
-  @media(max-width:768px){ .cp-grid{grid-template-columns:1fr;} }
-  .cp-box{border:1px solid var(--paper-line); border-radius:4px; padding:14px; background:var(--paper-dim);}
-  .cp-box.contender{border-left:5px solid var(--green);}
-  .cp-box.pretender{border-left:5px solid var(--red); opacity:0.9;}
-  .cp-head{font-family:var(--mono); font-size:12px; font-weight:800; text-transform:uppercase; margin-bottom:8px;}
-  .cp-box.contender .cp-head{color:var(--green);}
-  .cp-box.pretender .cp-head{color:var(--red);}
-  .cp-item{padding:6px 0; border-bottom:1px dotted var(--paper-line); font-size:12.5px; line-height:1.4;}
-  .cp-item:last-child{border-bottom:none;}
-  .cp-horse{font-weight:700; cursor:pointer; text-decoration:underline dotted;}
-
-  .h2h-select-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
-  .h2h-select-box select { width: 100%; padding: 8px; font-family: var(--mono); font-size: 13px; border: 1px solid var(--paper-line); border-radius: 3px; background: #fff; }
-  .h2h-comparison-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-  .h2h-card { background: #fff; border: 1px solid var(--paper-line); border-radius: 4px; padding: 16px; }
-  .h2h-card h3 { margin: 0 0 10px; color: var(--board-950); border-bottom: 2px solid var(--paper-line); padding-bottom: 6px; }
-  .h2h-stat { font-family: var(--mono); font-size: 12px; margin-bottom: 6px; }
-
-  .h2h-past-box { background: #fff; border: 1px solid var(--paper-line); border-radius: 4px; padding: 16px; margin-bottom: 20px; }
-  .h2h-past-matchup { border-bottom: 1px dashed var(--paper-line); padding: 10px 0; font-size: 12.5px; }
-  .h2h-past-matchup:last-child { border-bottom: none; }
-  .h2h-winner-badge { background:var(--green); color:#fff; font-family:var(--mono); font-size:10px; padding:2px 6px; border-radius:3px; font-weight:700; }
-
-  .badge-changed{
-    background:var(--red); color:#fff; font-family:var(--mono); font-size:10px;
-    padding:2px 5px; border-radius:3px; font-weight:700; margin-left:4px; text-transform:uppercase;
+  .tabbar .tab-count{
+    display:inline-block; margin-left:6px; padding:1px 6px; border-radius:9px;
+    background:var(--board-950); color:#fff; font-size:10px; font-weight:700;
   }
-  .badge-scr{
-    background:var(--red); color:#fff; font-family:var(--mono); font-size:10px;
-    padding:2px 5px; border-radius:3px; font-weight:700; margin-left:4px; text-transform:uppercase;
+  .print-page{background:var(--paper); padding:4px 0 20px;}
+  @media print{ .page-break{break-before:page; page-break-before:always;} }
+  .print-page header{margin-bottom:18px;}
+  .print-page h2{margin-top:26px;}
+  @media print{
+    body > .wrap > section:not(#printSection){display:none !important;}
+    #printSection{display:block !important;}
+    #printSection > h2, #printSection > .rss-info, .tabbar, .report-toolbar{display:none !important;}
   }
-  .badge-top-pick{
-    background:var(--board-950); color:var(--amber); font-family:var(--mono); font-size:10px;
-    padding:2px 5px; border-radius:3px; font-weight:700; margin-left:4px; text-transform:uppercase;
+  .bo-save{
+    flex:0 0 auto; appearance:none; cursor:pointer; font-family:var(--mono);
+    font-size:11px; font-weight:700; letter-spacing:.04em; text-transform:uppercase;
+    padding:6px 12px; border-radius:3px; border:1.5px solid var(--board-950);
+    background:none; color:var(--board-950);
   }
-  .badge-value{
-    background:var(--green); color:#fff; font-family:var(--mono); font-size:10px;
-    padding:2px 5px; border-radius:3px; font-weight:700; margin-left:4px; text-transform:uppercase;
+  .bo-save.saved{background:var(--board-950); color:#fff;}
+  .betlog-row{
+    display:flex; align-items:center; gap:10px; padding:11px 0;
+    border-bottom:1px solid var(--paper-line); flex-wrap:wrap;
   }
-  .badge-fts{
-    background:var(--amber-dim); color:#fff; font-family:var(--mono); font-size:10px;
-    padding:2px 5px; border-radius:3px; font-weight:700; margin-left:4px; text-transform:uppercase;
+  .betlog-row .bl-main{flex:1 1 200px; min-width:0;}
+  .betlog-row .bl-horse{font-weight:800;}
+  .betlog-row .bl-meta{font-family:var(--mono); font-size:11.5px; color:var(--ink-soft);}
+  .bl-result{
+    appearance:none; font-family:var(--mono); font-size:12px; padding:5px 8px;
+    border:1.5px solid var(--paper-line); border-radius:3px; background:var(--paper);
+  }
+  .bl-del{
+    appearance:none; background:none; border:none; cursor:pointer;
+    color:var(--red); font-size:16px; line-height:1; padding:4px 6px;
+  }
+  .bl-tally{
+    display:flex; gap:22px; flex-wrap:wrap; padding:14px 16px; margin-bottom:16px;
+    border:2px solid var(--board-950); border-radius:4px; background:var(--paper);
+  }
+  .bl-tally div span{display:block;}
+  .bl-tally .n{font-size:24px; font-weight:800; letter-spacing:-.02em;}
+  .bl-tally .l{font-family:var(--mono); font-size:10.5px; text-transform:uppercase;
+               letter-spacing:.08em; color:var(--ink-soft);}
+  .bestof{
+    border:2px solid var(--board-950); border-radius:5px; padding:18px 20px;
+    margin:0 0 20px; background:var(--paper);
+  }
+  .bestof h3{margin:0 0 4px; font-size:17px; letter-spacing:-.01em;}
+  .bestof .bo-sub{font-size:12px; color:var(--ink-soft); margin-bottom:14px;}
+  .bo-row{
+    display:flex; align-items:baseline; gap:12px; padding:10px 0;
+    border-top:1px solid var(--paper-line);
+  }
+  .bo-rank{
+    flex:0 0 26px; height:26px; line-height:26px; text-align:center;
+    background:var(--board-950); color:#fff; border-radius:50%;
+    font-family:var(--mono); font-size:12px; font-weight:800;
+  }
+  .bo-main{flex:1 1 auto;}
+  .bo-horse{font-size:16px; font-weight:800;}
+  .bo-meta{font-size:12px; color:var(--ink-soft); font-family:var(--mono);}
+  .bo-with{display:block; margin-top:3px; font-size:11.5px; font-family:var(--mono); color:var(--ink-soft); opacity:.85;}
+  .bo-foot{margin-top:14px; padding-top:12px; border-top:2px solid var(--paper-line);
+           font-size:12.5px; line-height:1.6; color:var(--ink-soft);}
+  .bo-foot b{color:var(--ink);}
+  .pick-card{
+    border:1.5px solid var(--paper-line); border-left:5px solid #2E6E45;
+    border-radius:4px; padding:16px 18px; margin-bottom:14px; background:var(--paper);
+  }
+  .pick-head{display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; margin-bottom:8px;}
+  .pick-horse{font-size:19px; font-weight:800; letter-spacing:-.01em;}
+  .pick-why{font-size:13px; line-height:1.6; color:var(--ink-soft); margin-top:8px;}
+  .pick-why b{color:var(--ink);}
+  .pick-none{
+    border:1.5px dashed var(--paper-line); border-radius:4px; padding:14px 16px;
+    margin-bottom:10px; font-size:13px; color:var(--ink-soft); background:var(--paper-dim);
+  }
+  .pick-none b{color:var(--ink);}
+  .pick-card.tier2{border-left-color:#5C7A8A;}
+  .pp-turf{
+    font-family:var(--mono); font-weight:800; font-size:11px; color:#2E6E45;
+    border:1px solid #2E6E45; border-radius:2px; padding:0 3px; margin-left:5px;
+    line-height:1.3; vertical-align:1px;
+  }
+  .pp-adj{color:#2E6E45; font-weight:800;}
+  .pp-wonby{color:#2E6E45; font-weight:700;}
+  .cp{border:1px solid var(--paper-line); border-radius:4px; padding:12px 14px; margin:12px 0; background:var(--paper-dim);}
+  .cp-head{font-family:var(--mono); font-size:11px; font-weight:800; letter-spacing:.06em;
+           text-transform:uppercase; color:var(--ink-soft); margin-bottom:9px;}
+  .cp-row{padding:8px 0 8px 10px; border-left:3px solid var(--paper-line); margin-bottom:8px; font-size:13px; line-height:1.7;}
+  .cp-in{border-left-color:#2E6E45;}
+  .cp-q{border-left-color:#C08A2E;}
+  .cp-out{border-left-color:var(--paper-line); opacity:.72;}
+  .cp-horse{font-weight:700;}
+  .cp-why{font-family:var(--mono); font-size:11.5px; color:var(--ink-soft);}
+  .cp-foot{margin-top:6px; padding-top:8px; border-top:1px solid var(--paper-line);
+           font-size:12px; line-height:1.55; color:var(--ink-soft);}
+  .cp-foot b{color:var(--ink);}
+  .eps-basis{font-size:12px; color:var(--ink-soft);}
+  .eps-basis b{color:var(--red);}
+  .cc{
+    border:1px solid var(--paper-line); border-left:4px solid #2E6E45; border-radius:4px;
+    padding:12px 14px; margin:12px 0; background:var(--paper-dim);
+  }
+  .cc-head{
+    font-family:var(--mono); font-size:11px; font-weight:800; letter-spacing:.06em;
+    text-transform:uppercase; color:var(--ink-soft); margin-bottom:8px;
+  }
+  .cc-row{padding:7px 0; border-top:1px solid var(--paper-line); font-size:13px; line-height:1.55;}
+  .cc-row:first-of-type{border-top:0;}
+  .cc-fav{font-weight:800; color:#2E6E45;}
+  .cc-oth{font-weight:700;}
+  .cc-via{font-family:var(--mono); font-size:11.5px; color:var(--ink-soft);}
+  .cc-foot{margin-top:9px; padding-top:8px; border-top:1px solid var(--paper-line);
+           font-size:12px; line-height:1.55; color:var(--ink-soft);}
+  .cc-foot b{color:var(--ink);}
+  .pick-tier{
+    font-family:var(--mono); font-size:10px; font-weight:800; letter-spacing:.08em;
+    padding:3px 7px; border-radius:3px; background:#2E6E45; color:#fff; text-transform:uppercase;
+  }
+  .pick-tier.t2{background:#5C7A8A;}
+  .mkt-ok{margin-top:10px; padding:9px 11px; border-left:3px solid #2E6E45;
+          background:var(--paper-dim); font-size:12.5px; color:var(--ink-soft);}
+  .mkt-ok b{color:var(--ink);}
+  .mkt-pending{margin-top:10px; padding:9px 11px; border-left:3px solid #C08A2E;
+          background:var(--paper-dim); font-size:12.5px; line-height:1.55; color:var(--ink-soft);}
+  .mkt-pending b{color:var(--ink);}
+  .price-warn{margin-top:10px; padding:9px 11px; border-left:3px solid #5C7A8A;
+          background:var(--paper-dim); font-size:12.5px; line-height:1.55; color:var(--ink-soft);}
+  .price-warn b{color:var(--ink);}
+  .blind-note{
+    margin-top:10px; padding:9px 11px; border-left:3px solid #C08A2E;
+    background:var(--paper-dim); font-size:12.5px; line-height:1.55; color:var(--ink-soft);
+  }
+  .blind-note b{color:var(--ink);}
+  .pick-downgrade{
+    margin-top:10px; padding:9px 11px; border-left:3px solid var(--red);
+    background:var(--paper-dim); font-size:12.5px; line-height:1.55; color:var(--ink-soft);
+  }
+  .pick-downgrade b{color:var(--ink);}
+  .bo-row.t2 .bo-rank{background:#5C7A8A;}
+  .bo-row.t2 .bo-horse{opacity:.9;}
+  .bo-tierhead{
+    font-family:var(--mono); font-size:11px; font-weight:800; letter-spacing:.06em;
+    text-transform:uppercase; color:var(--ink-soft); margin:16px 0 2px; padding-top:10px;
+    border-top:2px solid var(--paper-line);
+  }
+  .race-chip{
+    font-family:var(--mono); font-size:12.5px; font-weight:700; padding:7px 11px;
+    border:1px solid var(--paper-line); background:var(--paper-dim); color:var(--ink);
+    border-radius:3px; cursor:pointer; line-height:1;
+  }
+  .race-chip.green{background:#2E6E45; border-color:#2E6E45; color:#fff;}
+  .race-chip.yellow{background:#C08A2E; border-color:#C08A2E; color:#fff;}
+  .race-chip.red{background:transparent; border-color:var(--red); color:var(--red); opacity:.6;}
+  .race-chip:focus-visible{outline:2px solid var(--amber); outline-offset:2px;}
+
+  .race-card{
+    background:var(--paper-dim); border:1px solid var(--paper-line); border-radius:3px;
+    padding:14px 16px; margin-bottom:14px; scroll-margin-top:12px;
+  }
+  .race-card{border-left:4px solid var(--board-800);}
+  .race-card.read-green{border-left-color:#2E6E45;}
+  .race-card.read-yellow{border-left-color:#C08A2E;}
+  .race-card.read-red{border-left-color:var(--red);}
+  .read-badge{
+    font-family:var(--mono); font-size:10.5px; font-weight:800; letter-spacing:.06em;
+    padding:3px 9px; border-radius:12px; text-transform:uppercase;
+  }
+  .race-no{padding:2px 10px 2px 8px; border-radius:3px; border-left:5px solid transparent;}
+  .race-no.green{border-left-color:#2E6E45; background:rgba(46,110,69,.14);}
+  .race-no.green a{color:#1F5231;}
+  .race-no.yellow{border-left-color:#C08A2E; background:rgba(192,138,46,.14);}
+  .race-no.yellow a{color:#7A5516;}
+  .race-no.red{border-left-color:var(--red); background:rgba(139,42,42,.10);}
+  .race-no.red a{color:var(--red);}
+  .read-badge.green{background:#2E6E45; color:#fff;}
+  .read-badge.yellow{background:#C08A2E; color:#fff;}
+  .read-badge.red{background:var(--red); color:#fff;}
+  .market-tag{
+    font-family:var(--mono); font-size:10.5px; letter-spacing:.04em;
+    padding:2px 8px; border-radius:10px; border:1px solid var(--paper-line);
+    color:var(--ink-soft); background:transparent;
+  }
+  .read-why{font-size:12px; color:var(--ink-soft); margin-top:6px; line-height:1.55;}
+  .read-why b{color:var(--ink);}
+  .race-card-top{display:flex; justify-content:space-between; align-items:baseline; gap:10px; flex-wrap:wrap;}
+  .race-card-top strong{font-size:16px;}
+  .race-metric{font-family:var(--mono); font-size:12px; color:var(--ink-soft);}
+  .race-reason{font-size:12px; color:var(--ink-soft); margin-top:6px; font-style:italic;}
+  .pace-note{font-size:11.5px; color:var(--ink-soft); margin-top:8px; padding:7px 9px; background:rgba(0,0,0,.035); border-radius:4px; line-height:1.5;}
+  .fav-note{font-size:12.5px; color:var(--ink); margin-top:8px; padding:8px 10px; background:rgba(201,152,60,.12); border:1px solid var(--amber); border-radius:4px; line-height:1.55; font-weight:600;}
+  .sparse-warning{font-size:12px; color:var(--red); margin:6px 0 10px; padding:8px 10px; background:rgba(139,42,42,.08); border:1px solid var(--red); border-radius:4px; line-height:1.5; font-weight:600;}
+  .work-dots{display:inline-flex; gap:3px; align-items:center; vertical-align:middle;}
+  .work-dot{display:inline-block; width:9px; height:9px; border-radius:50%; border:1px solid rgba(0,0,0,.25);}
+  .work-dot-bullet{background:#2E6E45;}
+  .work-dot-good{background:#D9A73B;}
+  .work-dot-other{background:#8B2A2A;}
+  .work-dots-none{font-size:11px; color:var(--ink-soft); font-style:italic;}
+
+  /* ticket block inside each race */
+  .ticket{margin-top:10px; padding:10px 12px; background:#fff; border:1px solid var(--paper-line); border-radius:4px;}
+  .ticket-head{font-family:var(--mono); font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-soft); margin-bottom:7px;}
+  .bet-line{font-size:12.5px; color:var(--ink); margin-bottom:6px; line-height:1.5;}
+  .bet-line:last-child{margin-bottom:0;}
+  .bet-tag{
+    display:inline-block; font-family:var(--mono); font-size:10px; font-weight:800; letter-spacing:.04em;
+    background:var(--amber); color:var(--ink); padding:2px 7px; border-radius:3px; margin-right:6px; text-transform:uppercase;
+  }
+  .bet-tag.skip{background:#8a8a8a; color:#fff;}
+  .bet-tag.log{background:#8a8a8a; color:#fff;}
+  .bet-tag.test{background:var(--red); color:#fff;}
+  .bet-tag.toprated{background:#8a8a8a; color:#fff;}
+  .bet-tag.win{background:#2E6E45; color:#fff;}
+  .bet-tag.place{background:#5C7A8A; color:#fff;}
+  .bet-tag.show{background:#8A7A45; color:#fff;}
+  .bet-tag.exotic{background:var(--board-950); color:var(--amber);}
+  .bet-tag.failed{background:#8a8a8a; color:#fff;}
+  .bet-line.struck{color:var(--ink-soft);}
+
+  .race-pick{font-size:12.5px; color:var(--ink-soft); margin-top:6px;}
+  .race-pick b{color:var(--ink);}
+  .race-jump{color:inherit; text-decoration:underline dotted; text-underline-offset:3px; cursor:pointer;}
+  .race-jump{display:inline-block; padding:2px 0; min-height:22px;}
+  .field-race-head .race-jump::after,
+  .score-row .race-jump::after{content:" \u25B8"; font-size:11px; opacity:.6;}
+  .race-jump:hover, .race-jump:active{color:var(--amber-dim);}
+  .field-jump{
+    font-family:var(--mono); font-size:11px; letter-spacing:.06em; text-transform:uppercase;
+    color:var(--ink-soft); text-decoration:underline dotted; text-underline-offset:3px; cursor:pointer;
+  }
+  .field-jump:hover, .field-jump:active{color:var(--amber-dim);}
+  
+  .sort-toggle{display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap;}
+  .toggle-btn{
+    background:var(--paper-dim); border:1px solid var(--paper-line); color:var(--ink-soft);
+    padding:8px 14px; border-radius:3px; font-size:12.5px; font-weight:600; cursor:pointer;
+    font-family:var(--sans);
+  }
+  .toggle-btn:hover{border-color:var(--ink-soft); color:var(--ink);}
+  .toggle-btn.active{background:var(--board-950); color:var(--paper); border-color:var(--board-950);}
+  .toggle-btn:focus-visible{outline:2px solid var(--amber); outline-offset:2px;}
+
+  .field-race{margin-bottom:20px;}
+  .field-race-head{
+    display:flex; justify-content:space-between; align-items:baseline; gap:10px; flex-wrap:wrap;
+    margin-bottom:6px;
+  }
+  .field-race-head strong{font-size:14px;}
+  .field-table{width:100%; border-collapse:collapse; font-size:14px; border:1px solid var(--paper-line);}
+  .field-table thead th{
+    text-align:left; font-family:var(--mono); font-size:11px; letter-spacing:.06em;
+    text-transform:uppercase; color:var(--paper); background:var(--board-900); padding:8px 10px;
+  }
+  .field-table td{padding:8px 10px; border-bottom:1px solid var(--paper-line); font-family:var(--mono); font-size:13.5px;}
+  .field-table td.name{font-family:var(--sans); font-size:14px;}
+  .field-table tr:last-child td{border-bottom:none;}
+  .field-table tr:nth-child(even){background:rgba(0,0,0,0.02);}
+  .field-edge{
+    display:inline-block; font-family:var(--mono); font-size:13px; font-weight:800;
+    padding:3px 9px; border-radius:3px; min-width:56px; text-align:center;
+  }
+  .field-edge.pos{background:#2E6E45; color:#fff;}
+  .field-edge.neg{background:var(--red); color:#fff;}
+  .field-edge.dash{background:none; color:var(--ink-soft); font-weight:400; padding:3px 0;}
+  .field-table td.raw-col, .field-table th.raw-col{display:none; background:rgba(0,0,0,.045); font-size:12px;}
+  .field-table th.raw-col{background:var(--board-800); color:#B9C9BE;}
+  body.diag .field-table td.raw-col, body.diag .field-table th.raw-col{display:table-cell;}
+  .field-table td.diag-col, .field-table th.diag-col{display:none;}
+  body.diag .field-table td.diag-col, body.diag .field-table th.diag-col{display:table-cell;}
+
+  textarea{
+    font-family:var(--mono); font-size:12.5px; padding:10px; width:100%;
+    border:1px solid var(--paper-line); border-radius:3px; background:#fff; color:var(--ink);
+    resize:vertical; line-height:1.5;
   }
 
-  #ppOverlay{display:none; position:fixed; inset:0; background:rgba(15,42,32,.65); z-index:100; overflow-y:auto; padding:16px;}
-  #ppOverlay.show{display:block;}
-  .pp-card{max-width:920px; margin:20px auto; background:var(--paper); border-radius:4px; border:1px solid var(--paper-line); padding:20px; position:relative;}
-  .pp-close{position:absolute; top:12px; right:14px; background:none; border:none; font-size:22px; color:var(--ink-soft); cursor:pointer;}
-  .pp-back{
-    display:inline-flex; align-items:center; gap:6px; margin-bottom:14px; padding:8px 14px;
-    background:var(--board-950); color:var(--paper); border:none; border-radius:4px; font-family:var(--mono);
-    font-size:12px; font-weight:700; cursor:pointer;
+  .score-summary{
+    display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:12px;
+    margin-bottom:18px;
   }
-  .pp-back:hover{background:var(--board-800);}
-  .pp-table{width:100%; border-collapse:collapse; font-family:var(--mono); font-size:11px; margin:10px 0 20px;}
-  .pp-table th{background:var(--board-900); color:var(--paper); padding:6px; font-size:10px; text-transform:uppercase; text-align:left;}
-  .pp-table td{padding:5px 6px; border-bottom:1px solid var(--paper-line); vertical-align:top;}
+  .score-stat{
+    background:var(--board-950); border-radius:4px; padding:14px 12px; text-align:center;
+  }
+  .score-stat .num{font-family:var(--mono); font-size:22px; font-weight:800; color:var(--amber);}
+  .score-stat .lbl{font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; color:#B9C9BE; margin-top:4px;}
+  .score-stat .num.roi-pos{color:#7FD99A;}
+  .score-stat .num.roi-neg{color:#E2897F;}
 
-  .work-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:10px; margin-top:8px;}
-  .work-item{background:#fff; border:1px solid var(--paper-line); padding:8px; border-radius:3px; font-family:var(--mono); font-size:11px;}
+  .score-row{
+    display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;
+    padding:10px 14px; border:1px solid var(--paper-line); border-radius:3px; margin-bottom:8px;
+    background:var(--paper-dim);
+  }
+  .score-row .sr-left{font-size:13px;}
+  .score-row .sr-left b{font-size:14px;}
+  .score-tag{
+    font-family:var(--mono); font-size:11px; font-weight:800; letter-spacing:.05em;
+    padding:4px 9px; border-radius:12px; text-transform:uppercase;
+  }
+  .score-tag.win{background:#2E6E45; color:#fff;}
+  .score-tag.place{background:#5C7A8A; color:#fff;}
+  .score-tag.show{background:#8A7A45; color:#fff;}
+  .score-tag.miss{background:var(--red); color:#fff;}
+  .score-tag.unmatched{background:#999; color:#fff;}
 
-  textarea{font-family:var(--mono); font-size:12px; padding:8px; width:100%; border:1px solid var(--paper-line); border-radius:3px; background:#fff;}
+  .report-toolbar{display:flex; gap:10px; margin:0 0 14px; flex-wrap:wrap; align-items:center;}
+  .clean-toggle{
+    display:inline-flex; align-items:center; gap:8px; font-size:13px; color:var(--ink);
+    border:1px solid var(--board-950); border-radius:3px; padding:9px 14px; cursor:pointer;
+    background:var(--paper-dim);
+  }
+  .clean-toggle input{width:auto; accent-color:var(--board-950);}
+  .clean-toggle.on{background:var(--board-950); color:var(--paper);}
+
+  .conf-block{
+    margin:8px 0 2px; padding:8px 10px; border-radius:3px; font-size:12.5px; line-height:1.5;
+    border:1px solid var(--paper-line); background:#FAFAF7;
+  }
+  .conf-block.conf-questionable{border-color:#C0641E; background:#FDF1E7;}
+  .conf-block.conf-probable{border-color:#C0A21E; background:#FCF8E8;}
+  .conf-tag{
+    display:inline-block; font-weight:800; letter-spacing:.07em; font-size:10px;
+    text-transform:uppercase; border-radius:8px; padding:2px 8px; margin-right:7px; color:#fff;
+  }
+  .conf-high .conf-tag, .conf-tag.conf-high{background:#3C7A4A;}
+  .conf-probable .conf-tag, .conf-tag.conf-probable{background:#B08A16;}
+  .conf-questionable .conf-tag, .conf-tag.conf-questionable{background:#B4541A;}
+  .conf-body{color:var(--ink);}
+
+  /* Contender vs Pretender & Exotic Knowledge Styling */
+  .contender-matrix {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin: 10px 0;
+  }
+  @media (max-width: 720px){.contender-matrix {grid-template-columns: 1fr;}}
+  .matrix-box {
+    background: #fff;
+    border: 1px solid var(--paper-line);
+    border-radius: 4px;
+    padding: 10px 12px;
+    font-size: 12.5px;
+  }
+  .matrix-box.contenders { border-left: 4px solid #2E6E45; }
+  .matrix-box.pretenders { border-left: 4px solid var(--red); opacity: 0.88; }
+  .matrix-title {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    font-weight: 800;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+    color: var(--ink-soft);
+  }
+  .exotic-tip {
+    margin-top: 10px;
+    padding: 9px 12px;
+    background: rgba(15, 42, 32, 0.04);
+    border: 1px dashed var(--board-950);
+    border-radius: 4px;
+    font-size: 12px;
+    line-height: 1.55;
+    color: var(--ink);
+  }
+  .exotic-tip b { color: var(--board-950); font-family: var(--mono); }
+
+  .disclaimer{
+    font-size:12px; color:var(--ink-soft); line-height:1.6; padding-top:18px;
+    border-top:1px solid var(--paper-line); margin-top:36px;
+  }
+  @media print{
+    .no-print{display:none !important;}
+    header{padding:14px 0 10px; border-bottom:2px solid #999;}
+    main{padding:8px 0 0;}
+    body{background:#fff;}
+    .board{box-shadow:none; border:1px solid #bbb;}
+    .race-card, .field-table{page-break-inside:avoid;}
+  }
 </style>
 </head>
 <body>
-
 <div class="wrap">
   <header>
-    <p class="eyebrow">Professional Handicapping &amp; Value Engine</p>
-    <h1>Horse Race Predictor</h1>
-    <p class="tagline">Multi-Factor Best Bets, Pace Analysis &amp; Head-to-Head Race Card Engines.</p>
+    <p class="eyebrow">Handicapping utility · <span class="ver">v1.15</span> · released September 2026</p>
+    <h1><span class="flap">O</span><span class="flap">v</span><span class="flap">e</span><span class="flap">r</span><span class="flap">l</span><span class="flap">a</span><span class="flap">y</span> <span class="flap">B</span><span class="flap">o</span><span class="flap">a</span><span class="flap">r</span><span class="flap">d</span></h1>
+    <p class="tagline">Upload a data file or program PDF. Overlay Board lays out the whole card: past performances, scratches, confidence scoring, exotic structures, and contender vs. pretender separation.</p>
   </header>
 
   <main>
-    <section>
-      <h2><span class="step-num">1</span> Load Race Data &amp; Scratches / Rider Changes</h2>
-      <div class="upload-grid">
+    <!-- STEP 1: UPLOAD -->
+    <section class="no-print">
+      <h2><span class="step-num">1</span> Bring in your data</h2>
+      <div class="upload-grid four-col">
         <div class="upload-card">
-          <h3>Brisnet .DRF Single File</h3>
-          <p>Parses explicit Field 251 for Prime Power, Trainer/Jockey stats, speed ratings (846+i), finish position (616+i), and workouts within 30 days of race date.</p>
-          <label class="file-btn" for="drfInput">Select .DRF / .CSV</label>
-          <input type="file" id="drfInput" accept=".drf,.csv,.txt">
+          <h3>Brisnet data file</h3>
+          <p>Brisnet’s "Single File" export. If .drf looks greyed out in the picker, rename it to .csv — the parser reads the contents, not the name. Unzip a .zip first.</p>
+          <label class="file-btn" for="drfInput">Choose .DRF / .csv</label>
+          <input type="file" id="drfInput" accept=".drf,.csv,.txt,text/csv,text/plain,text/*">
           <div class="status" id="drfStatus"></div>
         </div>
-
         <div class="upload-card">
-          <h3>Equibase RSS / XML Feed</h3>
-          <p>Import official feed XML to process scratches and detect late Jockey Changes with updated rider stats.</p>
-          <label class="file-btn" for="rssInput">Select XML/RSS</label>
-          <input type="file" id="rssInput" accept=".xml,.rss,.txt,.xml.rss">
-          
-          <div class="file-meta-box" id="rssMetaBox">
-            <div><strong>Loaded File:</strong> <span id="rssFileName">-</span></div>
-            <div><strong>Feed Date:</strong> <span id="rssFileDate">-</span></div>
-            <div style="margin-top:6px;">
-              <button class="small-btn" id="reloadRssBtn">↻ Reload / Replace File</button>
-            </div>
+          <h3>CSV file</h3>
+          <p>Any spreadsheet with race, horse and odds columns. Map the columns after choosing the file.</p>
+          <label class="file-btn" for="csvInput">Choose CSV</label>
+          <input type="file" id="csvInput" accept=".csv">
+          <div class="status" id="csvStatus"></div>
+          <div class="mapper" id="csvMapper">
+            <div class="map-row"><label>Race</label><select id="mapRace"></select></div>
+            <div class="map-row"><label>Post #</label><select id="mapPost"></select></div>
+            <div class="map-row"><label>Horse</label><select id="mapHorse"></select></div>
+            <div class="map-row"><label>ML odds</label><select id="mapOdds"></select></div>
+            <div class="map-row"><label>Final odds</label><select id="mapFinal"></select></div>
+            <div class="map-row"><label>Rating</label><select id="mapScore"></select></div>
+            <div class="map-row"><label>Surface fit</label><select id="mapSurface"></select></div>
+            <div class="map-row"><label>Class move</label><select id="mapClass"></select></div>
+            <button class="small-btn" id="importCsvBtn">Import mapped rows →</button>
           </div>
-
-          <textarea id="rssPaste" rows="2" placeholder="...or paste XML content directly here" style="margin-top:8px;"></textarea>
-          <button class="small-btn" id="applyRssBtn" style="margin-top:8px;">Apply Feed Updates</button>
-          <div class="status" id="rssStatus"></div>
+        </div>
+        <div class="upload-card">
+          <h3>Program PDF</h3>
+          <p>Brisnet-style past-performance sheet. Runs in the browser; if it hangs on a phone, use Paste text instead.</p>
+          <label class="file-btn" for="pdfInput">Choose PDF</label>
+          <input type="file" id="pdfInput" accept=".pdf">
+          <div class="status" id="pdfStatus"></div>
+        </div>
+        <div class="upload-card">
+          <h3>Paste text</h3>
+          <p>Open the PDF, select all, copy, paste here. Same extraction as the PDF option and works everywhere.</p>
+          <textarea id="pdfPasteText" rows="4" placeholder="Paste program text here…"></textarea>
+          <div class="table-actions" style="margin-top:10px;">
+            <button class="small-btn" id="extractPasteBtn">Extract from pasted text →</button>
+          </div>
+          <div class="status" id="pdfPasteStatus"></div>
         </div>
       </div>
     </section>
 
-    <section>
-      <h2><span class="step-num">2</span> Field Entries</h2>
+    <!-- STEP 2: TABLE -->
+    <section class="no-print">
+      <h2><span class="step-num">2</span> Check &amp; edit entries</h2>
+      <p style="font-size:12.5px; color:var(--ink-soft); margin:-6px 0 12px;"><b>ML odds</b> comes in with the file. <b>Final</b> starts empty — fill it in at the track; it never overwrites the morning line. <b>Surface fit</b> and <b>Class</b> are optional. Tick <b>Scr</b> for a scratch and rebuild the card: scratched horses drop out and the field renormalizes.</p>
+      <div class="scratch-panel">
+        <h3>Apply scratches from the Equibase feed</h3>
+        <p>Load your entries first, then choose the track’s <b>Changes &amp; Scratches</b> feed or paste it below. Scratches are ticked automatically by race and program number. Rider changes are flagged on the card, with the new rider’s meet record where the file has one.</p>
+        <label class="file-btn" for="rssInput">Choose RSS file</label>
+        <input type="file" id="rssInput">
+        <textarea id="rssPaste" rows="3" placeholder="…or paste the feed XML here" style="margin-top:10px;"></textarea>
+        <div class="table-actions" style="margin-top:10px;">
+          <button class="small-btn" id="applyRssBtn">Apply scratches →</button>
+        </div>
+        <div class="status" id="rssStatus"></div>
+        <div id="rssReport"></div>
+      </div>
       <div class="table-wrap">
         <table>
           <thead>
             <tr>
-              <th class="col-race">Race</th>
-              <th class="col-post">Post</th>
-              <th class="col-horse">Horse Name</th>
-              <th class="col-trainer">Trainer (Starts / W-P-S)</th>
-              <th class="col-jockey">Jockey (Starts / W-P-S)</th>
-              <th class="col-odds">M/L Odds</th>
-              <th class="col-power">Prime Power</th>
-              <th class="col-speed">Speed Fig</th>
-              <th class="col-scr">Scr</th>
-              <th class="col-del"></th>
+              <th style="width:70px">Race</th>
+              <th style="width:60px">Post</th>
+              <th>Horse</th>
+              <th style="width:88px">ML odds</th>
+              <th style="width:88px" class="live-col" title="Live tote board — fill this in at the track">Final</th>
+              <th style="width:88px" title="Prime Power exactly as the data file supplies it — no adjustments.">Rating</th>
+              <th style="width:88px">Surface fit</th>
+              <th style="width:70px">Class</th>
+              <th style="width:44px" title="Scratched — excluded from compute">Scr</th>
+              <th style="width:34px"></th>
             </tr>
           </thead>
           <tbody id="rowsBody"></tbody>
         </table>
+        <div class="empty-note" id="emptyNote">No entries yet. Upload a file above, or add a row manually.</div>
       </div>
       <div class="table-actions">
-        <button class="ghost-btn" id="addRowBtn">+ Add Runner</button>
-        <button class="ghost-btn" id="clearBtn">Clear All</button>
-        <button class="primary-btn" id="computeBtn">Compute Race Card →</button>
+        <button class="ghost-btn" id="addRowBtn">+ Add row</button>
+        <button class="ghost-btn" id="demoBtn">Load demo data</button>
+        <button class="ghost-btn" id="clearBtn">Clear all</button>
+        <button class="primary-btn" id="computeBtn">Build the card →</button>
       </div>
     </section>
 
-    <div class="tabbar" id="tabbar" style="display:none;">
-      <button data-tab="card" class="on" id="tabCard">Full Race Cards</button>
-      <button data-tab="best" id="tabBest">Best Bets (Composite Multi-Factor)</button>
-      <button data-tab="analysis">Contenders vs Pretenders</button>
-      <button data-tab="h2h">Head-to-Head Comparison</button>
+    <!-- STEP 3: RACE CARD -->
+    <div class="report-toolbar no-print" id="reportToolbar" style="display:none;">
+        <button class="primary-btn" id="raceCardBtn">▤ Race card</button>
+        <button class="ghost-btn" id="printBtn">🖨 Printable page</button>
+        <label class="clean-toggle" id="diagToggleLabel"><input type="checkbox" id="diagToggle"> Show diagnostics</label>
+      </div>
+    <div class="status no-print" id="printStatus"></div>
+
+    <div class="tabbar no-print" id="tabbar" style="display:none;">
+      <button data-tab="picks" id="tabPicks">Picks<span class="tab-count" id="pickCount">0</span></button>
+      <button data-tab="cards" class="on">Race cards</button>
+      <button data-tab="field">Full field</button>
+      <button data-tab="score">Benchmark</button>
+      <button data-tab="bets">My bets<span class="tab-count" id="betCount">0</span></button>
+      <button data-tab="print">Printable page</button>
     </div>
 
-    <section id="cardSection" style="display:none;">
-      <h2>Full Race Cards &amp; Complete Fields</h2>
-      <div id="raceCardsList"></div>
+    <section id="picksSection" style="display:none;">
+      <h2><span class="step-num">★</span> Where the board likes a horse</h2>
+      <div class="rss-info" style="margin:0 0 14px;">One rule, and the only place this tool names a horse: <b>the field's highest career earnings per start is also the market favourite</b>, at a morning line of 2.5 or shorter, and still favourite at post.</div>
+      <div id="pickList"></div>
     </section>
 
-    <section id="bestSection" style="display:none;">
-      <div class="bestof">
-        <h3>Best Bets — Composite Multi-Factor Choices</h3>
-        <p style="font-size:12.5px; color:var(--ink-soft); margin-bottom:12px;">Ranked using Prime Power, Last Speed, Connections Synergy, Pace Advantage, and Betting Odds Value.</p>
-        <div id="bestBetsList"></div>
+    <section id="printSection" style="display:none;">
+      <h2><span class="step-num">🖨</span> Printable page</h2>
+      <div class="rss-info" style="margin:0 0 14px;">The whole card on one page — picks, race cards, full field and your saved bets. Use your browser's own <b>Print</b> or <b>Share</b> from here.</div>
+      <div id="printView"></div>
+    </section>
+
+    <section id="betsSection" style="display:none;">
+      <h2><span class="step-num">$</span> My bets</h2>
+      <div class="rss-info" style="margin:0 0 14px;">Saved picks stay in this browser. Fill in what each one did and the tally is your own record. Nothing is wagered here.</div>
+      <div id="betTally"></div>
+      <div id="betList"></div>
+      <div class="table-actions" style="margin-top:14px;">
+        <button class="small-btn" id="betExportBtn">Export as JSON</button>
+        <label class="file-btn" for="betImportInput">Import JSON</label>
+        <input type="file" id="betImportInput">
+        <button class="ghost-btn" id="betClearBtn">Clear all</button>
       </div>
+      <div class="status" id="betStatus"></div>
     </section>
 
-    <section id="analysisSection" style="display:none;">
-      <h2>Contenders vs. Pretenders</h2>
-      <p style="font-size:12.5px; color:var(--ink-soft); margin-bottom:14px;">Classification based on Composite Index gap and longshot thresholding per race. First-time starters bypass the point gap penalty.</p>
-      <div id="contenderCards"></div>
-    </section>
-
-    <section id="h2hSection" style="display:none;">
-      <h2>Head-to-Head Analysis &amp; Comparison</h2>
-
-      <div class="h2h-past-box">
-        <h3 style="margin:0 0 10px; font-size:15px; border-bottom:1px solid var(--paper-line); padding-bottom:6px;">
-          Direct Head-to-Head Past Matchups (Ordered by Current Race Number)
-        </h3>
-        <div id="pastMatchupsList">
-          <p style="font-size:12.5px; color:var(--ink-soft); margin:0;">Scanning past performances for horses that previously faced each other on the same track, date, and race...</p>
-        </div>
+    <section id="resultsSection" style="display:none;">
+      <h2><span class="step-num">3</span> Race card — every race, in race order</h2>
+      <div class="sort-toggle no-print" role="group" aria-label="Which odds to compute from">
+        <button class="toggle-btn active" id="oddsMLBtn" data-src="ml">Compute from: morning line</button>
+        <button class="toggle-btn" id="oddsFinalBtn" data-src="final">Compute from: final odds</button>
       </div>
-
-      <h3 style="font-size:14px; margin:20px 0 10px;">Side-by-Side Runner Comparison</h3>
-      <div class="h2h-select-grid">
-        <div class="h2h-select-box">
-          <label style="font-size:12px; font-family:var(--mono); font-weight:700;">HORSE A:</label>
-          <select id="h2hSelectA"></select>
-        </div>
-        <div class="h2h-select-box">
-          <label style="font-size:12px; font-family:var(--mono); font-weight:700;">HORSE B:</label>
-          <select id="h2hSelectB"></select>
-        </div>
-      </div>
-      <div class="h2h-comparison-grid" id="h2hComparisonDisplay"></div>
+      <p style="font-size:12.5px;color:var(--ink-soft);margin:-4px 0 14px;">Which column the math reads. <b>Final odds</b> falls back to the morning line for any horse you haven't updated, so you can fill in one race at a time.</p>
+      <div class="race-nav no-print" id="raceNav"></div>
+      <div id="raceCardList"></div>
     </section>
 
+    <section id="fieldSection" style="display:none;">
+      <h2><span class="step-num">4</span> Full field, race by race</h2>
+      <div class="sort-toggle no-print" role="group" aria-label="Sort order">
+        <button class="toggle-btn active" id="sortByEdgeBtn" data-sort="edge">Sort: edge</button>
+        <button class="toggle-btn" id="sortByPostBtn" data-sort="post">Sort: post position</button>
+      </div>
+      <div id="fieldTables"></div>
+    </section>
+
+    <section id="resultsScoreSection" style="display:none;">
+      <h2><span class="step-num">5</span> Score the benchmark against results</h2>
+      <div class="rss-info" style="margin:0 0 14px;">Grades the <b>market favourite</b> in each race — the benchmark, not a pick.</div>
+      <div class="upload-card no-print">
+        <h3>Paste a results chart</h3>
+        <p>Paste a results chart. It only needs the "$2 Mutuel Prices" payout lines.</p>
+        <textarea id="resultsPaste" rows="6" placeholder="FIRST RACE&#10;Canterbury Park&#10;$2 Mutuel Prices:&#10; 2- EOS HEY BUCKO . . . 4.40 2.80 2.20&#10; 5- IZA B SLICK . . . 5.40 3.20&#10; ..."></textarea>
+        <div class="table-actions" style="margin-top:10px;">
+          <button class="primary-btn" id="scoreResultsBtn">Score the benchmark →</button>
+        </div>
+        <div class="status" id="resultsStatus"></div>
+      </div>
+      <div id="scoreboard" style="margin-top:18px;"></div>
+    </section>
+
+    <div class="disclaimer">
+      <strong>How to read this:</strong> odds are converted to an implied win probability and normalized across the field to strip out the track's built-in edge. The tool does not know track bias, late scratches, trip trouble or today's pace shape — mark scratches in the Scr column, rebuild, and read the past performances yourself before betting.<br><br>
+      This is an analytical aid, not advice, and it carries no guarantee of accuracy. Wagering involves real financial risk. If gambling stops being fun or starts causing problems, the National Problem Gambling Helpline (1-800-522-4700) is free and confidential.
+    </div>
   </main>
-</div>
-
-<div id="ppOverlay" role="dialog" aria-modal="true">
-  <div class="pp-card">
-    <button class="pp-back" id="ppReturnBtn">← Return to Race Card</button>
-    <button class="pp-close" id="ppCloseBtn">✕</button>
-    <div id="ppContent"></div>
-  </div>
 </div>
 
 <script>
 let rows = [];
 let rowId = 0;
-let computedRaces = {};
+let computedRaces = [];
 
 const rowsBody = document.getElementById('rowsBody');
-
-function formatDistance(distVal) {
-  let yards = parseFloat(distVal);
-  if (isNaN(yards) || yards <= 0) return distVal || 'N/A';
-  if (yards > 2500) yards = yards / 3.0;
-
-  const furlongs = yards / 220.0;
-  if (furlongs < 8.0) {
-    const fRounded = Math.round(furlongs * 2) / 2; 
-    return (fRounded % 1 === 0 ? fRounded.toFixed(0) : fRounded.toFixed(1)) + 'f';
-  } else {
-    const miles = yards / 1760.0;
-    if (Math.abs(miles - 1.0) < 0.03) return '1m';
-    if (Math.abs(miles - 1.0625) < 0.03) return '1 1/16m';
-    if (Math.abs(miles - 1.125) < 0.03) return '1 1/8m';
-    if (Math.abs(miles - 1.25) < 0.03) return '1 1/4m';
-    if (Math.abs(miles - 1.5) < 0.03) return '1 1/2m';
-    return miles.toFixed(2) + 'm';
-  }
-}
-
-function formatDate(dateStr) {
-  if (!dateStr || dateStr.length !== 8) return dateStr || 'N/A';
-  const y = dateStr.substring(0, 4);
-  const m = dateStr.substring(4, 6);
-  const d = dateStr.substring(6, 8);
-  return `${m}/${d}/${y}`;
-}
-
-function parseDateToUTC(dateStr) {
-  if (!dateStr || dateStr.length !== 8) return null;
-  const y = parseInt(dateStr.substring(0, 4), 10);
-  const m = parseInt(dateStr.substring(4, 6), 10) - 1;
-  const d = parseInt(dateStr.substring(6, 8), 10);
-  const t = Date.UTC(y, m, d);
-  return isNaN(t) ? null : t;
-}
-
-function parseOddsDecimal(oddsStr) {
-  if (!oddsStr) return 2.0;
-  const parts = oddsStr.split('/');
-  if (parts.length === 2 && parseFloat(parts[1]) > 0) {
-    return parseFloat(parts[0]) / parseFloat(parts[1]);
-  }
-  const val = parseFloat(oddsStr);
-  return isNaN(val) ? 2.0 : val;
-}
-
-function computeCompositeIndex(runner, field) {
-  if (runner.scratched) return -1;
-
-  const power = parseFloat(runner.score || runner.primePower) || 0;
-  const speed = parseFloat(runner.surfaceRating || runner.lastSpeed) || 0;
-  const speedBonus = speed > 0 ? (speed * 0.25) : 0;
-
-  const tWinPct = runner.trainerStarts > 0 ? (runner.trainerWins / runner.trainerStarts) : 0;
-  const jWinPct = runner.jockeyStarts > 0 ? (runner.jockeyWins / runner.jockeyStarts) : 0;
-  const connectionsBonus = (tWinPct * 8.0) + (jWinPct * 8.0);
-
-  let paceBonus = 0;
-  if (runner.runStyle === 'E' || runner.runStyle === 'E/P') {
-    const earlyRunners = field.filter(h => !h.scratched && (h.runStyle === 'E' || h.runStyle === 'E/P'));
-    if (earlyRunners.length === 1) paceBonus = 3.5;
-  }
-
-  return power + speedBonus + connectionsBonus + paceBonus;
-}
+const emptyNote = document.getElementById('emptyNote');
 
 function newRow(partial){
-  return Object.assign({
-    id: rowId++, race:'1', post:'1', horse:'', 
-    trainer:'', trainerStarts:0, trainerWins:0, trainerPlaces:0, trainerShows:0,
-    jockey:'', jockeyStarts:0, jockeyWins:0, jockeyPlaces:0, jockeyShows:0,
-    jockeyChanged: false, origJockey: '',
-    starts: 0, wins: 0, places: 0, shows: 0,
-    odds:'2/1', finalOdds:'', score:'', surfaceRating:'', scratched:false,
-    primePower: 0, eps: 0, lastSpeed: 0, bestSpeed: 0,
-    quirin: 0, runStyle: '',
-    ppRaces: [], ppWorks: []
-  }, partial);
+  return Object.assign({id: rowId++, race:'', post:'', horse:'', odds:'', finalOdds:'', score:'', surfaceRating:'', classMove:'', scratched:false}, partial);
 }
 
 function renderRows(){
   rowsBody.innerHTML = '';
+  emptyNote.style.display = rows.length ? 'none' : 'block';
   rows.forEach(r => {
     const tr = document.createElement('tr');
     if (r.scratched) tr.classList.add('scratched-row');
-    
-    const valPower = r.score !== '' ? r.score : (r.primePower ? r.primePower : '');
-    const valSpeed = r.surfaceRating !== '' ? r.surfaceRating : (r.lastSpeed ? r.lastSpeed : '');
-    
-    const tStats = r.trainer ? `${r.trainer} (${r.trainerStarts || 0}: ${r.trainerWins || 0}-${r.trainerPlaces || 0}-${r.trainerShows || 0})` : '';
-    const jStats = r.jockey ? `${r.jockey} (${r.jockeyStarts || 0}: ${r.jockeyWins || 0}-${r.jockeyPlaces || 0}-${r.jockeyShows || 0})` : '';
-
     tr.innerHTML = `
-      <td class="col-race"><input type="text" value="${r.race}" data-f="race"></td>
-      <td class="col-post"><input type="text" value="${r.post}" data-f="post"></td>
-      <td class="col-horse"><input type="text" value="${r.horse}" data-f="horse"></td>
-      <td class="col-trainer"><input type="text" value="${tStats}" data-f="trainerDisplay" placeholder="Trainer Stats"></td>
-      <td class="col-jockey">
-        <input type="text" value="${jStats}" data-f="jockeyDisplay" placeholder="Jockey Stats">
-        ${r.jockeyChanged ? '<span class="badge-changed">CHANGED</span>' : ''}
+      <td class="col-num"><input type="text" value="${escAttr(r.race)}" data-f="race"></td>
+      <td class="col-num"><input type="text" value="${escAttr(r.post)}" data-f="post"></td>
+      <td><input type="text" value="${escAttr(r.horse)}" data-f="horse"></td>
+      <td class="col-num"><input type="text" value="${escAttr(r.odds)}" data-f="odds" placeholder="e.g. 5/2"></td>
+      <td class="col-num live-col"><input type="text" value="${escAttr(r.finalOdds)}" data-f="finalOdds" placeholder="tote"></td>
+      <td class="col-num"><input type="text" value="${escAttr(r.score)}" data-f="score" placeholder="optional"></td>
+      <td class="col-num"><input type="text" value="${escAttr(r.surfaceRating)}" data-f="surfaceRating" placeholder="optional"></td>
+      <td class="col-num">
+        <select data-f="classMove">
+          <option value="" ${!r.classMove ? 'selected' : ''}>–</option>
+          <option value="down" ${r.classMove==='down' ? 'selected' : ''}>drop</option>
+          <option value="up" ${r.classMove==='up' ? 'selected' : ''}>rise</option>
+        </select>
       </td>
-      <td class="col-odds"><input type="text" value="${r.odds}" data-f="odds"></td>
-      <td class="col-power"><input type="text" value="${valPower}" data-f="score" style="font-weight:700;"></td>
-      <td class="col-speed"><input type="text" value="${valSpeed}" data-f="surfaceRating"></td>
-      <td class="col-scr"><input type="checkbox" ${r.scratched ? 'checked' : ''} data-f="scratched"></td>
-      <td class="col-del"><button class="del-btn">✕</button></td>
+      <td style="text-align:center;"><input type="checkbox" ${r.scratched ? 'checked' : ''} data-f="scratched" title="Scratched — leave out of compute"></td>
+      <td><button class="del-btn" title="Remove row">✕</button></td>
     `;
-
-    tr.querySelectorAll('input').forEach(inp => {
-      inp.addEventListener('input', e => {
-        const field = e.target.dataset.f;
-        if(field){
-          if(field === 'scratched'){
-            r.scratched = e.target.checked;
-            tr.classList.toggle('scratched-row', r.scratched);
-          } else {
-            r[field] = e.target.value;
-          }
-        }
+    tr.querySelectorAll('input, select').forEach(inp => {
+      const isCheckbox = inp.type === 'checkbox';
+      const evt = (inp.tagName === 'SELECT' || isCheckbox) ? 'change' : 'input';
+      inp.addEventListener(evt, e => {
+        r[e.target.dataset.f] = isCheckbox ? e.target.checked : e.target.value;
+        if (isCheckbox) tr.classList.toggle('scratched-row', r.scratched);
       });
     });
-
     tr.querySelector('.del-btn').addEventListener('click', () => {
       rows = rows.filter(x => x.id !== r.id);
       renderRows();
@@ -456,658 +820,195 @@ function renderRows(){
   });
 }
 
-document.getElementById('addRowBtn').addEventListener('click', () => { rows.push(newRow({})); renderRows(); });
-document.getElementById('clearBtn').addEventListener('click', () => { rows = []; renderRows(); });
-
-function parseCSVLine(line){
-  const out = []; let cur = ''; let inQ = false;
-  for (let i = 0; i < line.length; i++){
-    const c = line[i];
-    if (inQ){
-      if (c === '"'){ if (line[i+1] === '"'){ cur += '"'; i++; } else { inQ = false; } }
-      else cur += c;
-    } else {
-      if (c === '"') inQ = true;
-      else if (c === ','){ out.push(cur); cur = ''; }
-      else cur += c;
-    }
-  }
-  out.push(cur);
-  return out.map(v => v.trim());
+function escAttr(s){
+  return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/"/g,'&quot;');
 }
 
-function extractPrimePower(f) {
-  const get = n => (f[n - 1] !== undefined ? f[n - 1].trim() : '');
-  let rawVal = parseFloat(get(251));
-  if (isNaN(rawVal) || rawVal <= 0) return '';
-  if (rawVal > 500) {
-    return (rawVal / 10).toFixed(1);
-  } else if (rawVal >= 50.0) {
-    return rawVal.toFixed(1);
-  }
-  return '';
-}
-
-document.getElementById('drfInput').addEventListener('change', e => {
-  const file = e.target.files[0];
-  if(!file) return;
-  const reader = new FileReader();
-  reader.onload = function(evt){
-    const text = evt.target.result;
-    const lines = text.split(/\r\n|\n|\r/).filter(l => l.trim().length > 0);
-    rows = [];
-    
-    lines.forEach(line => {
-      const f = parseCSVLine(line);
-      if(f.length < 5) return;
-      
-      const get = n => (f[n-1] !== undefined ? f[n-1].trim().replace(/^["']|["']$/g, '') : '');
-      const num = n => { const v = parseFloat(get(n)); return isNaN(v) ? 0 : v; };
-
-      const race = get(3) || '1';
-      const post = get(4) || '1';
-      const horse = get(45) || get(5) || 'Unnamed Runner';
-      const mlOdds = get(44) || '2/1';
-
-      const primePower = extractPrimePower(f);
-
-      const trainer = get(28);
-      const trainerStarts = num(29);
-      const trainerWins = num(30);
-      const trainerPlaces = num(31);
-      const trainerShows = num(32);
-
-      const jockey = get(33);
-      const jockeyStarts = num(35);
-      const jockeyWins = num(36);
-      const jockeyPlaces = num(37);
-      const jockeyShows = num(38);
-
-      const starts = num(97);
-      const wins = num(98);
-      const places = num(99);
-      const shows = num(100);
-
-      const bestSpeed = num(101);
-      const runStyle = get(249);
-      const quirin = num(250);
-
-      const ppRaces = [];
-      for(let i = 0; i < 10; i++){
-        const date = get(256 + i);
-        if(!date) continue;
-        ppRaces.push({
-          date: date,
-          track: get(276 + i),
-          raceNum: get(296 + i) || '',
-          dist: get(316 + i),
-          surf: get(326 + i),
-          fin: get(616 + i),
-          speed: num(846 + i),
-          comment: get(396 + i)
-        });
-      }
-
-      // Exact most recent speed rating from the first past performance line (Index 846 -> field 847)
-      const lastSpeed = ppRaces.length > 0 ? ppRaces[0].speed : num(846);
-
-      // Determine the reference race date (assume today's date if available or latest PP date for work filtering)
-      const currentRaceDateStr = ppRaces.length > 0 ? ppRaces[0].date : '20260831';
-      const raceDateUTC = parseDateToUTC(currentRaceDateStr) || Date.now();
-      const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
-
-      const ppWorks = [];
-      for(let w = 0; w < 12; w++){
-        const wDateStr = get(102 + w);
-        if(!wDateStr || wDateStr === '0') continue;
-        
-        const workDateUTC = parseDateToUTC(wDateStr);
-        if (workDateUTC !== null) {
-          const diff = raceDateUTC - workDateUTC;
-          // Filter: only works within 30 days prior to the race date
-          if (diff >= 0 && diff <= thirtyDaysMs) {
-            ppWorks.push({
-              date: formatDate(wDateStr),
-              time: get(114 + w),
-              track: get(126 + w),
-              description: get(162 + w)
-            });
-          }
-        }
-      }
-
-      rows.push(newRow({
-        race, post, horse, odds: mlOdds,
-        trainer, trainerStarts, trainerWins, trainerPlaces, trainerShows,
-        jockey, origJockey: jockey, jockeyStarts, jockeyWins, jockeyPlaces, jockeyShows,
-        starts, wins, places, shows,
-        score: primePower, surfaceRating: lastSpeed, primePower,
-        lastSpeed, bestSpeed, runStyle, quirin, ppRaces, ppWorks,
-        scratched: false
-      }));
-    });
-
-    renderRows();
-    document.getElementById('drfStatus').innerText = `Loaded ${rows.length} horses successfully.`;
-    document.getElementById('drfStatus').className = 'status ok';
-  };
-  reader.readAsText(file);
-});
-
-function extractDateFromXML(xmlDoc, rawText){
-  const dateTags = ['pubDate', 'lastBuildDate', 'date', 'dc:date', 'issueDate'];
-  for (const tag of dateTags){
-    const el = xmlDoc.querySelector(tag);
-    if(el && el.textContent.trim()) return el.textContent.trim();
-  }
-  const dateRegex = /\b(?:\d{4}-\d{2}-\d{2}|\d{1,2}\/\d{1,2}\/\d{2,4}|(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{1,2},?\s+\d{4})\b/i;
-  const match = rawText.match(dateRegex);
-  return match ? match[0] : "Date Not Specified in Feed";
-}
-
-function processScratchesAndChanges(rawText, fileName = "Pasted Content"){
-  if(!rawText || !rawText.trim()){
-    document.getElementById('rssStatus').innerText = "Error: Input content is empty.";
-    document.getElementById('rssStatus').className = 'status err';
-    return;
-  }
-
-  const parser = new DOMParser();
-  const xmlDoc = parser.parseFromString(rawText, "text/xml");
-  
-  const feedDate = extractDateFromXML(xmlDoc, rawText);
-  document.getElementById('rssFileName').innerText = fileName;
-  document.getElementById('rssFileDate').innerText = feedDate;
-  document.getElementById('rssMetaBox').classList.add('show');
-
-  let scratchCount = 0;
-  let jockChangeCount = 0;
-
-  const items = xmlDoc.querySelectorAll("item, change, entry, scratch, jockey_change");
-
-  items.forEach(item => {
-    const text = item.textContent.toLowerCase();
-    
-    rows.forEach(r => {
-      if(!r.horse || r.horse.length < 2) return;
-      const hName = r.horse.toLowerCase();
-
-      if(text.includes(hName)){
-        if(text.includes("scratch")){
-          r.scratched = true;
-          scratchCount++;
-        }
-        
-        if(text.includes("jockey") || text.includes("rider")){
-          const newJockMatch = item.textContent.match(/(?:rider|jockey)\s+(?:change\s+to\s+)?([A-Z\s\.,]+)/i);
-          if(newJockMatch && newJockMatch[1]){
-            const newJockName = newJockMatch[1].trim();
-            if(newJockName && r.jockey !== newJockName){
-              r.jockey = newJockName;
-              r.jockeyChanged = true;
-              
-              const startsM = item.textContent.match(/starts?:?\s*(\d+)/i);
-              const winsM = item.textContent.match(/wins?:?\s*(\d+)/i);
-              const placesM = item.textContent.match(/places?:?\s*(\d+)/i);
-              const showsM = item.textContent.match(/shows?:?\s*(\d+)/i);
-
-              if(startsM) r.jockeyStarts = parseInt(startsM[1]);
-              if(winsM) r.jockeyWins = parseInt(winsM[1]);
-              if(placesM) r.jockeyPlaces = parseInt(placesM[1]);
-              if(showsM) r.jockeyShows = parseInt(showsM[1]);
-
-              jockChangeCount++;
-            }
-          }
-        }
-      }
-    });
-  });
-
+document.getElementById('addRowBtn').addEventListener('click', () => {
+  rows.push(newRow({}));
   renderRows();
-  document.getElementById('rssStatus').innerText = `Applied ${scratchCount} scratches & ${jockChangeCount} jockey changes.`;
-  document.getElementById('rssStatus').className = 'status ok';
+});
 
-  if(Object.keys(computedRaces).length > 0) computeRaceCard();
+document.getElementById('clearBtn').addEventListener('click', () => {
+  rows = [];
+  computedRaces = [];
+  renderRows();
+  document.getElementById('resultsSection').style.display='none';
+  document.getElementById('fieldSection').style.display='none';
+  document.getElementById('resultsScoreSection').style.display='none';
+  document.getElementById('reportToolbar').style.display='none';
+  document.getElementById('tabbar').style.display='none';
+});
+
+document.getElementById('demoBtn').addEventListener('click', () => {
+  const demo = [
+    {race:'3', post:'1', horse:'Paarl', odds:'10/1', score:'94.3'},
+    {race:'3', post:'2', horse:'Queen Atlas', odds:'4/1', score:'114.8'},
+    {race:'3', post:'3', horse:"Merlin's Sister", odds:'15/1', score:'73.0'},
+    {race:'3', post:'4', horse:'Alcohol', odds:'9/2', score:'103.6'},
+    {race:'3', post:'5', horse:'Fall Moon', odds:'5/2', score:'90.4'},
+    {race:'3', post:'6', horse:'Dixi So Fast', odds:'6/1', score:'101.5'},
+    {race:'3', post:'7', horse:'Mark of Victory', odds:'9/2', score:'95.5'},
+    {race:'3', post:'8', horse:'Sirius Light', odds:'6/1', score:'104.8'},
+    {race:'8', post:'1', horse:'Treble Clef', odds:'9/2', score:'114.7'},
+    {race:'8', post:'2', horse:'Ky Do Declare', odds:'4/1', score:'113.8'},
+    {race:'8', post:'3', horse:'Cobblestone Bridge', odds:'5/2', score:'120.7'},
+    {race:'8', post:'4', horse:'Lace Up', odds:'3/1', score:'112.8'},
+    {race:'8', post:'5', horse:'Secret Potion', odds:'8/1', score:'116.3'},
+    {race:'8', post:'6', horse:'Fort Warren', odds:'12/1', score:'112.8'},
+    {race:'8', post:'7', horse:'Words of Wisdom', odds:'5/1', score:'116.9'},
+  ];
+  rows = demo.map(d => newRow(d));
+  renderRows();
+});
+
+function parseOdds(str){
+  if (!str) return null;
+  str = str.trim();
+  if (str.includes('/')){
+    const parts = str.split('/');
+    const num = parseFloat(parts[0]), den = parseFloat(parts[1]);
+    if (!isNaN(num) && !isNaN(den) && den !== 0) return (num / den) + 1;
+  }
+  const val = parseFloat(str);
+  if (!isNaN(val)) return val + 1;
+  return null;
 }
 
-const rssInput = document.getElementById('rssInput');
-rssInput.addEventListener('change', e => {
-  const file = e.target.files[0];
-  if(!file) return;
-  const reader = new FileReader();
-  reader.onload = evt => processScratchesAndChanges(evt.target.result, file.name);
-  reader.readAsText(file);
-});
+function computeCard(useFinal = false){
+  // Group rows by race
+  const map = {};
+  rows.filter(r => !r.scratched).forEach(r => {
+    const rc = r.race || '1';
+    if (!map[rc]) map[rc] = [];
+    map[rc].push(r);
+  });
 
-document.getElementById('applyRssBtn').addEventListener('click', () => {
-  processScratchesAndChanges(document.getElementById('rssPaste').value, "Pasted Content");
-});
+  computedRaces = [];
+  Object.keys(map).sort((a,b) => parseInt(a,10) - parseInt(b,10)).forEach(rc => {
+    const list = map[rc];
+    const horses = list.map(r => {
+      const oddsStr = (useFinal && r.finalOdds) ? r.finalOdds : (r.odds || r.finalOdds);
+      const dec = parseOdds(oddsStr) || 2.0;
+      const prob = 1 / dec;
+      const score = parseFloat(r.score) || 100.0;
+      return { ...r, decOdds: dec, rawProb: prob, scoreVal: score };
+    });
 
-document.getElementById('reloadRssBtn').addEventListener('click', () => {
-  rssInput.value = "";
-  document.getElementById('rssPaste').value = "";
-  document.getElementById('rssMetaBox').classList.remove('show');
-  document.getElementById('rssStatus').innerText = "Feed reset. Please choose a new file.";
-  document.getElementById('rssStatus').className = 'status';
-  rssInput.click();
-});
+    const totalProb = horses.reduce((s, h) => s + h.rawProb, 0);
+    horses.forEach(h => {
+      h.marketProb = totalProb > 0 ? h.rawProb / totalProb : 1 / horses.length;
+    });
 
-function findPastMatchups() {
-  const activeRows = rows.filter(r => !r.scratched && r.horse);
-  const raceMap = {};
+    const totalScore = horses.reduce((s, h) => s + h.scoreVal, 0);
+    horses.forEach(h => {
+      h.modelProb = totalScore > 0 ? h.scoreVal / totalScore : 1 / horses.length;
+      h.edge = h.modelProb - h.marketProb;
+    });
 
-  activeRows.forEach(h => {
-    if(!h.ppRaces) return;
-    h.ppRaces.forEach(pp => {
-      if(!pp.date || !pp.track) return;
-      
-      const raceId = pp.raceNum ? `R${pp.raceNum}` : 'R_UNK';
-      const key = `${pp.date}_${pp.track.toUpperCase()}_${raceId}`;
-      if(!raceMap[key]) raceMap[key] = { date: pp.date, track: pp.track, raceNum: pp.raceNum || 'N/A', runners: [] };
-      
-      let numericFin = parseInt(pp.fin);
-      if (isNaN(numericFin)) numericFin = 99;
+    horses.sort((a,b) => b.edge - a.edge);
 
-      raceMap[key].runners.push({
-        horse: h.horse,
-        currentRace: parseInt(h.race) || 1,
-        post: h.post,
-        fin: pp.fin,
-        finNum: numericFin,
-        speed: pp.speed,
-        dist: pp.dist,
-        surf: pp.surf
-      });
+    // Contenders vs Pretenders split & Confidence scoring
+    const topEdge = horses[0]?.edge || 0;
+    const confidence = topEdge > 0.08 ? 'HIGH' : (topEdge > 0.03 ? 'PROBABLE' : 'QUESTIONABLE');
+    
+    const contenders = horses.filter(h => h.edge >= -0.01);
+    const pretenders = horses.filter(h => h.edge < -0.01);
+
+    computedRaces.push({
+      race: rc,
+      horses,
+      confidence,
+      topEdge,
+      contenders,
+      pretenders
     });
   });
 
-  const matchups = Object.values(raceMap).filter(m => m.runners.length > 1);
+  renderOutputs();
+}
 
-  matchups.sort((a, b) => {
-    const minRaceA = Math.min(...a.runners.map(r => r.currentRace));
-    const minRaceB = Math.min(...b.runners.map(r => r.currentRace));
-    return minRaceA - minRaceB;
-  });
+function renderOutputs(){
+  document.getElementById('reportToolbar').style.display = 'flex';
+  document.getElementById('tabbar').style.display = 'flex';
+  document.getElementById('resultsSection').style.display = 'block';
 
-  const container = document.getElementById('pastMatchupsList');
+  // Render Race Cards
+  const listEl = document.getElementById('raceCardList');
+  listEl.innerHTML = '';
 
-  if(matchups.length === 0) {
-    container.innerHTML = `<div style="font-size:12.5px; color:var(--ink-soft);">No exact same-track, same-date, same-race head-to-head encounters found in past performance lines.</div>`;
-    return;
-  }
+  computedRaces.forEach(cr => {
+    const div = document.createElement('div');
+    div.className = 'race-card';
+    div.id = `raceCard-${cr.race}`;
 
-  container.innerHTML = matchups.map(m => {
-    m.runners.sort((a, b) => a.finNum - b.finNum);
-    const winner = m.runners[0];
-    const losers = m.runners.slice(1);
+    const topPick = cr.horses[0];
+    const confClass = `conf-${cr.confidence.toLowerCase()}`;
 
-    return `
-      <div class="h2h-past-matchup">
-        <div style="font-family:var(--mono); font-weight:700; color:var(--board-950); margin-bottom:4px; display:flex; justify-content:space-between; align-items:center;">
-          <span>📅 ${m.date} — Track: ${m.track} (Race ${m.raceNum}) — Dist: ${formatDistance(m.runners[0].dist)} (${m.runners[0].surf})</span>
-          <span class="h2h-winner-badge">Outcome: ${winner.horse} Beat ${losers.map(l=>l.horse).join(', ')}</span>
+    div.innerHTML = `
+      <div class="race-card-top">
+        <strong>Race ${cr.race}</strong>
+        <span class="read-badge ${cr.confidence === 'HIGH' ? 'green' : (cr.confidence === 'PROBABLE' ? 'yellow' : 'red')}">${cr.confidence} CONFIDENCE</span>
+      </div>
+      <div class="race-pick">Top Value Pick: <b>#${topPick?.post} ${topPick?.horse}</b> (Edge: ${(topPick?.edge*100).toFixed(1)}%)</div>
+      
+      <div class="conf-block ${confClass}">
+        <span class="conf-tag">${cr.confidence}</span>
+        <span class="conf-body">Model confidence rating based on overlay spread and strength metrics.</span>
+      </div>
+
+      <div class="contender-matrix">
+        <div class="matrix-box contenders">
+          <div class="matrix-title">Contenders (Value / Positive Edge)</div>
+          <div>${cr.contenders.map(h => `#${h.post} ${h.horse} (${(h.edge*100).toFixed(1)}% edge)`).join(', ') || 'None'}</div>
         </div>
-        <table style="width:100%; font-family:var(--mono); font-size:11.5px; margin-top:6px; border:1px solid var(--paper-line);">
-          <thead>
-            <tr style="background:var(--paper-dim); text-align:left;">
-              <th style="padding:4px 6px;">Current Race</th>
-              <th style="padding:4px 6px;">Horse Name</th>
-              <th style="padding:4px 6px;">Finish Pos</th>
-              <th style="padding:4px 6px;">Speed Fig</th>
-              <th style="padding:4px 6px;">Head-to-Head Result</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${m.runners.map((r, idx) => `
-              <tr style="${idx === 0 ? 'font-weight:bold; background:rgba(46,110,69,0.08);' : ''}">
-                <td style="padding:4px 6px;">Race ${r.currentRace} (#${r.post})</td>
-                <td style="padding:4px 6px;">${r.horse}</td>
-                <td style="padding:4px 6px;">${r.fin}</td>
-                <td style="padding:4px 6px;">${r.speed}</td>
-                <td style="padding:4px 6px;">${idx === 0 ? '🏆 Defeated field below' : 'Finished behind ' + winner.horse}</td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
+        <div class="matrix-box pretenders">
+          <div class="matrix-title">Pretenders (Negative Edge / Overbet)</div>
+          <div>${cr.pretenders.map(h => `#${h.post} ${h.horse}`).join(', ') || 'None'}</div>
+        </div>
+      </div>
+
+      <div class="exotic-tip">
+        <b>Exotic Suggestion:</b> Key <b>#${topPick?.post} ${topPick?.horse}</b> on top in Exactas and Trifectas over contenders 
+        ${cr.contenders.slice(1, 3).map(h => `#${h.post} ${h.horse}`).join(', ')}. 
+        Box top 3 contenders for multi-race or vertical stability.
       </div>
     `;
-  }).join('');
-}
-
-function updateH2HDropdowns(){
-  const selA = document.getElementById('h2hSelectA');
-  const selB = document.getElementById('h2hSelectB');
-  selA.innerHTML = '';
-  selB.innerHTML = '';
-
-  const activeRows = rows.filter(r => !r.scratched && r.horse);
-  activeRows.forEach((r) => {
-    const optText = `R${r.race} #${r.post} ${r.horse}`;
-    selA.appendChild(new Option(optText, r.id));
-    selB.appendChild(new Option(optText, r.id));
+    listEl.appendChild(div);
   });
-
-  if (activeRows.length > 1) {
-    selB.selectedIndex = 1;
-  }
-
-  findPastMatchups();
-  renderH2H();
 }
 
-function renderH2HCard(h) {
-  if(!h) return '<div>Select a horse</div>';
-  return `
-    <div class="h2h-card">
-      <h3>R${h.race} #${h.post} ${h.horse}</h3>
-      <div class="h2h-stat">Composite Index: <b>${h.compositeIndex ? h.compositeIndex.toFixed(1) : 'N/A'}</b></div>
-      <div class="h2h-stat">Prime Power: <b>${h.score || h.primePower || 'N/A'}</b></div>
-      <div class="h2h-stat">M/L Odds: <b>${h.odds}</b></div>
-      <div class="h2h-stat">Trainer: <b>${h.trainer || 'N/A'}</b> (${h.trainerStarts || 0}: ${h.trainerWins || 0}-${h.trainerPlaces || 0}-${h.trainerShows || 0})</div>
-      <div class="h2h-stat">Jockey: <b>${h.jockey || 'N/A'}</b> (${h.jockeyStarts || 0}: ${h.jockeyWins || 0}-${h.jockeyPlaces || 0}-${h.jockeyShows || 0})</div>
-      <div class="h2h-stat">Career Starts: <b>${h.starts} (${h.wins}-${h.places}-${h.shows})</b></div>
-      
-      <div style="font-size:11px; font-weight:700; text-transform:uppercase; margin-top:12px; margin-bottom:4px;">Recent PP Lines</div>
-      ${h.ppRaces && h.ppRaces.length > 0 ? `
-        <table class="pp-table">
-          <thead>
-            <tr><th>Date</th><th>Track</th><th>Dist</th><th>Fin</th><th>Speed</th></tr>
-          </thead>
-          <tbody>
-            ${h.ppRaces.slice(0, 5).map(p => `
-              <tr>
-                <td>${p.date}</td>
-                <td>${p.track}</td>
-                <td>${formatDistance(p.dist)}</td>
-                <td>${p.fin}</td>
-                <td><b>${p.speed}</b></td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-      ` : '<div style="font-size:11px; color:var(--ink-soft);">No PP data available</div>'}
-    </div>
-  `;
-}
+document.getElementById('computeBtn').addEventListener('click', () => {
+  computeCard(false);
+});
 
-function renderH2H(){
-  const idA = document.getElementById('h2hSelectA').value;
-  const idB = document.getElementById('h2hSelectB').value;
-  const horseA = rows.find(r => r.id == idA);
-  const horseB = rows.find(r => r.id == idB);
+document.getElementById('oddsMLBtn').addEventListener('click', (e) => {
+  document.querySelectorAll('.sort-toggle button').forEach(b => b.classList.remove('active'));
+  e.target.classList.add('active');
+  computeCard(false);
+});
 
-  const container = document.getElementById('h2hComparisonDisplay');
-  container.innerHTML = renderH2HCard(horseA) + renderH2HCard(horseB);
-}
+document.getElementById('oddsFinalBtn').addEventListener('click', (e) => {
+  document.querySelectorAll('.sort-toggle button').forEach(b => b.classList.remove('active'));
+  e.target.classList.add('active');
+  computeCard(true);
+});
 
-document.getElementById('h2hSelectA').addEventListener('change', renderH2H);
-document.getElementById('h2hSelectB').addEventListener('change', renderH2H);
-
-function computeRaceCard(){
-  computedRaces = {};
-
-  rows.forEach(r => {
-    if(!r.horse) return;
-    const raceKey = r.race || '1';
-    if(!computedRaces[raceKey]) computedRaces[raceKey] = [];
-    computedRaces[raceKey].push(r);
-  });
-
-  const bestBetsHTML = [];
-  const contenderHTML = [];
-  const cardHTML = [];
-
-  const raceKeys = Object.keys(computedRaces).sort((a,b) => parseInt(a) - parseInt(b));
-
-  raceKeys.forEach(raceNum => {
-    const fullField = computedRaces[raceNum];
-    const activeField = fullField.filter(h => !h.scratched);
-
-    activeField.forEach(h => {
-      h.compositeIndex = computeCompositeIndex(h, activeField);
-    });
-
-    activeField.sort((a,b) => b.compositeIndex - a.compositeIndex);
-
-    const topPick = activeField.length > 0 ? activeField[0] : null;
-    const runnerUp = activeField.length > 1 ? activeField[1] : null;
-
-    if (topPick) {
-      const topOddsDec = parseOddsDecimal(topPick.odds);
-      const gap = runnerUp ? (topPick.compositeIndex - runnerUp.compositeIndex).toFixed(1) : 'N/A';
-
-      let valueTag = '';
-      if (topOddsDec >= 3.0) {
-        valueTag = '<span class="badge-value">VALUE OVERLAY</span>';
-      }
-
-      bestBetsHTML.push(`
-        <div class="bo-race-block">
-          <h4 style="margin:0 0 8px; font-size:14px; font-family:var(--mono); color:var(--board-950);">Race ${raceNum}</h4>
-          <div class="bo-row">
-            <div class="bo-rank">1</div>
-            <div style="flex:1;">
-              <div>
-                <span class="bo-horse" onclick="openPP('${topPick.horse}')">#${topPick.post} ${topPick.horse}</span>
-                <span class="badge-top-pick">TOP PICK</span>
-                ${valueTag}
-                ${topPick.jockeyChanged ? '<span class="badge-changed">NEW RIDER</span>' : ''}
-              </div>
-              <div class="bo-meta">
-                Composite Index: <b>${topPick.compositeIndex.toFixed(1)}</b> | Gap to 2nd: <b>+${gap} pts</b> | M/L Odds: <b>${topPick.odds}</b><br>
-                Prime Power: <b>${topPick.score || topPick.primePower}</b> | Last Speed: <b>${topPick.surfaceRating || topPick.lastSpeed}</b> | Trainer: <b>${topPick.trainer || 'N/A'}</b>
-              </div>
-            </div>
-          </div>
-        </div>
-      `);
-    }
-
-    const contenders = [];
-    const pretenders = [];
-    const topIndexVal = topPick ? topPick.compositeIndex : 0;
-
-    activeField.forEach((h) => {
-      const indexGap = topIndexVal - h.compositeIndex;
-      const oddsVal = parseOddsDecimal(h.odds);
-      const isFirstTimeStarter = (h.starts === 0 || !h.score || parseFloat(h.score) === 0);
-
-      if (isFirstTimeStarter) {
-        if (oddsVal < 25.0) {
-          contenders.push({ horse: h, gap: 0, isTop: false, isFTS: true });
-        } else {
-          pretenders.push({ horse: h, reason: `First-Time Starter with Extreme Odds (${h.odds})` });
-        }
-      } else if (indexGap <= 10.0 && oddsVal < 20.0) {
-        contenders.push({ horse: h, gap: indexGap, isTop: topPick && h.id === topPick.id, isFTS: false });
-      } else {
-        let pretenderReason = [];
-        if (indexGap > 10.0) pretenderReason.push(`Composite Gap -${indexGap.toFixed(1)} pts`);
-        if (oddsVal >= 20.0) pretenderReason.push(`Long Odds (${h.odds})`);
-        if (h.lastSpeed && h.lastSpeed < 70) pretenderReason.push(`Low Speed Fig (${h.lastSpeed})`);
-        if (pretenderReason.length === 0) pretenderReason.push('Class/Form deficit');
-
-        pretenders.push({ horse: h, reason: pretenderReason.join(', ') });
-      }
-    });
-
-    contenderHTML.push(`
-      <div style="margin-bottom:22px; border:1px solid var(--paper-line); border-radius:4px; padding:16px; background:#fff;">
-        <h3 style="margin:0 0 10px; font-size:16px;">Race ${raceNum} Overview</h3>
-        <div class="cp-grid">
-          <div class="cp-box contender">
-            <div class="cp-head">Contenders (${contenders.length})</div>
-            ${contenders.map(c => `
-              <div class="cp-item">
-                <span class="cp-horse" onclick="openPP('${c.horse.horse}')">#${c.horse.post} ${c.horse.horse}</span> 
-                ${c.isTop ? '<span class="badge-top-pick">TOP PICK</span>' : ''}
-                ${c.isFTS ? '<span class="badge-fts">1ST TIME STARTER</span>' : ''}
-                ${c.horse.jockeyChanged ? '<span class="badge-changed">NEW RIDER</span>' : ''}<br>
-                Composite Score: <b>${c.isFTS ? 'N/A (FTS)' : c.horse.compositeIndex.toFixed(1)}</b> | M/L: <b>${c.horse.odds}</b>
-              </div>
-            `).join('')}
-          </div>
-          <div class="cp-box pretender">
-            <div class="cp-head">Pretenders (${pretenders.length})</div>
-            ${pretenders.length > 0 ? pretenders.map(p => `
-              <div class="cp-item">
-                <span class="cp-horse" onclick="openPP('${p.horse.horse}')">#${p.horse.post} ${p.horse.horse}</span> | M/L: <b>${p.horse.odds}</b><br>
-                <span style="color:var(--red); font-size:11.5px; font-weight:600;">⚠️ ${p.reason}</span>
-              </div>
-            `).join('') : '<div style="font-size:12px; color:var(--ink-soft);">None — Entire active field classified as contenders.</div>'}
-          </div>
-        </div>
-      </div>
-    `);
-
-    cardHTML.push(`
-      <div style="border:1px solid var(--paper-line); padding:16px; margin-bottom:18px; background:#fff; border-radius:4px;">
-        <h3 style="margin:0 0 10px; font-size:16px; border-bottom:2px solid var(--board-950); padding-bottom:6px;">
-          Race ${raceNum} — Full Field (${fullField.length} Total / ${activeField.length} Active)
-        </h3>
-        <table style="width:100%; font-size:12px;">
-          <thead>
-            <tr style="background:var(--board-950); color:#fff;">
-              <th style="padding:6px;">Post</th>
-              <th style="padding:6px;">Horse Name</th>
-              <th style="padding:6px;">Trainer (Starts/W-P-S)</th>
-              <th style="padding:6px;">Jockey (Starts/W-P-S)</th>
-              <th style="padding:6px;">Composite</th>
-              <th style="padding:6px;">Prime Power</th>
-              <th style="padding:6px;">Last Speed</th>
-              <th style="padding:6px;">ML Odds</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${fullField.map(h => {
-              const isTop = topPick && h.id === topPick.id && !h.scratched;
-              const isFTS = (h.starts === 0 || !h.score || parseFloat(h.score) === 0);
-              const trClass = h.scratched ? 'class="scratched-card-row"' : (isTop ? 'style="background:rgba(217,167,59,0.15); font-weight:bold;"' : '');
-              return `
-              <tr ${trClass}>
-                <td style="padding:6px; font-family:var(--mono);">${h.post}</td>
-                <td style="padding:6px;">
-                  <span class="bo-horse" onclick="openPP('${h.horse}')">${h.horse}</span>
-                  ${h.scratched ? '<span class="badge-scr">SCRATCHED</span>' : ''}
-                  ${isTop ? '<span class="badge-top-pick">BEST BET</span>' : ''}
-                  ${isFTS ? '<span class="badge-fts">1ST TIME STARTER</span>' : ''}
-                  ${h.jockeyChanged ? '<span class="badge-changed">NEW RIDER</span>' : ''}
-                </td>
-                <td style="padding:6px;">${h.trainer ? `${h.trainer} (${h.trainerStarts}: ${h.trainerWins}-${h.trainerPlaces}-${h.trainerShows})` : 'N/A'}</td>
-                <td style="padding:6px;">${h.jockey ? `${h.jockey} (${h.jockeyStarts}: ${h.jockeyWins}-${h.jockeyPlaces}-${h.jockeyShows})` : 'N/A'}</td>
-                <td style="padding:6px; font-weight:700; color:var(--green);">${h.compositeIndex ? h.compositeIndex.toFixed(1) : '-'}</td>
-                <td style="padding:6px;">${h.score || h.primePower || 'FTS'}</td>
-                <td style="padding:6px;">${h.surfaceRating || h.lastSpeed || 'FTS'}</td>
-                <td style="padding:6px; font-family:var(--mono);">${h.odds}</td>
-              </tr>
-            `}).join('')}
-          </tbody>
-        </table>
-      </div>
-    `);
-  });
-
-  document.getElementById('bestBetsList').innerHTML = bestBetsHTML.join('');
-  document.getElementById('contenderCards').innerHTML = contenderHTML.join('');
-  document.getElementById('raceCardsList').innerHTML = cardHTML.join('');
-
-  updateH2HDropdowns();
-
-  document.getElementById('tabbar').style.display = 'flex';
-  document.getElementById('cardSection').style.display = 'block';
-  document.getElementById('bestSection').style.display = 'none';
-  document.getElementById('analysisSection').style.display = 'none';
-  document.getElementById('h2hSection').style.display = 'none';
-}
-
-document.getElementById('computeBtn').addEventListener('click', computeRaceCard);
-
+// Tab switching logic
 document.querySelectorAll('.tabbar button').forEach(btn => {
-  btn.addEventListener('click', e => {
+  btn.addEventListener('click', (e) => {
     document.querySelectorAll('.tabbar button').forEach(b => b.classList.remove('on'));
     e.target.classList.add('on');
     const tab = e.target.dataset.tab;
-    document.getElementById('cardSection').style.display = tab === 'card' ? 'block' : 'none';
-    document.getElementById('bestSection').style.display = tab === 'best' ? 'block' : 'none';
-    document.getElementById('analysisSection').style.display = tab === 'analysis' ? 'block' : 'none';
-    document.getElementById('h2hSection').style.display = tab === 'h2h' ? 'block' : 'none';
+    // Simple tab display toggles
+    document.getElementById('resultsSection').style.display = (tab === 'cards' || !tab) ? 'block' : 'none';
+    document.getElementById('picksSection').style.display = tab === 'picks' ? 'block' : 'none';
+    document.getElementById('printSection').style.display = tab === 'print' ? 'block' : 'none';
+    document.getElementById('betsSection').style.display = tab === 'bets' ? 'block' : 'none';
+    document.getElementById('fieldSection').style.display = tab === 'field' ? 'block' : 'none';
+    document.getElementById('resultsScoreSection').style.display = tab === 'score' ? 'block' : 'none';
   });
 });
-
-function openPP(horseName){
-  const horse = rows.find(r => r.horse.toLowerCase() === horseName.toLowerCase());
-  if(!horse) return;
-
-  const content = document.getElementById('ppContent');
-  content.innerHTML = `
-    <h2 style="margin:0 0 4px; font-size:20px;">
-      #${horse.post} ${horse.horse}
-      ${horse.scratched ? '<span class="badge-scr">SCRATCHED</span>' : ''}
-      ${(horse.starts === 0 || !horse.score || parseFloat(horse.score) === 0) ? '<span class="badge-fts">1ST TIME STARTER</span>' : ''}
-      ${horse.jockeyChanged ? '<span class="badge-changed">JOCKEY CHANGED</span>' : ''}
-    </h2>
-    <div style="font-family:var(--mono); font-size:12px; color:var(--ink-soft); margin-bottom:12px; line-height:1.6;">
-      Composite Score: <b>${horse.compositeIndex ? horse.compositeIndex.toFixed(1) : 'N/A'}</b> | Prime Power: <b>${horse.score || horse.primePower || 'FTS'}</b> | Best Speed: <b>${horse.bestSpeed || 'N/A'}</b><br>
-      Trainer: <b>${horse.trainer || 'N/A'}</b> | Record: <b>${horse.trainerStarts || 0} Starts (${horse.trainerWins || 0}-${horse.trainerPlaces || 0}-${horse.trainerShows || 0})</b><br>
-      Jockey: <b>${horse.jockey || 'N/A'}</b> | Record: <b>${horse.jockeyStarts || 0} Starts (${horse.jockeyWins || 0}-${horse.jockeyPlaces || 0}-${horse.jockeyShows || 0})</b><br>
-      Horse Career: <b>${horse.starts} Starts — ${horse.wins} W / ${horse.places} P / ${horse.shows} S</b>
-    </div>
-    
-    <div style="font-size:12px; font-weight:700; text-transform:uppercase; margin-bottom:6px;">Past Performances</div>
-    ${horse.ppRaces && horse.ppRaces.length > 0 ? `
-      <table class="pp-table">
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>Track</th>
-            <th>Race</th>
-            <th>Dist</th>
-            <th>Surf</th>
-            <th>Finish</th>
-            <th>BRIS Speed</th>
-            <th>Comment</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${horse.ppRaces.map(p => `
-            <tr>
-              <td>${p.date}</td>
-              <td>${p.track}</td>
-              <td>${p.raceNum ? 'R' + p.raceNum : '-'}</td>
-              <td>${formatDistance(p.dist)}</td>
-              <td>${p.surf}</td>
-              <td>${p.fin}</td>
-              <td><b>${p.speed}</b></td>
-              <td>${p.comment}</td>
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>
-    ` : '<div style="font-size:12.5px; color:var(--ink-soft); margin-bottom:14px;">No past performance lines available (First-Time Starter).</div>'}
-
-    <div style="font-size:12px; font-weight:700; text-transform:uppercase; margin-bottom:6px;">Recent Workouts (Within 30 Days of Race Date)</div>
-    ${horse.ppWorks && horse.ppWorks.length > 0 ? `
-      <div class="work-grid">
-        ${horse.ppWorks.map(w => `
-          <div class="work-item">
-            <div><b>${w.date}</b> — ${w.track || 'Track N/A'}</div>
-            <div>Time: <b>${w.time || 'N/A'}</b> ${w.description ? '(' + w.description + ')' : ''}</div>
-          </div>
-        `).join('')}
-      </div>
-    ` : '<div style="font-size:12.5px; color:var(--ink-soft);">No workouts recorded within 30 days of the race date.</div>'}
-  `;
-
-  document.getElementById('ppOverlay').classList.add('show');
-}
-
-function closePP(){
-  document.getElementById('ppOverlay').classList.remove('show');
-}
-
-document.getElementById('ppCloseBtn').addEventListener('click', closePP);
-document.getElementById('ppReturnBtn').addEventListener('click', closePP);
 </script>
 </body>
 </html>
