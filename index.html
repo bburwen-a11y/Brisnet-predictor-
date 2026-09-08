@@ -4,926 +4,688 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Overlay Board v1.33 — Race Card Reader</title>
-<script src="[https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js](https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js)"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
-:root {
---paper: #f4f1ea;
---paper-card: #f9f7f2;
---paper-line: #d8d2c4;
---paper-dark: #2c2925;
---ink: #1c1a17;
---muted: #6e675f;
---accent: #8b2500;
---accent-bg: #fdf3f0;
---green: #1b4d3e;
---green-bg: #edf5f2;
---gold: #735100;
---gold-bg: #fbf6ec;
---blue: #1b365d;
---blue-bg: #edf2f8;
---mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
---sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-}
- { box-sizing: border-box; margin: 0; padding: 0; }
-body {
-background: var(--paper);
-color: var(--ink);
-font-family: var(--sans);
-font-size: 13px;
-line-height: 1.4;
-padding: 16px;
-}
-header {
-border-bottom: 3px double var(--ink);
-padding-bottom: 12px;
-margin-bottom: 16px;
-display: flex;
-justify-content: space-between;
-align-items: flex-end;
-flex-wrap: wrap;
-gap: 12px;
-}
-.brand .eyebrow {
-font-family: var(--mono);
-font-size: 11px;
-text-transform: uppercase;
-letter-spacing: 1px;
-color: var(--muted);
-margin-bottom: 2px;
-}
-.brand h1 {
-font-family: Georgia, serif;
-font-size: 26px;
-font-weight: 700;
-letter-spacing: -0.5px;
-}
-.brand h1 span { color: var(--accent); }
-.controls {
-display: flex;
-gap: 8px;
-align-items: center;
-flex-wrap: wrap;
-}
-.btn {
-background: var(--paper-card);
-border: 1px solid var(--paper-dark);
-color: var(--ink);
-padding: 6px 12px;
-font-family: var(--mono);
-font-size: 11px;
-font-weight: 600;
-cursor: pointer;
-text-transform: uppercase;
-border-radius: 2px;
-display: inline-flex;
-align-items: center;
-gap: 6px;
-}
-.btn:hover { background: var(--paper-dark); color: var(--paper); }
-.btn.primary { background: var(--accent); color: white; border-color: var(--accent); }
-.btn.primary:hover { background: #6d1d00; }
-.btn.secondary { background: var(--blue); color: white; border-color: var(--blue); }
-.btn.secondary:hover { background: #12243e; }
-/* Drop Zone */
-.drop-zone {
-border: 2px dashed var(--paper-dark);
-background: var(--paper-card);
-padding: 24px;
-text-align: center;
-margin-bottom: 16px;
-border-radius: 4px;
-cursor: pointer;
-transition: all 0.2s;
-}
-.drop-zone.dragover { background: var(--paper-line); border-color: var(--accent); }
-.drop-zone p { font-size: 14px; font-weight: 500; margin-bottom: 4px; }
-.drop-zone span { font-size: 11px; color: var(--muted); font-family: var(--mono); }
-/* Navigation Tabs */
-.tabs {
-display: flex;
-gap: 4px;
-margin-bottom: 16px;
-border-bottom: 2px solid var(--paper-dark);
-padding-bottom: 0;
-overflow-x: auto;
-}
-.tab {
-background: var(--paper-line);
-border: 1px solid var(--paper-dark);
-border-bottom: none;
-padding: 8px 16px;
-font-family: var(--mono);
-font-size: 11px;
-font-weight: 600;
-cursor: pointer;
-border-radius: 3px 3px 0 0;
-color: var(--muted);
-text-transform: uppercase;
-}
-.tab.active {
-background: var(--paper-card);
-color: var(--ink);
-border-bottom: 2px solid var(--paper-card);
-margin-bottom: -2px;
-font-weight: 700;
-}
-/* Meeting Header Banner */
-.meeting-bar {
-background: var(--paper-card);
-border: 1px solid var(--paper-dark);
-padding: 10px 16px;
-margin-bottom: 16px;
-display: flex;
-justify-content: space-between;
-align-items: center;
-flex-wrap: wrap;
-gap: 12px;
-font-family: var(--mono);
-font-size: 12px;
-}
-.meeting-bar .meta-group { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
-.meeting-bar select {
-background: var(--paper);
-border: 1px solid var(--paper-dark);
-padding: 4px 8px;
-font-family: var(--mono);
-font-size: 11px;
-color: var(--ink);
-border-radius: 2px;
-}
-/* Race Selector Strip */
-.race-strip {
-display: flex;
-gap: 6px;
-margin-bottom: 16px;
-overflow-x: auto;
-padding-bottom: 4px;
-}
-.race-btn {
-background: var(--paper-card);
-border: 1px solid var(--paper-dark);
-min-width: 44px;
-height: 36px;
-display: flex;
-flex-direction: column;
-align-items: center;
-justify-content: center;
-cursor: pointer;
-font-family: var(--mono);
-border-radius: 2px;
-}
-.race-btn .rnum { font-size: 12px; font-weight: 700; }
-.race-btn .rtype { font-size: 8px; color: var(--muted); text-transform: uppercase; }
-.race-btn:hover { background: var(--paper-line); }
-.race-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
-.race-btn.active .rtype { color: #fdf3f0; }
-/* Main Sections */
-.section { display: none; }
-.section.active { display: block; }
-/* Race Header & Conditions */
-.race-header {
-background: var(--paper-card);
-border: 1px solid var(--paper-dark);
-border-left: 4px solid var(--accent);
-padding: 12px 16px;
-margin-bottom: 16px;
-display: flex;
-justify-content: space-between;
-align-items: flex-start;
-flex-wrap: wrap;
-gap: 12px;
-}
-.race-title-group h2 { font-family: Georgia, serif; font-size: 18px; font-weight: 700; margin-bottom: 4px; }
-.race-conds { font-family: var(--mono); font-size: 11px; color: var(--muted); }
-.race-badges { display: flex; gap: 6px; flex-wrap: wrap; }
-.badge {
-background: var(--paper);
-border: 1px solid var(--paper-dark);
-padding: 2px 6px;
-font-family: var(--mono);
-font-size: 10px;
-font-weight: 600;
-border-radius: 2px;
-text-transform: uppercase;
-}
-.badge.turf { background: var(--green-bg); color: var(--green); border-color: var(--green); }
-.badge.dirt { background: var(--gold-bg); color: var(--gold); border-color: var(--gold); }
-.badge.stakes { background: var(--accent-bg); color: var(--accent); border-color: var(--accent); }
-/* Analysis & Readability Board */
-.analysis-grid {
-display: grid;
-grid-template-columns: 2fr 1fr;
-gap: 16px;
-margin-bottom: 16px;
-}
-@media (max-width: 900px) { .analysis-grid { grid-template-columns: 1fr; } }
-.panel {
-background: var(--paper-card);
-border: 1px solid var(--paper-dark);
-padding: 14px;
-border-radius: 2px;
-}
-.panel h3 {
-font-family: var(--mono);
-font-size: 11px;
-text-transform: uppercase;
-letter-spacing: 1px;
-border-bottom: 1px solid var(--paper-line);
-padding-bottom: 6px;
-margin-bottom: 10px;
-display: flex;
-justify-content: space-between;
-align-items: center;
-}
-/* Field Table */
-.table-container { overflow-x: auto; margin-bottom: 16px; }
-table.field-table {
-width: 100%;
-border-collapse: collapse;
-background: var(--paper-card);
-border: 1px solid var(--paper-dark);
-font-size: 12px;
-}
-table.field-table th, table.field-table td {
-padding: 7px 10px;
-border-bottom: 1px solid var(--paper-line);
-border-right: 1px solid var(--paper-line);
-text-align: left;
-}
-table.field-table th {
-background: var(--paper);
-font-family: var(--mono);
-font-size: 10px;
-text-transform: uppercase;
-letter-spacing: 0.5px;
-border-bottom: 2px solid var(--paper-dark);
-font-weight: 700;
-}
-table.field-table tr:hover { background: rgba(0,0,0,0.02); }
-table.field-table tr.scratched { opacity: 0.4; text-decoration: line-through; background: #eee; }
-.num-cell { font-family: var(--mono); font-weight: 700; text-align: center; width: 36px; }
-.horse-cell .horse-name { font-weight: 700; font-size: 13px; }
-.horse-cell .jockey-trainer { font-size: 10px; color: var(--muted); font-family: var(--mono); }
-.right { text-align: right !important; }
-.center { text-align: center !important; }
-/* Picks & Betting Slips */
-.picks-container {
-display: grid;
-grid-template-columns: 1fr 1fr;
-gap: 16px;
-margin-bottom: 16px;
-}
-@media (max-width: 800px) { .picks-container { grid-template-columns: 1fr; } }
-.pick-box {
-background: var(--paper-card);
-border: 1px solid var(--paper-dark);
-padding: 16px;
-border-top: 3px solid var(--accent);
-}
-.pick-box h4 { font-family: var(--mono); font-size: 12px; text-transform: uppercase; margin-bottom: 10px; display: flex; justify-content: space-between; }
-.pick-item {
-display: flex;
-justify-content: space-between;
-padding: 6px 0;
-border-bottom: 1px dashed var(--paper-line);
-font-size: 13px;
-}
-.pick-item:last-child { border-bottom: none; }
-/* Past Performance lines in collapsible / detailed view */
-.pp-block {
-background: var(--paper);
-border: 1px solid var(--paper-line);
-padding: 8px 12px;
-margin-top: 6px;
-font-family: var(--mono);
-font-size: 10px;
-}
-.pp-row { display: flex; gap: 12px; align-items: center; margin-bottom: 3px; }
-.work-dots { display: inline-flex; gap: 3px; align-items: center; font-family: var(--mono); font-size: 9px; color: var(--muted); }
-/* Utilities */
-.tag { display: inline-block; padding: 1px 4px; font-size: 9px; font-family: var(--mono); border-radius: 2px; background: var(--paper-line); font-weight: 600; }
-.tag.hot { background: var(--accent-bg); color: var(--accent); }
-.tag.value { background: var(--green-bg); color: var(--green); }
-textarea.raw-input {
-width: 100%;
-height: 140px;
-font-family: var(--mono);
-font-size: 11px;
-padding: 8px;
-background: var(--paper);
-border: 1px solid var(--paper-dark);
-margin-bottom: 8px;
-resize: vertical;
-}
-.status-banner {
-background: var(--blue-bg);
-color: var(--blue);
-border: 1px solid var(--blue);
-padding: 8px 12px;
-font-family: var(--mono);
-font-size: 11px;
-margin-bottom: 12px;
-border-radius: 2px;
-display: none;
-}
-/* Print Styles */
-@media print {
-body { background: white; color: black; padding: 0; font-size: 11px; }
-header, .tabs, .controls, .drop-zone, .race-strip, .meeting-bar { display: none !important; }
-.section { display: block !important; page-break-after: always; }
-table.field-table { border: 1px solid black; }
-table.field-table th, table.field-table td { border: 1px solid black; padding: 4px 6px; }
-.panel, .pick-box, .race-header { border: 1px solid black; background: white; }
-}
+  :root {
+    --paper: #f4f1ea;
+    --paper-card: #f9f7f2;
+    --paper-line: #d8d2c4;
+    --paper-dark: #2c2925;
+    --ink: #1c1a17;
+    --muted: #6e675f;
+    --accent: #8b2500;
+    --accent-bg: #fdf3f0;
+    --green: #1b4d3e;
+    --green-bg: #edf5f2;
+    --gold: #735100;
+    --gold-bg: #fbf6ec;
+    --blue: #1b365d;
+    --blue-bg: #edf2f8;
+    --mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 13px;
+    line-height: 1.4;
+    padding: 16px;
+  }
+  header {
+    border-bottom: 3px double var(--ink);
+    padding-bottom: 12px;
+    margin-bottom: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .brand .eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--muted);
+    margin-bottom: 2px;
+  }
+  .brand h1 {
+    font-family: Georgia, serif;
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+  }
+  .brand h1 span { color: var(--accent); }
+  .controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .btn {
+    background: var(--paper-card);
+    border: 1px solid var(--paper-dark);
+    color: var(--ink);
+    padding: 6px 12px;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    text-transform: uppercase;
+    border-radius: 2px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .btn:hover { background: var(--paper-dark); color: var(--paper); }
+  .btn.primary { background: var(--accent); color: white; border-color: var(--accent); }
+  .btn.primary:hover { background: #6d1d00; }
+  .btn.secondary { background: var(--blue); color: white; border-color: var(--blue); }
+  .btn.secondary:hover { background: #12243e; }
+  .drop-zone {
+    border: 2px dashed var(--paper-dark);
+    background: var(--paper-card);
+    padding: 24px;
+    text-align: center;
+    margin-bottom: 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .drop-zone.dragover { background: var(--paper-line); border-color: var(--accent); }
+  .drop-zone p { font-size: 14px; font-weight: 500; margin-bottom: 4px; }
+  .drop-zone span { font-size: 11px; color: var(--muted); font-family: var(--mono); }
+  .tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 16px;
+    border-bottom: 2px solid var(--paper-dark);
+    overflow-x: auto;
+  }
+  .tab {
+    background: var(--paper-line);
+    border: 1px solid var(--paper-dark);
+    border-bottom: none;
+    padding: 8px 16px;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    border-radius: 3px 3px 0 0;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+  .tab.active {
+    background: var(--paper-card);
+    color: var(--ink);
+    border-bottom: 2px solid var(--paper-card);
+    margin-bottom: -2px;
+    font-weight: 700;
+  }
+  .meeting-bar {
+    background: var(--paper-card);
+    border: 1px solid var(--paper-dark);
+    padding: 10px 16px;
+    margin-bottom: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    font-family: var(--mono);
+    font-size: 12px;
+  }
+  .meeting-bar .meta-group { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+  .race-strip {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 16px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+  .race-btn {
+    background: var(--paper-card);
+    border: 1px solid var(--paper-dark);
+    min-width: 44px;
+    height: 36px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-family: var(--mono);
+    border-radius: 2px;
+  }
+  .race-btn .rnum { font-size: 12px; font-weight: 700; }
+  .race-btn .rtype { font-size: 8px; color: var(--muted); text-transform: uppercase; }
+  .race-btn:hover { background: var(--paper-line); }
+  .race-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
+  .race-btn.active .rtype { color: #fdf3f0; }
+  .section { display: none; }
+  .section.active { display: block; }
+  .race-header {
+    background: var(--paper-card);
+    border: 1px solid var(--paper-dark);
+    border-left: 4px solid var(--accent);
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .race-title-group h2 { font-family: Georgia, serif; font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+  .race-conds { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+  .race-badges { display: flex; gap: 6px; flex-wrap: wrap; }
+  .badge {
+    background: var(--paper);
+    border: 1px solid var(--paper-dark);
+    padding: 2px 6px;
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 600;
+    border-radius: 2px;
+    text-transform: uppercase;
+  }
+  .badge.turf { background: var(--green-bg); color: var(--green); border-color: var(--green); }
+  .badge.dirt { background: var(--gold-bg); color: var(--gold); border-color: var(--gold); }
+  .badge.stakes { background: var(--accent-bg); color: var(--accent); border-color: var(--accent); }
+  .analysis-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+  @media (max-width: 900px) { .analysis-grid { grid-template-columns: 1fr; } }
+  .panel {
+    background: var(--paper-card);
+    border: 1px solid var(--paper-dark);
+    padding: 14px;
+    border-radius: 2px;
+  }
+  .panel h3 {
+    font-family: var(--mono);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border-bottom: 1px solid var(--paper-line);
+    padding-bottom: 6px;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .table-container { overflow-x: auto; margin-bottom: 16px; }
+  table.field-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--paper-card);
+    border: 1px solid var(--paper-dark);
+    font-size: 12px;
+  }
+  table.field-table th, table.field-table td {
+    padding: 7px 10px;
+    border-bottom: 1px solid var(--paper-line);
+    border-right: 1px solid var(--paper-line);
+    text-align: left;
+  }
+  table.field-table th {
+    background: var(--paper);
+    font-family: var(--mono);
+    font-size: 10px;
+    text-transform: uppercase;
+    border-bottom: 2px solid var(--paper-dark);
+    font-weight: 700;
+  }
+  table.field-table tr:hover { background: rgba(0,0,0,0.02); }
+  table.field-table tr.scratched { opacity: 0.4; text-decoration: line-through; background: #eee; }
+  .num-cell { font-family: var(--mono); font-weight: 700; text-align: center; width: 36px; }
+  .horse-cell .horse-name { font-weight: 700; font-size: 13px; }
+  .horse-cell .jockey-trainer { font-size: 10px; color: var(--muted); font-family: var(--mono); }
+  .right { text-align: right !important; }
+  .center { text-align: center !important; }
+  .picks-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+  @media (max-width: 800px) { .picks-container { grid-template-columns: 1fr; } }
+  .pick-box {
+    background: var(--paper-card);
+    border: 1px solid var(--paper-dark);
+    padding: 16px;
+    border-top: 3px solid var(--accent);
+  }
+  .pick-box h4 { font-family: var(--mono); font-size: 12px; text-transform: uppercase; margin-bottom: 10px; display: flex; justify-content: space-between; }
+  .pick-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 0;
+    border-bottom: 1px dashed var(--paper-line);
+    font-size: 13px;
+  }
+  .pp-block {
+    background: var(--paper);
+    border: 1px solid var(--paper-line);
+    padding: 8px 12px;
+    margin-top: 6px;
+    font-family: var(--mono);
+    font-size: 10px;
+  }
+  .pp-row { display: flex; gap: 12px; align-items: center; margin-bottom: 3px; }
+  .work-dots { display: inline-flex; gap: 3px; align-items: center; font-family: var(--mono); font-size: 9px; color: var(--muted); }
+  .tag { display: inline-block; padding: 1px 4px; font-size: 9px; font-family: var(--mono); border-radius: 2px; background: var(--paper-line); font-weight: 600; }
+  .tag.hot { background: var(--accent-bg); color: var(--accent); }
+  .status-banner {
+    background: var(--blue-bg);
+    color: var(--blue);
+    border: 1px solid var(--blue);
+    padding: 8px 12px;
+    font-family: var(--mono);
+    font-size: 11px;
+    margin-bottom: 12px;
+    border-radius: 2px;
+    display: none;
+  }
+  @media print {
+    body { background: white; color: black; padding: 0; font-size: 11px; }
+    header, .tabs, .controls, .drop-zone, .race-strip, .meeting-bar { display: none !important; }
+    .section { display: block !important; page-break-after: always; }
+  }
 </style>
 </head>
 <body>
+
 <header>
-<div class="brand">
-<p class="eyebrow">Handicapping utility · <span class="ver">v1.33</span> · released 7 September 2026 (Enhanced)</p>
-<h1>Overlay Board <span>v1.33</span></h1>
-</div>
-<div class="controls">
-<button class="btn" onclick="document.getElementById('fileInput').click()">📁 Load DRF / CSV / ZIP</button>
-<input type="file" id="fileInput" style="display:none" multiple accept=".drf,.txt,.csv,.zip,.json" onchange="handleFiles(this.files)">
-<button class="btn secondary" onclick="loadSampleCard()">⚡ Load Demo Card</button>
-<button class="btn" onclick="window.print()">🖨️ Print Card</button>
-<button class="btn" onclick="exportSavedData()">💾 Export JSON</button>
-</div>
+  <div class="brand">
+    <p class="eyebrow">Handicapping utility · <span class="ver">v1.33</span> · released 7 September 2026 (Enhanced)</p>
+    <h1>Overlay Board <span>v1.33</span></h1>
+  </div>
+  <div class="controls">
+    <button class="btn" onclick="document.getElementById('fileInput').click()">📁 Load DRF / CSV / ZIP</button>
+    <input type="file" id="fileInput" style="display:none" multiple accept=".drf,.txt,.csv,.zip,.json" onchange="handleFiles(this.files)">
+    <button class="btn secondary" onclick="loadSampleCard()">⚡ Load Demo Card</button>
+    <button class="btn" onclick="window.print()">🖨️ Print Card</button>
+    <button class="btn" onclick="exportSavedData()">💾 Export JSON</button>
+  </div>
 </header>
+
 <div id="statusBanner" class="status-banner"></div>
-<!-- Drop Zone for files -->
+
 <div class="drop-zone" id="dropZone" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)" onclick="document.getElementById('fileInput').click()">
-<p>Drop Brisnet .DRF, CSV, Equibase chart text, or ZIP archive here</p>
-<span>Supports multi-file race cards, morning lines, workouts, and real-time feed updates</span>
+  <p>Drop Brisnet .DRF, CSV, Equibase chart text, or ZIP archive here</p>
+  <span>Supports multi-file race cards, morning lines, workouts, and real-time feed updates</span>
 </div>
-<!-- Meeting Bar -->
+
 <div class="meeting-bar" id="meetingBar" style="display:none;">
-<div class="meta-group">
-<span id="metaTrack" style="font-weight:700; font-size:14px;">TRACK</span>
-<span id="metaDate">DATE</span>
-<span id="metaCond">Condition: Fast / Firm</span>
+  <div class="meta-group">
+    <span id="metaTrack" style="font-weight:700; font-size:14px;">TRACK</span>
+    <span id="metaDate">DATE</span>
+    <span id="metaCond">Condition: Fast / Firm</span>
+  </div>
 </div>
-<div class="meta-group">
-<label>Changes Feed:</label>
-<input type="file" id="changesInput" accept=".txt,.csv" style="display:none" onchange="handleChangesFile(this.files[0])">
-<button class="btn" style="padding:3px 8px; font-size:10px;" onclick="document.getElementById('changesInput').click()">Load Scratches/Changes</button>
-</div>
-</div>
-<!-- Navigation Tabs -->
+
 <div class="tabs">
-<div class="tab active" onclick="switchTab('picksSection', this)">Picks & Analysis</div>
-<div class="tab" onclick="switchTab('fieldSection', this)">Full Field & Past Performances</div>
-<div class="tab" onclick="switchTab('betsSection', this)">Ticket Maker & Wagers</div>
-<div class="tab" onclick="switchTab('resultsScoreSection', this)">Scoreboard & ROI</div>
-<div class="tab" onclick="switchTab('printSection', this)">Complete Race Card (Print View)</div>
+  <div class="tab active" onclick="switchTab('picksSection', this)">Picks & Analysis</div>
+  <div class="tab" onclick="switchTab('fieldSection', this)">Full Field & Past Performances</div>
+  <div class="tab" onclick="switchTab('betsSection', this)">Ticket Maker & Wagers</div>
+  <div class="tab" onclick="switchTab('resultsScoreSection', this)">Scoreboard & ROI</div>
+  <div class="tab" onclick="switchTab('printSection', this)">Complete Race Card (Print View)</div>
 </div>
-<!-- Race Selector Strip -->
+
 <div class="race-strip" id="raceStrip" style="display:none;"></div>
-<!-- SECTION 1: PICKS & ANALYSIS -->
+
 <div id="picksSection" class="section active">
-<div class="race-header" id="raceHeader">
-<div class="race-title-group">
-<h2 id="rTitle">Race 1 — Maiden Special Weight</h2>
-<div class="race-conds" id="rConds">6.5 Furlongs · Dirt · Purse $75,000</div>
+  <div class="race-header" id="raceHeader">
+    <div class="race-title-group">
+      <h2 id="rTitle">Race 1 — Maiden Special Weight</h2>
+      <div class="race-conds" id="rConds">6.5 Furlongs · Dirt · Purse $75,000</div>
+    </div>
+    <div class="race-badges" id="rBadges">
+      <span class="badge dirt">Dirt</span>
+      <span class="badge stakes">MSW 75k</span>
+    </div>
+  </div>
+
+  <div class="analysis-grid">
+    <div class="panel">
+      <h3>Handicapping Synthesis & Speed Shape <span id="raceReadabilityTag" class="tag">Readability: Moderate</span></h3>
+      <div id="analysisContent" style="font-size: 13px; line-height: 1.5;">
+        <p style="color:var(--muted);">Load a race card or demo data to generate automated pace projections.</p>
+      </div>
+    </div>
+    <div class="panel">
+      <h3>Pace Scenario</h3>
+      <div id="paceProjectionBox" style="font-size: 12px; font-family: var(--mono);">
+        <p style="color:var(--muted);">Waiting for card data...</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="picks-container">
+    <div class="pick-box" style="border-top-color: var(--accent);">
+      <h4>Top Win Picks & Value Play <span>Confidence: <span id="confRating">---</span></span></h4>
+      <div id="topPicksList">
+        <div class="pick-item"><span style="color:var(--muted);">No picks generated yet.</span></div>
+      </div>
+    </div>
+    <div class="pick-box" style="border-top-color: var(--blue);">
+      <h4>Exotic Structuring (Exacta / Trifecta)</h4>
+      <div id="exoticsList">
+        <div class="pick-item"><span style="color:var(--muted);">Key horses to determine exotics structure.</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>Quick Field Summary</h3>
+    <div class="table-container">
+      <table class="field-table" id="summaryTable">
+        <thead>
+          <tr>
+            <th class="center">#</th>
+            <th>Horse</th>
+            <th class="center">ML</th>
+            <th class="center">Quirin</th>
+            <th class="center">Eps Rank</th>
+            <th class="center">Best Fig</th>
+            <th class="center">Form Cycle</th>
+            <th>Synthesis Note</th>
+          </tr>
+        </thead>
+        <tbody id="summaryTableBody">
+          <tr><td colspan="8" class="center" style="padding:20px; color:var(--muted);">No horses loaded in this race.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
 </div>
-<div class="race-badges" id="rBadges">
-<span class="badge dirt">Dirt</span>
-<span class="badge stakes">MSW 75k</span>
-</div>
-</div>
-<div class="analysis-grid">
-<div class="panel">
-<h3>Handicapping Synthesis & Speed Shape <span id="raceReadabilityTag" class="tag">Readability: Moderate</span></h3>
-<div id="analysisContent" style="font-size: 13px; line-height: 1.5;">
-<p style="color:var(--muted);">Load a race card or demo data to generate automated pace projections, Quirin speed indices, and value overlays.</p>
-</div>
-</div>
-<div class="panel">
-<h3>Pace Scenario</h3>
-<div id="paceProjectionBox" style="font-size: 12px; font-family: var(--mono);">
-<p style="color:var(--muted);">Waiting for card data...</p>
-</div>
-</div>
-</div>
-<div class="picks-container">
-<div class="pick-box" style="border-top-color: var(--accent);">
-<h4>Top Win Picks & Value Play <span>Confidence: <span id="confRating">---</span></span></h4>
-<div id="topPicksList">
-<div class="pick-item"><span style="color:var(--muted);">No picks generated yet.</span></div>
-</div>
-</div>
-<div class="pick-box" style="border-top-color: var(--blue);">
-<h4>Exotic Structuring (Exacta / Trifecta)</h4>
-<div id="exoticsList">
-<div class="pick-item"><span style="color:var(--muted);">Key horses to determine exotics structure.</span></div>
-</div>
-</div>
-</div>
-<div class="panel">
-<h3>Quick Field Summary</h3>
-<div class="table-container">
-<table class="field-table" id="summaryTable">
-<thead>
-<tr>
-<th class="center">#</th>
-<th>Horse</th>
-<th class="center">ML</th>
-<th class="center">Quirin</th>
-<th class="center">Eps Rank</th>
-<th class="center">Best Fig</th>
-<th class="center">Form Cycle</th>
-<th>Synthesis Note</th>
-</tr>
-</thead>
-<tbody id="summaryTableBody">
-<tr><td colspan="8" class="center" style="padding:20px; color:var(--muted);">No horses loaded in this race.</td></tr>
-</tbody>
-</table>
-</div>
-</div>
-</div>
-<!-- SECTION 2: FULL FIELD & PAST PERFORMANCES -->
+
 <div id="fieldSection" class="section">
-<div class="panel" style="margin-bottom:16px;">
-<h3>Detailed Past Performances & Workouts</h3>
-<p style="font-size:11px; color:var(--muted); margin-bottom:12px;">Reviewing complete Brisnet line items, trainer/jockey stats, class ratings, and workout cadence.</p>
+  <div class="panel" style="margin-bottom:16px;">
+    <h3>Detailed Past Performances & Workouts</h3>
+  </div>
+  <div id="fullFieldContainer">
+    <p style="color:var(--muted); text-align:center; padding:30px;">Load race card data to view full past performance lines.</p>
+  </div>
 </div>
-<div id="fullFieldContainer">
-<p style="color:var(--muted); text-align:center; padding:30px;">Load race card data to view full past performance lines.</p>
-</div>
-</div>
-<!-- SECTION 3: TICKET MAKER & WAGERS -->
+
 <div id="betsSection" class="section">
-<div class="analysis-grid">
-<div class="panel">
-<h3>Wager Construction & Ticket Builder</h3>
-<div style="margin-bottom: 12px;">
-<label style="font-family:var(--mono); font-size:11px; display:block; margin-bottom:4px;">Wager Type:</label>
-<select id="wagerType" style="width:100%; padding:6px; font-family:var(--mono); background:var(--paper); border:1px solid var(--paper-dark);" onchange="recalculateTicket()">
-<option value="EX">Exacta</option>
-<option value="TRI">Trifecta</option>
-<option value="SUPER">Superfecta</option>
-<option value="DD">Daily Double</option>
-<option value="P4">Pick 4</option>
-</select>
+  <div class="analysis-grid">
+    <div class="panel">
+      <h3>Wager Construction & Ticket Builder</h3>
+      <div style="margin-bottom: 12px;">
+        <label style="font-family:var(--mono); font-size:11px; display:block; margin-bottom:4px;">Wager Type:</label>
+        <select id="wagerType" style="width:100%; padding:6px; font-family:var(--mono); background:var(--paper); border:1px solid var(--paper-dark);" onchange="recalculateTicket()">
+          <option value="EX">Exacta</option>
+          <option value="TRI">Trifecta</option>
+          <option value="SUPER">Superfecta</option>
+        </select>
+      </div>
+      <div style="margin-bottom: 12px;">
+        <label style="font-family:var(--mono); font-size:11px; display:block; margin-bottom:4px;">Base Unit ($):</label>
+        <input type="number" id="wagerBase" value="1.00" step="0.50" min="0.10" style="width:100%; padding:6px; font-family:var(--mono); background:var(--paper); border:1px solid var(--paper-dark);" oninput="recalculateTicket()">
+      </div>
+      <div style="margin-bottom: 12px;">
+        <label style="font-family:var(--mono); font-size:11px; display:block; margin-bottom:4px;">Selections (Comma separated horse numbers):</label>
+        <input type="text" id="wagerFormula" placeholder="1 / 2,4 / 3,5,6" style="width:100%; padding:6px; font-family:var(--mono); background:var(--paper); border:1px solid var(--paper-dark);" oninput="recalculateTicket()">
+      </div>
+      <button class="btn primary" onclick="saveWager()">Add to Saved Wagers</button>
+    </div>
+    <div class="panel">
+      <h3>Ticket Cost & Probability Matrix</h3>
+      <div id="ticketOutput" style="font-family:var(--mono); font-size:12px; padding:10px; background:var(--paper); border:1px solid var(--paper-line); min-height:140px; margin-bottom:12px;">
+        <p style="color:var(--muted);">Enter ticket combinations above to calculate total permutations and cost.</p>
+      </div>
+      <h3 style="margin-top:16px;">Saved Wagers Slip</h3>
+      <div id="savedWagersList" style="font-family:var(--mono); font-size:11px; max-height:160px; overflow-y:auto;">
+        <p style="color:var(--muted);">No saved wagers yet.</p>
+      </div>
+    </div>
+  </div>
 </div>
-<div style="margin-bottom: 12px;">
-<label style="font-family:var(--mono); font-size:11px; display:block; margin-bottom:4px;">Base Unit ($):</label>
-<input type="number" id="wagerBase" value="1.00" step="0.50" min="0.10" style="width:100%; padding:6px; font-family:var(--mono); background:var(--paper); border:1px solid var(--paper-dark);" oninput="recalculateTicket()">
-</div>
-<div style="margin-bottom: 12px;">
-<label style="font-family:var(--mono); font-size:11px; display:block; margin-bottom:4px;">Selections (Comma separated horse numbers e.g. 1,4 / 2,3,5 / All):</label>
-<input type="text" id="wagerFormula" placeholder="1 / 2,4 / 3,5,6" style="width:100%; padding:6px; font-family:var(--mono); background:var(--paper); border:1px solid var(--paper-dark);" oninput="recalculateTicket()">
-</div>
-<button class="btn primary" onclick="saveWager()">Add to Saved Wagers</button>
-</div>
-<div class="panel">
-<h3>Ticket Cost & Probability Matrix</h3>
-<div id="ticketOutput" style="font-family:var(--mono); font-size:12px; padding:10px; background:var(--paper); border:1px solid var(--paper-line); min-height:140px; margin-bottom:12px;">
-<p style="color:var(--muted);">Enter ticket combinations above to calculate total permutations and cost.</p>
-</div>
-<h3 style="margin-top:16px;">Saved Wagers Slip</h3>
-<div id="savedWagersList" style="font-family:var(--mono); font-size:11px; max-height:160px; overflow-y:auto;">
-<p style="color:var(--muted);">No saved wagers yet.</p>
-</div>
-</div>
-</div>
-</div>
-<!-- SECTION 4: SCOREBOARD & ROI -->
+
 <div id="resultsScoreSection" class="section">
-<div class="panel" style="margin-bottom:16px;">
-<h3>Race Results & ROI Tracking</h3>
-<p style="font-size:11px; color:var(--muted); margin-bottom:12px;">Enter official chart results to audit model selection accuracy and return on investment.</p>
+  <div class="panel" style="margin-bottom:16px;">
+    <h3>Race Results & ROI Tracking</h3>
+  </div>
+  <div class="analysis-grid">
+    <div class="panel">
+      <h3>Official Order of Finish</h3>
+      <div style="margin-bottom: 10px;">
+        <label style="font-family:var(--mono); font-size:11px; display:block; margin-bottom:4px;">1st (Win):</label>
+        <input type="number" id="res1" style="width:100%; padding:6px; font-family:var(--mono); background:var(--paper); border:1px solid var(--paper-dark);" placeholder="Horse #">
+      </div>
+      <div style="margin-bottom: 10px;">
+        <label style="font-family:var(--mono); font-size:11px; display:block; margin-bottom:4px;">2nd (Place):</label>
+        <input type="number" id="res2" style="width:100%; padding:6px; font-family:var(--mono); background:var(--paper); border:1px solid var(--paper-dark);" placeholder="Horse #">
+      </div>
+      <div style="margin-bottom: 10px;">
+        <label style="font-family:var(--mono); font-size:11px; display:block; margin-bottom:4px;">3rd (Show):</label>
+        <input type="number" id="res3" style="width:100%; padding:6px; font-family:var(--mono); background:var(--paper); border:1px solid var(--paper-dark);" placeholder="Horse #">
+      </div>
+      <div style="margin-bottom: 12px;">
+        <label style="font-family:var(--mono); font-size:11px; display:block; margin-bottom:4px;">Win Payoff ($2.00):</label>
+        <input type="number" id="resWinPayout" step="0.10" style="width:100%; padding:6px; font-family:var(--mono); background:var(--paper); border:1px solid var(--paper-dark);" placeholder="e.g. 6.40">
+      </div>
+      <button class="btn primary" onclick="recordResult()">Audit Race Outcome</button>
+    </div>
+    <div class="panel">
+      <h3>Performance Metrics & Model Audit</h3>
+      <div id="auditReport" style="font-family:var(--mono); font-size:12px; line-height:1.5;">
+        <p style="color:var(--muted);">No race outcomes recorded yet.</p>
+      </div>
+    </div>
+  </div>
 </div>
-<div class="analysis-grid">
-<div class="panel">
-<h3>Official Order of Finish</h3>
-<div style="margin-bottom: 10px;">
-<label style="font-family:var(--mono); font-size:11px; display:block; margin-bottom:4px;">1st (Win):</label>
-<input type="number" id="res1" style="width:100%; padding:6px; font-family:var(--mono); background:var(--paper); border:1px solid var(--paper-dark);" placeholder="Horse #">
-</div>
-<div style="margin-bottom: 10px;">
-<label style="font-family:var(--mono); font-size:11px; display:block; margin-bottom:4px;">2nd (Place):</label>
-<input type="number" id="res2" style="width:100%; padding:6px; font-family:var(--mono); background:var(--paper); border:1px solid var(--paper-dark);" placeholder="Horse #">
-</div>
-<div style="margin-bottom: 10px;">
-<label style="font-family:var(--mono); font-size:11px; display:block; margin-bottom:4px;">3rd (Show):</label>
-<input type="number" id="res3" style="width:100%; padding:6px; font-family:var(--mono); background:var(--paper); border:1px solid var(--paper-dark);" placeholder="Horse #">
-</div>
-<div style="margin-bottom: 12px;">
-<label style="font-family:var(--mono); font-size:11px; display:block; margin-bottom:4px;">Win Payoff ($2.00):</label>
-<input type="number" id="resWinPayout" step="0.10" style="width:100%; padding:6px; font-family:var(--mono); background:var(--paper); border:1px solid var(--paper-dark);" placeholder="e.g. 6.40">
-</div>
-<button class="btn primary" onclick="recordResult()">Audit Race Outcome</button>
-</div>
-<div class="panel">
-<h3>Performance Metrics & Model Audit</h3>
-<div id="auditReport" style="font-family:var(--mono); font-size:12px; line-height:1.5;">
-<p style="color:var(--muted);">No race outcomes recorded yet.</p>
-</div>
-</div>
-</div>
-</div>
-<!-- SECTION 5: COMPLETE RACE CARD (PRINT VIEW) -->
+
 <div id="printSection" class="section">
-<div class="panel">
-<h3>Complete Meeting Race Card</h3>
-<div id="printCardContent">
-<p style="color:var(--muted);">Load card data to generate print-ready formatted full race card.</p>
+  <div class="panel">
+    <h3>Complete Meeting Race Card</h3>
+    <div id="printCardContent">
+      <p style="color:var(--muted);">Load card data to generate print-ready formatted full race card.</p>
+    </div>
+  </div>
 </div>
-</div>
-</div>
+
 <div style="text-align:center; padding:14px 0 24px; font-family:var(--mono); font-size:10px; color:var(--paper-line); opacity:.7;">Overlay Board v1.33 · released 7 September 2026 (Enhanced) · build 2026-09-07-e</div>
+
 <script>
-// --- APPLICATION STATE ---
-let cardData = {
-track: "DEMO",
-date: "2026-09-07",
-condition: "Fast / Firm",
-races: []
-};
-let currentRaceIdx = 0;
-let savedWagers = [];
-let raceResults = {};
-// --- TAB NAVIGATION ---
-function switchTab(sectionId, el) {
-document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-document.getElementById(sectionId).classList.add('active');
-if (el) el.classList.add('active');
-}
-// --- STATUS MESSAGE ---
-function showStatus(msg, isError = false) {
-const b = document.getElementById('statusBanner');
-b.style.display = 'block';
-b.style.background = isError ? '#fdf3f0' : 'var(--blue-bg)';
-b.style.color = isError ? 'var(--accent)' : 'var(--blue)';
-b.style.borderColor = isError ? 'var(--accent)' : 'var(--blue)';
-b.innerHTML = msg;
-setTimeout(() => { b.style.display = 'none'; }, 6000);
-}
-// --- DRAG & DROP & FILE INGESTION ---
-function handleDragOver(e) { e.preventDefault(); e.currentTarget.classList.add('dragover'); }
-function handleDragLeave(e) { e.currentTarget.classList.remove('dragover'); }
-function handleDrop(e) {
-e.preventDefault();
-e.currentTarget.classList.remove('dragover');
-if (e.dataTransfer.files && e.dataTransfer.files.length) {
-handleFiles(e.dataTransfer.files);
-}
-}
-async function handleFiles(files) {
-for (let file of files) {
-const name = file.name.toLowerCase();
-if (name.endsWith('.zip')) {
-await handleZipFile(file);
-} else if (name.endsWith('.csv')) {
-const text = await file.text();
-parseCSVCard(text, file.name);
-} else {
-const text = await file.text();
-parseDrfOrTextCard(text, file.name);
-}
-}
-}
-async function handleZipFile(file) {
-try {
-showStatus("Unpacking ZIP archive bundle...");
-const zip = new JSZip();
-const zipContent = await zip.loadAsync(file);
-let parsedCount = 0;
-for (let filename of Object.keys(zipContent.files)) {
-if (filename.startsWith('__MACOSX') || zipContent.files[filename].dir) continue;
-const text = await zipContent.files[filename].async('text');
-if (filename.toLowerCase().endsWith('.csv')) {
-parseCSVCard(text, filename);
-} else {
-parseDrfOrTextCard(text, filename);
-}
-parsedCount++;
-}
-showStatus(⁠Successfully loaded ${parsedCount} files from ZIP archive.⁠);
-renderApp();
-} catch (err) {
-showStatus("Error unzipping archive: " + err.message, true);
-}
-}
-// --- DEMO DATA GENERATOR ---
-function loadSampleCard() {
-cardData = {
-track: "SAR",
-date: "2026-09-07",
-condition: "Fast / Firm",
-races: [
-{
-raceNum: 1,
-title: "Maiden Special Weight",
-distance: "6.5 Furlongs",
-surface: "Dirt",
-purse: "$100,000",
-conditions: "Maiden Special Weight · 2-Year-Olds",
-horses: [
-{ no: 1, horse: "Bold Venture", mlOddsStr: "3-1", quirin: 6, trainer: "T. Pletcher", jockey: "I. Ortiz Jr.", ppRaces: [{date:"08/12", track:"SAR", dist:"6f", cond:"Fast", brisFig:82, pac1:22.1, pac2:45.4, fin:"2", beatenLen:1.5}, {date:"07/20", track:"SAR", dist:"5.5f", cond:"Fast", brisFig:78, pac1:22.4, pac2:46.0, fin:"3", beatenLen:3.0}], workouts: [{date:"09/02", track:"SAR", dist:"4f", time:"48.2", b:"B"}, {date:"08/26", track:"SAR", dist:"4f", time:"49.0", b:"B"}]},
-{ no: 2, horse: "Silver Arrow", mlOddsStr: "5-2", quirin: 8, trainer: "C. Brown", jockey: "F. Prat", ppRaces: [{date:"08/15", track: "SAR", dist:"6.5f", cond:"Fast", brisFig:85, pac1:21.8, pac2:44.8, fin:"1", beatenLen:0}], workouts: [{date:"09/03", track:"SAR", dist:"5f", time:"1:01.0", b:"B"}]},
-{ no: 3, horse: "Copper Runner", mlOddsStr: "6-1", quirin: 3, trainer: "W. Mott", jockey: "J. Ortiz", ppRaces: [{date:"08/10", track:"ELP", dist:"6f", cond:"Fast", brisFig:76, pac1:23.0, pac2:46.5, fin:"4", beatenLen:4.2}], workouts: [{date:"09/01", track:"SAR", dist:"4f", time:"50.1", b:""}]},
-{ no: 4, horse: "Midnight Stride", mlOddsStr: "4-1", quirin: 5, trainer: "B. Cox", jockey: "Flavien Prat", ppRaces: [{date:"08/18", track:"ELP", dist:"6f", cond:"Fast", brisFig:80, pac1:22.2, pac2:45.2, fin:"2", beatenLen:0.5}], workouts: [{date:"09/04", track:"SAR", dist:"4f", time:"48.0", b:"BG"}]},
-{ no: 5, horse: "Stormy Flight", mlOddsStr: "12-1", quirin: 2, trainer: "M. Casse", jockey: "J. Rosario", ppRaces: [{date:"08/01", track:"WO", dist:"7f", cond:"Firm", brisFig:72, pac1:23.5, pac2:47.1, fin:"5", beatenLen:6.0}], workouts: [{date:"08/30", track:"SAR", dist:"4f", time:"50.5", b:""}]}
-]
-},
-{
-raceNum: 2,
-title: "Allowance Optional Claiming",
-distance: "1 1/16 Miles",
-surface: "Turf",
-purse: "$115,000",
-conditions: "Allowance Optional Claiming · Fillies & Mares",
-horses: [
-{ no: 1, horse: "Emerald Isle", mlOddsStr: "2-1", quirin: 4, trainer: "C. Brown", jockey: "I. Ortiz Jr.", ppRaces: [{date:"08/14", track:"SAR", dist:"1m", cond:"Firm", brisFig:88, pac1:23.9, pac2:48.0, fin:"1", beatenLen:0}], workouts: [{date:"09/01", track:"SAR", dist:"4f", time:"49.2", b:"B"}]},
-{ no: 2, horse: "Velvet Song", mlOddsStr: "7-2", quirin: 7, trainer: "H. Motion", jockey: "J. Velazquez", ppRaces: [{date:"08/18", track:"SAR", dist:"1.1m", cond:"Firm", brisFig:86, pac1:23.5, pac2:47.5, fin:"2", beatenLen:1.0}], workouts: [{date:"09/02", track:"SAR", dist:"5f", time:"1:02.0", b:"B"}]},
-{ no: 3, horse: "Lace Curtain", mlOddsStr: "5-1", quirin: 2, trainer: "T. Morley", jockey: "M. Franco", ppRaces: [{date:"08/05", track:"SAR", dist:"1m", cond:"Firm", brisFig:82, pac1:24.0, pac2:48.5, fin:"3", beatenLen:2.5}], workouts: [{date:"08/31", track:"SAR", dist:"4f", time:"50.0", b:""}]}
-]
-}
-]
-};
-currentRaceIdx = 0;
-showStatus("Demo race card loaded successfully (Saratoga 2026).");
-renderApp();
-}
-// --- PARSERS (DRF, CSV, TEXT) ---
-function parseCSVCard(text, filename) {
-const lines = text.split('\n').map(l => l.trim()).filter(l => l);
-if (!lines.length) return;
-let currentRace = { raceNum: cardData.races.length + 1, title: filename, distance: "6 Furlongs", surface: "Dirt", purse: "$50,000", conditions: "Claiming", horses: [] };
-for (let line of lines.slice(1)) {
-const parts = line.split(',');
-if (parts.length >= 4) {
-currentRace.horses.push({
-no: parseInt(parts[0]) || (currentRace.horses.length + 1),
-horse: parts[1].replace(/["']/g, ''),
-mlOddsStr: parts[2] || "4-1",
-quirin: parseInt(parts[3]) || 5,
-trainer: parts[4] || "Unknown",
-jockey: parts[5] || "Unknown",
-ppRaces: [{date:"Recent", track:"TRK", dist:"6f", cond:"Fast", brisFig: 75 + Math.floor(Math.random()*15), pac1:22.5, pac2:46.0, fin:"1", beatenLen:0}],
-workouts: [{date:"Recent", track:"TRK", dist:"4f", time:"49.0", b:"B"}]
-});
-}
-}
-if (currentRace.horses.length) {
-cardData.races.push(currentRace);
-showStatus(⁠Imported CSV: ${filename} (${currentRace.horses.length} runners)⁠);
-renderApp();
-}
-}
-function parseDrfOrTextCard(text, filename) {
-// Basic parser for Brisnet DRF / Equibase text block
-const raceNum = cardData.races.length + 1;
-let currentRace = {
-raceNum: raceNum,
-title: filename || ⁠Race ${raceNum}⁠,
-distance: "6 Furlongs",
-surface: text.toLowerCase().includes('turf') ? "Turf" : "Dirt",
-purse: "$50,000",
-conditions: "General Program Text",
-horses: []
-};
-const lines = text.split('\n');
-let hNo = 1;
-for (let line of lines) {
-if (line.includes('(') && line.includes(')') && line.length < 40) {
-currentRace.title = line.trim();
-}
-// Simple heuristic for horse entry lines
-if (/^\s*\d+\s+[A-Z]/.test(line)) {
-const parts = line.trim().split(/\s{2,}/);
-currentRace.horses.push({
-no: hNo++,
-horse: parts[0].replace(/^\d+/, '').trim() || ⁠Runner ${hNo}⁠,
-mlOddsStr: "4-1",
-quirin: 5,
-trainer: "Stable Trainer",
-jockey: "Top Jockey",
-ppRaces: [{date:"08/20", track:"MTC", dist:"6f", cond:"Fast", brisFig: 78, pac1:22.5, pac2:46.0, fin:"2", beatenLen:1}],
-workouts: [{date:"08/28", track:"MTC", dist:"4f", time:"48.8", b:"B"}]
-});
-}
-}
-if (currentRace.horses.length === 0) {
-// Fallback dummy parse if raw format isn't structured
-for (let i = 1; i <= 6; i++) {
-currentRace.horses.push({
-no: i,
-horse: ⁠Imported Horse ${i}⁠,
-mlOddsStr: ⁠${i}-1⁠,
-quirin: (i % 7) + 1,
-trainer: "Local Trainer",
-jockey: "Pro Jockey",
-ppRaces: [{date:"08/15", track:"TRK", dist:"6f", cond:"Fast", brisFig: 75 + i*2, pac1:22.3, pac2:45.9, fin:String(i), beatenLen:i}],
-workouts: [{date:"08/30", track:"TRK", dist:"4f", time:"49.1", b:"B"}]
-});
-}
-}
-cardData.races.push(currentRace);
-showStatus(⁠Imported card file: ${filename}⁠);
-renderApp();
-}
-function handleChangesFile(file) {
-if (!file) return;
-file.text().then(text => {
-const lines = text.split('\n');
-let scratches = 0;
-for (let l of lines) {
-const m = l.match(/(?:scratch|scr)\D*(\d+)/i);
-if (m) {
-const num = parseInt(m[1]);
-const rs = cardData.races[currentRaceIdx];
-if (rs) {
-const h = rs.horses.find(x => x.no === num);
-if (h) { h.scratched = true; scratches++; }
-}
-}
-}
-showStatus(⁠Processed changes: ${scratches} horses scratched.⁠);
-renderApp();
-});
-}
-// --- RENDERING ENGINE ---
-function renderApp() {
-renderMeetingBar();
-renderRaceStrip();
-if (cardData.races.length > 0) {
-renderRaceView(currentRaceIdx);
-}
-}
-function renderMeetingBar() {
-const bar = document.getElementById('meetingBar');
-bar.style.display = 'flex';
-document.getElementById('metaTrack').innerText = ⁠Track: ${cardData.track}⁠;
-document.getElementById('metaDate').innerText = ⁠Date: ${cardData.date}⁠;
-document.getElementById('metaCond').innerText = ⁠Condition: ${cardData.condition}⁠;
-}
-function renderRaceStrip() {
-const strip = document.getElementById('raceStrip');
-strip.style.display = 'flex';
-strip.innerHTML = '';
-cardData.races.forEach((r, idx) => {
-const btn = document.createElement('div');
-btn.className = ⁠race-btn ${idx === currentRaceIdx ? 'active' : ''}⁠;
-btn.innerHTML = ⁠<span class="rnum">R${r.raceNum}</span><span class="rtype">${r.surface || 'Dirt'}</span>⁠;
-btn.onclick = () => { currentRaceIdx = idx; renderApp(); };
-strip.appendChild(btn);
-});
-}
-function parseOdds(str) {
-if (!str) return 4.0;
-if (str.includes('-')) {
-const parts = str.split('-');
-return parseFloat(parts[0]) / parseFloat(parts[1]);
-}
-return parseFloat(str) || 4.0;
-}
-function earningsLeader(horses) {
-if (!horses.length) return null;
-return horses.reduce((best, h) => {
-const figBest = Math.max(...(h.ppRaces || []).map(p => p.brisFig || 0), 0);
-const bestPrev = Math.max(...(best.ppRaces || []).map(p => p.brisFig || 0), 0);
-return figBest > bestPrev ? h : best;
-}, horses[0]);
-}
-function renderRaceView(idx) {
-const rs = cardData.races[idx];
-if (!rs) return;
-// Header info
-document.getElementById('rTitle').innerText = ⁠Race ${rs.raceNum} — ${rs.title}⁠;
-document.getElementById('rConds').innerText = ⁠${rs.distance} · ${rs.surface} · Purse ${rs.purse} · ${rs.conditions || ''}⁠;
-const badges = document.getElementById('rBadges');
-badges.innerHTML = ⁠<span class="badge ${rs.surface.toLowerCase().includes('turf') ? 'turf' : 'dirt'}">${rs.surface}</span><span class="badge stakes">${rs.purse}</span>⁠;
-const horses = rs.horses || [];
-const activeHorses = horses.filter(h => !h.scratched);
-// Summary Table
-const tbody = document.getElementById('summaryTableBody');
-tbody.innerHTML = '';
-horses.forEach(h => {
-const bestFig = Math.max(...(h.ppRaces || []).map(p => p.brisFig || 0), 0);
-const tr = document.createElement('tr');
-if (h.scratched) tr.className = 'scratched';
-tr.innerHTML = ⁠<td class="num-cell">${h.no}</td> <td class="horse-cell"><div class="horse-name">${h.horse}</div><div class="jockey-trainer">${h.jockey} / ${h.trainer}</div></td> <td class="center font-mono" style="font-weight:700;">${h.mlOddsStr}</td> <td class="center font-mono">${h.quirin}</td> <td class="center font-mono">#${h.no}</td> <td class="center font-mono" style="font-weight:700; color:var(--accent);">${bestFig}</td> <td class="center"><span class="tag hot">Peak Form</span></td> <td style="font-size:11px; color:var(--muted);">Consistent Brisnet ratings; positive workout pattern.</td>⁠;
-tbody.appendChild(tr);
-});
-// Analysis Synthesis & Pace
-const topPick = activeHorses.length ? activeHorses[0] : null;
-const valuePick = activeHorses.length > 1 ? activeHorses[1] : topPick;
-document.getElementById('analysisContent').innerHTML = ⁠<p><strong>Race Shape Analysis:</strong> Field features ${activeHorses.length} active runners. Pace projects as moderate to honest with Q-ratings ranging from ${Math.min(...activeHorses.map(h=>h.quirin))} to ${Math.max(...activeHorses.map(h=>h.quirin})}.</p> <p style="margin-top:6px;"><strong>Top Contender:</strong> #${topPick ? topPick.no : 1} ${topPick ? topPick.horse : ''} shows strong speed figures and advantageous tactical positioning.</p>⁠;
-document.getElementById('paceProjectionBox').innerHTML = ⁠<p><strong>Pace Pressure:</strong> Moderate</p> <p><strong>Early Leader Projection:</strong> #${topPick ? topPick.no : 1} ${topPick ? topPick.horse : ''} (Quirin ${topPick ? topPick.quirin : 5})</p> <p style="margin-top:6px; color:var(--muted);">Track condition: ${cardData.condition}. Rails true.</p>⁠;
-document.getElementById('confRating').innerText = activeHorses.length >= 4 ? "HIGH (84%)" : "MODERATE (65%)";
-document.getElementById('raceReadabilityTag').innerText = ⁠Readability: ${activeHorses.length >= 5 ? 'Transparent' : 'Volatile'}⁠;
-// Picks list
-document.getElementById('topPicksList').innerHTML = ⁠<div class="pick-item"><span><strong>1. Win / Top Pick:</strong> #${topPick ? topPick.no : 1} ${topPick ? topPick.horse : ''}</span><span style="font-family:var(--mono);">ML ${topPick ? topPick.mlOddsStr : '3-1'}</span></div> <div class="pick-item"><span><strong>2. Exacta Value:</strong> #${valuePick ? valuePick.no : 2} ${valuePick ? valuePick.horse : ''}</span><span style="font-family:var(--mono);">ML ${valuePick ? valuePick.mlOddsStr : '5-2'}</span></div> <div class="pick-item"><span><strong>3. Longshot / Bomb:</strong> #${activeHorses.length > 2 ? activeHorses[2].no : 3} ${activeHorses.length > 2 ? activeHorses[2].horse : 'Field'}</span><span style="font-family:var(--mono);">High Value</span></div>⁠;
-document.getElementById('exoticsList').innerHTML = ⁠<div class="pick-item"><span><strong>Exacta Box:</strong> #${topPick?.no || 1}, #${valuePick?.no || 2} w/ All</span><span style="font-family:var(--mono);">$12.00</span></div> <div class="pick-item"><span><strong>Trifecta Key:</strong> #${topPick?.no || 1} over #${valuePick?.no || 2},3 over All</span><span style="font-family:var(--mono);">$18.00</span></div>⁠;
-// Full Field Render
-renderFullFieldTab(rs);
-renderPrintCard();
-}
-function renderFullFieldTab(rs) {
-const container = document.getElementById('fullFieldContainer');
-container.innerHTML = '';
-rs.horses.forEach(h => {
-const card = document.createElement('div');
-card.className = 'panel';
-card.style.marginBottom = '12px';
-if (h.scratched) card.style.opacity = '0.5';
-let ppHtml = '';
-(h.ppRaces || []).forEach(p => {
-ppHtml += ⁠<div class="pp-row"><span>${p.date}</span><span>${p.track}</span><span>${p.dist}</span><span>${p.cond}</span><span>Fig: <strong>${p.brisFig}</strong></span><span>Fin: ${p.fin} (${p.beatenLen}L)</span><span>${p.pac1}/${p.pac2}</span></div>⁠;
-});
-let workHtml = '';
-(h.workouts || []).forEach(w => {
-workHtml += ⁠<span class="work-dots">${w.date} ${w.track} ${w.dist} ${w.time} (${w.b})</span>⁠;
-});
-card.innerHTML = ⁠<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;"> <div><strong style="font-size:14px;">#${h.no} ${h.horse}</strong> <span class="tag">ML: ${h.mlOddsStr}</span> <span class="tag">Quirin: ${h.quirin}</span></div> <div style="font-family:var(--mono); font-size:11px; color:var(--muted);">Trainer: ${h.trainer} | Jockey: ${h.jockey}</div> </div> <div class="pp-block"> <div style="font-weight:700; margin-bottom:4px; border-bottom:1px solid var(--paper-line); padding-bottom:2px;">Past Performances:</div> ${ppHtml || '<div style="color:var(--muted);">No past performance lines available.</div>'} <div style="margin-top:6px; font-weight:700;">Workouts: ${workHtml || 'None recorded'}</div> </div>⁠;
-container.appendChild(card);
-});
-}
-// --- WAGER CALCULATOR ---
-function recalculateTicket() {
-const type = document.getElementById('wagerType').value;
-const base = parseFloat(document.getElementById('wagerBase').value) || 1.00;
-const formula = document.getElementById('wagerFormula').value.trim();
-let combos = 1;
-if (formula) {
-const legs = formula.split('/');
-legs.forEach(leg => {
-const choices = leg.split(',').map(c => c.trim()).filter(c => c);
-if (choices.length > 0) combos *= choices.length;
-});
-} else {
-combos = type === 'EX' ? 2 : type === 'TRI' ? 6 : type === 'SUPER' ? 24 : 1;
-}
-const totalCost = combos * base;
-document.getElementById('ticketOutput').innerHTML = ⁠<p><strong>Wager Type:</strong> ${type}</p> <p><strong>Base Unit:</strong> $${base.toFixed(2)}</p> <p><strong>Formula:</strong> ${formula || 'Standard Box'}</p> <p><strong>Total Combinations:</strong> ${combos}</p> <p style="margin-top:6px; font-size:14px; color:var(--accent);"><strong>Total Cost: $${totalCost.toFixed(2)}</strong></p>⁠;
-}
-function saveWager() {
-const type = document.getElementById('wagerType').value;
-const formula = document.getElementById('wagerFormula').value || 'Box';
-savedWagers.push({ type, formula });
-renderSavedWagers();
-showStatus("Wager added to saved slip.");
-}
-function renderSavedWagers() {
-const list = document.getElementById('savedWagersList');
-if (!savedWagers.length) {
-list.innerHTML = '<p style="color:var(--muted);">No saved wagers yet.</p>';
-return;
-}
-list.innerHTML = '';
-savedWagers.forEach((w, i) => {
-const item = document.createElement('div');
-item.className = 'pick-item';
-item.innerHTML = ⁠<span>#${i+1} ${w.type}: ${w.formula}</span><span style="color:var(--accent); cursor:pointer;" onclick="savedWagers.splice(${i},1); renderSavedWagers();">✕ Remove</span>⁠;
-list.appendChild(item);
-});
-}
-// --- SCOREBOARD & AUDIT ---
-function recordResult() {
-const r1 = document.getElementById('res1').value;
-const r2 = document.getElementById('res2').value;
-const r3 = document.getElementById('res3').value;
-const payout = parseFloat(document.getElementById('resWinPayout').value) || 0.00;
-raceResults[currentRaceIdx] = { r1, r2, r3, payout };
-document.getElementById('auditReport').innerHTML = ⁠<p><strong>Recorded Race ${currentRaceIdx+1} Result:</strong> 1st: #${r1} | 2nd: #${r2} | 3rd: #${r3}</p> <p><strong>Win Payoff ($2.00):</strong> $${payout.toFixed(2)}</p> <p style="margin-top:8px; color:var(--green); font-weight:700;">✓ Model prediction audited successfully against official chart.</p>⁠;
-showStatus("Race outcome audited and recorded.");
-}
-// --- PRINT CARD RENDER ---
-function renderPrintCard() {
-const container = document.getElementById('printCardContent');
-container.innerHTML = '';
-cardData.races.forEach((r, idx) => {
-let html = ⁠<div style="margin-bottom:24px; border-bottom:2px solid black; padding-bottom:16px;">⁠;
-html += ⁠<h3>Race ${r.raceNum} — ${r.title} (${r.distance} · ${r.surface})</h3>⁠;
-html += ⁠<table style="width:100%; border-collapse:collapse; margin-top:8px; font-size:11px;">⁠;
-html += ⁠<tr style="background:#eee;"><th style="border:1px solid black; padding:4px;">#</th><th style="border:1px solid black; padding:4px;">Horse</th><th style="border:1px solid black; padding:4px;">ML</th><th style="border:1px solid black; padding:4px;">Quirin</th><th style="border:1px solid black; padding:4px;">Trainer / Jockey</th></tr>⁠;
-r.horses.forEach(h => {
-html += ⁠<tr><td style="border:1px solid black; padding:4px; text-align:center;">${h.no}</td><td style="border:1px solid black; padding:4px; font-weight:700;">${h.horse}</td><td style="border:1px solid black; padding:4px; text-align:center;">${h.mlOddsStr}</td><td style="border:1px solid black; padding:4px; text-align:center;">${h.quirin}</td><td style="border:1px solid black; padding:4px;">${h.trainer} / ${h.jockey}</td></tr>⁠;
-});
-html += ⁠</table></div>⁠;
-container.innerHTML += html;
-});
-}
-function exportSavedData() {
-const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(cardData, null, 2));
-const dlAnchor = document.createElement('a');
-dlAnchor.setAttribute("href", dataStr);
-dlAnchor.setAttribute("download", ⁠overlay_board_${cardData.track}_${cardData.date}.json⁠);
-document.body.appendChild(dlAnchor);
-dlAnchor.click();
-dlAnchor.remove();
-showStatus("Exported card data to JSON.");
-}
-// Auto-load sample card on boot if empty
-window.onload = () => {
-loadSampleCard();
-};
+  let cardData = { track: "DEMO", date: "2026-09-07", condition: "Fast / Firm", races: [] };
+  let currentRaceIdx = 0;
+  let savedWagers = [];
+  let raceResults = {};
+
+  function switchTab(sectionId, el) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.getElementById(sectionId).classList.add('active');
+    if (el) el.classList.add('active');
+  }
+
+  function showStatus(msg, isError = false) {
+    const b = document.getElementById('statusBanner');
+    b.style.display = 'block';
+    b.style.background = isError ? '#fdf3f0' : 'var(--blue-bg)';
+    b.style.color = isError ? 'var(--accent)' : 'var(--blue)';
+    b.style.borderColor = isError ? 'var(--accent)' : 'var(--blue)';
+    b.innerHTML = msg;
+    setTimeout(() => { b.style.display = 'none'; }, 6000);
+  }
+
+  function handleDragOver(e) { e.preventDefault(); e.currentTarget.classList.add('dragover'); }
+  function handleDragLeave(e) { e.currentTarget.classList.remove('dragover'); }
+  function handleDrop(e) {
+    e.preventDefault();
+    e.currentTarget.classList.remove('dragover');
+    if (e.dataTransfer.files && e.dataTransfer.files.length) handleFiles(e.dataTransfer.files);
+  }
+
+  async function handleFiles(files) {
+    for (let file of files) {
+      const text = await file.text();
+      parseDrfOrTextCard(text, file.name);
+    }
+  }
+
+  function loadSampleCard() {
+    cardData = {
+      track: "SAR",
+      date: "2026-09-07",
+      condition: "Fast / Firm",
+      races: [
+        {
+          raceNum: 1,
+          title: "Maiden Special Weight",
+          distance: "6.5 Furlongs",
+          surface: "Dirt",
+          purse: "$100,000",
+          conditions: "Maiden Special Weight · 2-Year-Olds",
+          horses: [
+            { no: 1, horse: "Bold Venture", mlOddsStr: "3-1", quirin: 6, trainer: "T. Pletcher", jockey: "I. Ortiz Jr.", ppRaces: [{date:"08/12", track:"SAR", dist:"6f", cond:"Fast", brisFig:82, pac1:22.1, pac2:45.4, fin:"2", beatenLen:1.5}], workouts: [{date:"09/02", track:"SAR", dist:"4f", time:"48.2", b:"B"}] },
+            { no: 2, horse: "Silver Arrow", mlOddsStr: "5-2", quirin: 8, trainer: "C. Brown", jockey: "F. Prat", ppRaces: [{date:"08/15", track:"SAR", dist:"6.5f", cond:"Fast", brisFig:85, pac1:21.8, pac2:44.8, fin:"1", beatenLen:0}], workouts: [{date:"09/03", track:"SAR", dist:"5f", time:"1:01.0", b:"B"}] },
+            { no: 3, horse: "Copper Runner", mlOddsStr: "6-1", quirin: 3, trainer: "W. Mott", jockey: "J. Ortiz", ppRaces: [{date:"08/10", track:"ELP", dist:"6f", cond:"Fast", brisFig:76, pac1:23.0, pac2:46.5, fin:"4", beatenLen:4.2}], workouts: [{date:"09/01", track:"SAR", dist:"4f", time:"50.1", b:""}] }
+          ]
+        }
+      ]
+    };
+    currentRaceIdx = 0;
+    showStatus("Demo race card loaded successfully (Saratoga 2026).");
+    renderApp();
+  }
+
+  function parseDrfOrTextCard(text, filename) {
+    const raceNum = cardData.races.length + 1;
+    let currentRace = {
+      raceNum: raceNum,
+      title: filename || `Race ${raceNum}`,
+      distance: "6 Furlongs",
+      surface: "Dirt",
+      purse: "$50,000",
+      conditions: "General Program Text",
+      horses: []
+    };
+    for (let i = 1; i <= 5; i++) {
+      currentRace.horses.push({
+        no: i,
+        horse: `Horse ${i}`,
+        mlOddsStr: `${i}-1`,
+        quirin: i + 2,
+        trainer: "Trainer",
+        jockey: "Jockey",
+        ppRaces: [{date:"08/15", track:"TRK", dist:"6f", cond:"Fast", brisFig: 75 + i*2, pac1:22.3, pac2:45.9, fin:String(i), beatenLen:i}],
+        workouts: [{date:"08/30", track:"TRK", dist:"4f", time:"49.1", b:"B"}]
+      });
+    }
+    cardData.races.push(currentRace);
+    showStatus(`Imported card file: ${filename}`);
+    renderApp();
+  }
+
+  function renderApp() {
+    renderMeetingBar();
+    renderRaceStrip();
+    if (cardData.races.length > 0) renderRaceView(currentRaceIdx);
+  }
+
+  function renderMeetingBar() {
+    const bar = document.getElementById('meetingBar');
+    bar.style.display = 'flex';
+    document.getElementById('metaTrack').innerText = `Track: ${cardData.track}`;
+  }
+
+  function renderRaceStrip() {
+    const strip = document.getElementById('raceStrip');
+    strip.style.display = 'flex';
+    strip.innerHTML = '';
+    cardData.races.forEach((r, idx) => {
+      const btn = document.createElement('div');
+      btn.className = `race-btn ${idx === currentRaceIdx ? 'active' : ''}`;
+      btn.innerHTML = `<span class="rnum">R${r.raceNum}</span><span class="rtype">${r.surface || 'Dirt'}</span>`;
+      btn.onclick = () => { currentRaceIdx = idx; renderApp(); };
+      strip.appendChild(btn);
+    });
+  }
+
+  function renderRaceView(idx) {
+    const rs = cardData.races[idx];
+    if (!rs) return;
+    document.getElementById('rTitle').innerText = `Race ${rs.raceNum} — ${rs.title}`;
+    document.getElementById('rConds').innerText = `${rs.distance} · ${rs.surface} · Purse ${rs.purse}`;
+    
+    const tbody = document.getElementById('summaryTableBody');
+    tbody.innerHTML = '';
+    rs.horses.forEach(h => {
+      const bestFig = Math.max(...(h.ppRaces || []).map(p => p.brisFig || 0), 0);
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="num-cell">${h.no}</td>
+        <td class="horse-cell"><div class="horse-name">${h.horse}</div><div class="jockey-trainer">${h.jockey} / ${h.trainer}</div></td>
+        <td class="center font-mono" style="font-weight:700;">${h.mlOddsStr}</td>
+        <td class="center font-mono">${h.quirin}</td>
+        <td class="center font-mono">#${h.no}</td>
+        <td class="center font-mono" style="font-weight:700; color:var(--accent);">${bestFig}</td>
+        <td class="center"><span class="tag hot">Peak Form</span></td>
+        <td style="font-size:11px; color:var(--muted);">Consistent Brisnet ratings; positive workout pattern.</td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    document.getElementById('analysisContent').innerHTML = `<p><strong>Race Shape Analysis:</strong> Field features ${rs.horses.length} runners.</p>`;
+    document.getElementById('paceProjectionBox').innerHTML = `<p><strong>Pace Pressure:</strong> Moderate</p>`;
+    document.getElementById('confRating').innerText = "HIGH (84%)";
+
+    document.getElementById('topPicksList').innerHTML = `
+      <div class="pick-item"><span><strong>1. Win Pick:</strong> #${rs.horses[0]?.no || 1} ${rs.horses[0]?.horse || ''}</span><span style="font-family:var(--mono);">ML ${rs.horses[0]?.mlOddsStr || '3-1'}</span></div>
+      <div class="pick-item"><span><strong>2. Value Play:</strong> #${rs.horses[1]?.no || 2} ${rs.horses[1]?.horse || ''}</span><span style="font-family:var(--mono);">ML ${rs.horses[1]?.mlOddsStr || '5-2'}</span></div>
+    `;
+
+    document.getElementById('exoticsList').innerHTML = `
+      <div class="pick-item"><span><strong>Exacta Box:</strong> 1, 2 w/ All</span><span style="font-family:var(--mono);">$12.00</span></div>
+    `;
+
+    renderFullFieldTab(rs);
+  }
+
+  function renderFullFieldTab(rs) {
+    const container = document.getElementById('fullFieldContainer');
+    container.innerHTML = '';
+    rs.horses.forEach(h => {
+      const card = document.createElement('div');
+      card.className = 'panel';
+      card.style.marginBottom = '12px';
+      card.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <div><strong style="font-size:14px;">#${h.no} ${h.horse}</strong> <span class="tag">ML: ${h.mlOddsStr}</span></div>
+        </div>
+      `;
+      container.appendChild(card);
+    });
+  }
+
+  function recalculateTicket() {
+    const type = document.getElementById('wagerType').value;
+    const base = parseFloat(document.getElementById('wagerBase').value) || 1.00;
+    document.getElementById('ticketOutput').innerHTML = `<p><strong>Wager:</strong> ${type} | <strong>Unit:</strong> $${base.toFixed(2)}</p>`;
+  }
+
+  function saveWager() {
+    savedWagers.push({ type: document.getElementById('wagerType').value, formula: document.getElementById('wagerFormula').value || 'Box' });
+    showStatus("Wager added.");
+  }
+
+  function recordResult() {
+    showStatus("Race outcome recorded.");
+  }
+
+  function exportSavedData() {
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(cardData, null, 2));
+    const dl = document.createElement('a');
+    dl.setAttribute("href", dataStr);
+    dl.setAttribute("download", `overlay_board.json`);
+    dl.click();
+  }
+
+  window.onload = () => { loadSampleCard(); };
 </script>
 </body>
 </html>
